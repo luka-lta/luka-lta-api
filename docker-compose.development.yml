@@ -1,0 +1,72 @@
+services:
+  nginx:
+    image: nginx:latest
+    container_name: 'nginx-luka-lta'
+    ports:
+      - '80:80'
+    volumes:
+      - ./public:/app/public:rw
+      - ./docker/nginx/nginx-development.conf:/etc/nginx/conf.d/default.conf
+    links:
+      - php-fpm
+    networks:
+      - lukaLta-shared
+
+  php-fpm:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      target: development
+    container_name: 'php-fpm-luka-lta'
+    working_dir: /app
+    environment:
+      APP_ENV: 'development'
+      MYSQL_DATABASE: 'luka_lta_api'
+      MYSQL_HOST: 'mysql-luka-lta'
+      MYSQL_USER: 'testing'
+      MYSQL_PASSWORD: '1234'
+      JWT_SECRET: 'd17c14f3ff470cebe5f85df1efc966b0fcdc2096'
+    volumes:
+      - ./:/app:rw
+    networks:
+      - lukaLta-shared
+
+  mysql:
+    image: mysql
+    container_name: 'mysql-luka-lta'
+    hostname: mysql-luka-lta
+    environment:
+      MYSQL_DATABASE: 'luka_lta_api'
+      MYSQL_USER: 'testing'
+      MYSQL_PASSWORD: '1234'
+      MYSQL_ROOT_PASSWORD: '1234'
+    ports:
+      - '3306:3306'
+    expose:
+      - '3306'
+    volumes:
+      - lukaLtaData:/var/lib/mysql:rw
+      - ./data/mysql:/docker-entrypoint-initdb.d/:ro
+    networks:
+      - lukaLta-shared
+
+  phpmyadmin:
+    image: phpmyadmin
+    container_name: 'pma-luka-lta'
+    links:
+      - mysql
+    environment:
+      PMA_HOST: mysql-luka-lta
+      PMA_PORT: 3306
+      PMA_ARBITRAY: 1
+    ports:
+      - '8081:80'
+    networks:
+      - lukaLta-shared
+
+volumes:
+  lukaLtaData:
+
+networks:
+  lukaLta-shared:
+    driver: bridge
