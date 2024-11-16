@@ -26,8 +26,7 @@
         "slim/http": "^1.4"
     },
     "require-dev": {
-        "roave/security-advisories": "dev-latest"
-        ,
+        "roave/security-advisories": "dev-latest",
         "phpmd/phpmd": "2.*",
         "squizlabs/php_codesniffer": "3.*"
     }

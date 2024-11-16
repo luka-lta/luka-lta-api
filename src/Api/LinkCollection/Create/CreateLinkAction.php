@@ -4,6 +4,8 @@ namespace LukaLtaApi\Api\LinkCollection\Create;
 
 use LukaLtaApi\Api\ApiAction;
 use LukaLtaApi\Api\RequestValidator;
+use LukaLtaApi\Value\Result\ApiResult;
+use LukaLtaApi\Value\Result\JsonResult;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -11,6 +13,7 @@ class CreateLinkAction extends ApiAction
 {
     public function __construct(
         private readonly RequestValidator $requestValidator,
+        private readonly CreateLinkService $service,
     ) {
     }
 
@@ -26,8 +29,14 @@ class CreateLinkAction extends ApiAction
 
         $this->requestValidator->validate($request, $rules);
 
-        // Service aufrufen
+        $this->service->create(
+            $request->getParsedBody()['displayname'],
+            $request->getParsedBody()['description'] ?? null,
+            $request->getParsedBody()['url'],
+            $request->getParsedBody()['isActive'] ?? false,
+            $request->getParsedBody()['iconName'] ?? null,
+        );
 
-        return $this->execute($request, $response);
+        return ApiResult::from(JsonResult::from('Link created'))->getResponse($response);
     }
 }

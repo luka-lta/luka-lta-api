@@ -2,6 +2,7 @@
 
 namespace LukaLtaApi\Api;
 
+use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Exception\ApiInvalidArgumentException;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -21,7 +22,10 @@ class RequestValidator
             $value = $location === 'body' ? ($bodyParams[$param] ?? null) : ($queryParams[$param] ?? null);
 
             if ($isRequired && $value === null) {
-                throw new ApiInvalidArgumentException("Parameter '{$param}' is required in {$location}.");
+                throw new ApiInvalidArgumentException(
+                    "Parameter '{$param}' is required in {$location}.",
+                    StatusCodeInterface::STATUS_BAD_REQUEST
+                );
             }
         }
     }

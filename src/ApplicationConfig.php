@@ -4,6 +4,7 @@ namespace LukaLtaApi;
 
 use DI\Definition\Source\DefinitionArray;
 use LukaLtaApi\App\Factory\LoggerFactory;
+use LukaLtaApi\App\Factory\PdoFactory;
 use Monolog\Logger;
 use PDO;
 use function DI\factory;
@@ -19,7 +20,7 @@ class ApplicationConfig extends DefinitionArray
     {
         return [
             Logger::class => factory(LoggerFactory::class),
-            PDO::class => factory(PDO::class),
+            PDO::class => factory(PdoFactory::class),
         ];
     }
 }
