@@ -14,7 +14,7 @@ class LinkCollectionRepository
     ) {
     }
 
-    public function createNewLink(LinkItem $link): void
+    public function create(LinkItem $link): void
     {
         $sql = <<<SQL
             INSERT INTO link_collection 
@@ -40,7 +40,63 @@ class LinkCollectionRepository
         }
     }
 
-    public function getAllLinks(): ?array
+    public function getById(int $linkId): ?LinkItem
+    {
+        $sql = <<<SQL
+            SELECT * FROM link_collection
+            WHERE link_id = :linkid
+        SQL;
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute(['linkid' => $linkId]);
+            $row = $stmt->fetch();
+
+            if ($row === false) {
+                return null;
+            }
+
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException(
+                'Failed to fetch link by id',
+                previous: $exception
+            );
+        }
+
+        return LinkItem::fromDatabase($row);
+    }
+
+    public function update(LinkItem $linkItem): void
+    {
+        $sql = <<<SQL
+            UPDATE link_collection
+            SET displayname = :displayname,
+                description = :description,
+                url = :url,
+                is_active = :is_active,
+                icon_name = :icon_name
+            WHERE link_id = :link_id
+        SQL;
+
+        try {
+            $statement = $this->pdo->prepare($sql);
+            $statement->execute([
+                'displayname' => (string)$linkItem->getDisplayName(),
+                'description' => $linkItem->getDescription()?->getValue(),
+                'url' => (string)$linkItem->getUrl(),
+                'is_active' => $linkItem->isActive() ? 1 : 0,
+                'icon_name' => $linkItem->getIconName()?->getValue(),
+                'link_id' => $linkItem->getId(),
+            ]);
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException(
+                'Failed to update link',
+                previous: $exception
+            );
+        }
+    }
+
+    public function getAll(): ?array
     {
         $sql = <<<SQL
             SELECT * FROM link_collection

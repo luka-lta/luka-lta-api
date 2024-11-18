@@ -3,6 +3,7 @@
 namespace LukaLtaApi\Slim;
 
 use LukaLtaApi\Api\LinkCollection\Create\CreateLinkAction;
+use LukaLtaApi\Api\LinkCollection\Edit\EditLinkAction;
 use LukaLtaApi\Api\LinkCollection\GetAll\GetAllLinksAction;
 use LukaLtaApi\Slim\Middleware\CORSMiddleware;
 use Monolog\Logger;
@@ -82,6 +83,7 @@ class RouteMiddlewareCollector
             $app->group('/linkCollection', function (RouteCollectorProxy $linkCollection) {
                 $linkCollection->post('/create', CreateLinkAction::class);
                 $linkCollection->get('/links', GetAllLinksAction::class);
+                $linkCollection->put('/link/{linkId:[0-9]+}', EditLinkAction::class);
             });
         });
     }

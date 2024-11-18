@@ -1,6 +1,6 @@
 <?php
 
-namespace LukaLtaApi\Api\LinkCollection\Create;
+namespace LukaLtaApi\Api\LinkCollection\Create\Service;
 
 use LukaLtaApi\Repository\LinkCollectionRepository;
 use LukaLtaApi\Value\LinkCollection\Description;
@@ -23,7 +23,7 @@ class CreateLinkService
         bool $isActive,
         ?string $iconName
     ): void {
-        $this->repository->createNewLink(
+        $this->repository->create(
             LinkItem::from(
                 null,
                 DisplayName::fromString($displayname),

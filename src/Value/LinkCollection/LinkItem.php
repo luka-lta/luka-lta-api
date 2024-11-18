@@ -5,23 +5,24 @@ namespace LukaLtaApi\Value\LinkCollection;
 class LinkItem
 {
     private function __construct(
-        private readonly ?int        $id,
-        private readonly DisplayName $displayname,
-        private readonly Description $description,
-        private readonly LinkUrl     $url,
-        private readonly bool        $isActive,
-        private readonly IconName $iconName
+        private readonly ?int $id,
+        private DisplayName   $displayname,
+        private Description   $description,
+        private LinkUrl       $url,
+        private bool          $isActive,
+        private IconName      $iconName
     ) {
     }
 
     public static function from(
-        ?int $id,
+        ?int        $id,
         DisplayName $displayname,
         Description $description,
-        LinkUrl $url,
-        ?bool $isActive,
-        IconName $iconName
-    ): self {
+        LinkUrl     $url,
+        ?bool       $isActive,
+        IconName    $iconName
+    ): self
+    {
         return new self($id, $displayname, $description, $url, $isActive ?? false, $iconName);
     }
 
@@ -77,5 +78,30 @@ class LinkItem
     public function getIconName(): IconName
     {
         return $this->iconName;
+    }
+
+    public function setDisplayname(DisplayName $displayname): void
+    {
+        $this->displayname = $displayname;
+    }
+
+    public function setDescription(Description $description): void
+    {
+        $this->description = $description;
+    }
+
+    public function setUrl(LinkUrl $url): void
+    {
+        $this->url = $url;
+    }
+
+    public function setIsActive(bool $isActive): void
+    {
+        $this->isActive = $isActive;
+    }
+
+    public function setIconName(IconName $iconName): void
+    {
+        $this->iconName = $iconName;
     }
 }

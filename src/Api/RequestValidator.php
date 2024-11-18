@@ -8,6 +8,9 @@ use Psr\Http\Message\ServerRequestInterface;
 
 class RequestValidator
 {
+    public const string LOCATION_QUERY = 'query';
+    public const string LOCATION_BODY = 'body';
+
     public function validate(
         ServerRequestInterface $request,
         array $rules
@@ -17,9 +20,9 @@ class RequestValidator
 
         foreach ($rules as $param => $rule) {
             $isRequired = $rule['required'] ?? false;
-            $location = $rule['location'] ?? 'query'; // 'query' oder 'body'
+            $location = $rule['location'] ?? self::LOCATION_QUERY; // 'query' oder 'body'
 
-            $value = $location === 'body' ? ($bodyParams[$param] ?? null) : ($queryParams[$param] ?? null);
+            $value = $location === self::LOCATION_BODY ? ($bodyParams[$param] ?? null) : ($queryParams[$param] ?? null);
 
             if ($isRequired && $value === null) {
                 throw new ApiInvalidArgumentException(
