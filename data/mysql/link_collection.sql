@@ -3,7 +3,7 @@ CREATE TABLE `link_collection`
     `link_id`       int          NOT NULL,
     `displayname`   varchar(30)  NOT NULL,
     `description`   text,
-    `url`           varchar(255) NOT NULL,
+    `url`           text NOT NULL,
     `is_active`     tinyint(1) NOT NULL DEFAULT '0',
     `created_at`    datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`    TIMESTAMP             DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
