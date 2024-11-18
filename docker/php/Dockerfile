@@ -9,6 +9,9 @@ WORKDIR /app/
 RUN chown -R www-data:www-data /app/
 
 RUN docker-php-ext-install pdo pdo_mysql
+RUN apk add --no-cache autoconf g++ make && \
+    pecl install redis && \
+    docker-php-ext-enable redis
 
 RUN apk update && apk add --no-cache \
     git \

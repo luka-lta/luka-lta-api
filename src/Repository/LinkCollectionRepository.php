@@ -3,6 +3,7 @@
 namespace LukaLtaApi\Repository;
 
 use LukaLtaApi\Exception\ApiDatabaseException;
+use LukaLtaApi\Service\LinkItemCachingService;
 use LukaLtaApi\Value\LinkCollection\LinkItem;
 use PDO;
 use PDOException;
@@ -11,6 +12,7 @@ class LinkCollectionRepository
 {
     public function __construct(
         private readonly PDO $pdo,
+        private readonly LinkItemCachingService $caching,
     ) {
     }
 
@@ -32,6 +34,8 @@ class LinkCollectionRepository
                 'is_active' => $link->isActive() ? 1 : 0,
                 'icon_name' => $link->getIconName()?->getValue(),
             ]);
+
+            $this->caching->addItem($link);
         } catch (PDOException $exception) {
             throw new ApiDatabaseException(
                 'Failed to create new link',
@@ -42,6 +46,10 @@ class LinkCollectionRepository
 
     public function getById(int $linkId): ?LinkItem
     {
+        if ($linkItem = $this->caching->getItem($linkId)) {
+            return $linkItem;
+        }
+
         $sql = <<<SQL
             SELECT * FROM link_collection
             WHERE link_id = :linkid
@@ -88,6 +96,8 @@ class LinkCollectionRepository
                 'icon_name' => $linkItem->getIconName()?->getValue(),
                 'link_id' => $linkItem->getId(),
             ]);
+
+            $this->caching->updateItem($linkItem);
         } catch (PDOException $exception) {
             throw new ApiDatabaseException(
                 'Failed to update link',
@@ -98,6 +108,10 @@ class LinkCollectionRepository
 
     public function getAll(): ?array
     {
+        if ($linkItems = $this->caching->getAllItems()) {
+            return $linkItems;
+        }
+
         $sql = <<<SQL
             SELECT * FROM link_collection
         SQL;

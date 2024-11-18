@@ -64,8 +64,22 @@ services:
     networks:
       - lukaLta-shared
 
+  redis:
+    image: redis:7.4.1
+    container_name: 'redis-luka-lta'
+    ports:
+      - "6379:6379"
+    environment:
+      REDIS_PASSWORD: 1234
+    command: [ "redis-server", "--requirepass", "$$REDIS_PASSWORD" ]
+    networks:
+      - lukaLta-shared
+    volumes:
+      - redis_data:/data
+
 volumes:
   lukaLtaData:
+  redis_data:
 
 networks:
   lukaLta-shared:
