@@ -3,6 +3,7 @@
 namespace LukaLtaApi\Api\LinkCollection\GetAll;
 
 use LukaLtaApi\Api\ApiAction;
+use LukaLtaApi\Api\LinkCollection\GetAll\Service\GetAllLinksService;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
 use Psr\Http\Message\ResponseInterface;

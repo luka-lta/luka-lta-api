@@ -1,6 +1,6 @@
 <?php
 
-namespace LukaLtaApi\Api\LinkCollection\GetAll;
+namespace LukaLtaApi\Api\LinkCollection\GetAll\Service;
 
 use LukaLtaApi\Repository\LinkCollectionRepository;
 use LukaLtaApi\Value\LinkCollection\LinkItem;
@@ -14,7 +14,7 @@ class GetAllLinksService
 
     public function getAllLinks(): ?array
     {
-        $links = $this->repository->getAllLinks();
+        $links = $this->repository->getAll();
 
         if ($links === null) {
             return null;

@@ -3,6 +3,7 @@
 namespace LukaLtaApi\Api\LinkCollection\Create;
 
 use LukaLtaApi\Api\ApiAction;
+use LukaLtaApi\Api\LinkCollection\Create\Service\CreateLinkService;
 use LukaLtaApi\Api\RequestValidator;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
