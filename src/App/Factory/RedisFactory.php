@@ -10,8 +10,10 @@ class RedisFactory
     {
         $client = new Redis();
 
-        $client->auth('1234');
         $client->connect('redis-luka-lta');
+        $client->auth([
+            'password' => '1234',
+        ]);
 
         return $client;
     }

@@ -13,7 +13,7 @@ class LoggerFactory
     {
         $logger = new Logger('ApiLogger');
 
-        $streamHandler = new StreamHandler('/app/logs/', LogLevel::DEBUG);
+        $streamHandler = new StreamHandler('/app/logs/error.log', LogLevel::DEBUG);
 
         $formatter = new LineFormatter(
             "[%datetime%] %channel%.%level_name%: %message% %context% %extra%\n",
