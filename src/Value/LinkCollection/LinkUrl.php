@@ -12,7 +12,7 @@ class LinkUrl
     ) {
         if (empty($value)) {
             throw new ApiInvalidArgumentException(
-                'Display name must not be empty',
+                'URL cannot be empty',
                 StatusCodeInterface::STATUS_BAD_REQUEST
             );
         }
@@ -33,5 +33,10 @@ class LinkUrl
     public function __toString(): string
     {
         return $this->value;
+    }
+
+    public function getAsTrackUrl(): string
+    {
+        return '/click/track?targetUrl=' . urlencode($this->value);
     }
 }
