@@ -3,12 +3,13 @@
 namespace LukaLtaApi\Value\Tracking;
 
 use DateTimeImmutable;
+use LukaLtaApi\Value\LinkCollection\LinkUrl;
 
 class UrlClick
 {
     private function __construct(
         private readonly ?int $clickId,
-        private readonly string $url,
+        private readonly LinkUrl $url,
         private readonly ?DateTimeImmutable $clickedAt,
         private readonly ?string $ipAdress,
         private readonly ?string $userAgent,
@@ -18,7 +19,7 @@ class UrlClick
 
     public static function from(
         ?int $clickId,
-        string $url,
+        LinkUrl $url,
         ?DateTimeImmutable $clickedAt,
         ?string $ipAdress,
         ?string $userAgent,
@@ -38,7 +39,7 @@ class UrlClick
     {
         return new self(
             $data['click_id'],
-            $data['url'],
+            LinkUrl::fromString($data['url']),
             new DateTimeImmutable($data['clicked_at']),
             $data['ip_adress'],
             $data['user_agent'],
@@ -49,11 +50,11 @@ class UrlClick
     public function toArray(): array
     {
         return [
-            'click_id' => $this->clickId,
-            'url' => $this->url,
-            'clicked_at' => $this->clickedAt->format('Y-m-d H:i:s'),
-            'ip_adress' => $this->ipAdress,
-            'user_agent' => $this->userAgent,
+            'clickId' => $this->clickId,
+            'url' => (string)$this->url,
+            'clickedAt' => $this->clickedAt->format('Y-m-d H:i:s'),
+            'ipAdress' => $this->ipAdress,
+            'userAgent' => $this->userAgent,
             'referer' => $this->referer,
         ];
     }
@@ -63,7 +64,7 @@ class UrlClick
         return $this->clickId;
     }
 
-    public function getUrl(): string
+    public function getUrl(): LinkUrl
     {
         return $this->url;
     }
