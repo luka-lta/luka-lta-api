@@ -12,7 +12,7 @@ class GetAllLinksService
     ) {
     }
 
-    public function getAllLinks(): ?array
+    public function getAllLinks(bool $mustRef): ?array
     {
         $links = $this->repository->getAll();
 
@@ -21,6 +21,6 @@ class GetAllLinksService
         }
 
         // Wandelt jedes LinkItem-Objekt in ein Array um
-        return array_map(static fn(LinkItem $link) => $link->toArray(), $links);
+        return array_map(static fn(LinkItem $link) => $link->toArray($mustRef), $links);
     }
 }
