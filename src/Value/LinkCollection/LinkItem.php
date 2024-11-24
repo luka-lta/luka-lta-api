@@ -2,28 +2,44 @@
 
 namespace LukaLtaApi\Value\LinkCollection;
 
+use DateTimeImmutable;
+
 class LinkItem
 {
     private function __construct(
-        private readonly ?int $id,
-        private DisplayName   $displayname,
-        private Description   $description,
-        private LinkUrl       $url,
-        private bool          $isActive,
-        private IconName      $iconName
-    ) {
+        private readonly ?int              $id,
+        private DisplayName                $displayname,
+        private Description                $description,
+        private LinkUrl                    $url,
+        private bool                       $isActive,
+        private readonly DateTimeImmutable $createdOn,
+        private IconName                   $iconName,
+        private int                        $displayOrder,
+    )
+    {
     }
 
     public static function from(
-        ?int        $id,
-        DisplayName $displayname,
-        Description $description,
-        LinkUrl     $url,
-        ?bool       $isActive,
-        IconName    $iconName
+        ?int              $id,
+        DisplayName       $displayname,
+        Description       $description,
+        LinkUrl           $url,
+        ?bool             $isActive,
+        DateTimeImmutable $createdOn,
+        IconName          $iconName,
+        int               $displayOrder,
     ): self
     {
-        return new self($id, $displayname, $description, $url, $isActive ?? false, $iconName);
+        return new self(
+            $id,
+            $displayname,
+            $description,
+            $url,
+            $isActive ?? false,
+            $createdOn,
+            $iconName,
+            $displayOrder
+        );
     }
 
     public static function fromDatabase(array $data): self
@@ -34,7 +50,9 @@ class LinkItem
             Description::fromString($data['description'] ?? null),
             LinkUrl::fromString($data['url']),
             $data['is_active'],
-            IconName::fromString($data['icon_name'] ?? null)
+            new DateTimeImmutable($data['created_on']),
+            IconName::fromString($data['icon_name'] ?? null),
+            $data['display_order'],
         );
     }
 
@@ -46,7 +64,9 @@ class LinkItem
             'description' => $this->description->getValue(),
             'url' => $this->url->__toString(),
             'isActive' => $this->isActive,
+            'createdOn' => $this->createdOn->format('Y-m-d H:i:s'),
             'iconName' => $this->iconName->getValue(),
+            'displayOrder' => $this->displayOrder,
         ];
     }
 
@@ -75,9 +95,19 @@ class LinkItem
         return $this->isActive;
     }
 
+    public function getCreatedOn(): DateTimeImmutable
+    {
+        return $this->createdOn;
+    }
+
     public function getIconName(): IconName
     {
         return $this->iconName;
+    }
+
+    public function getDisplayOrder(): int
+    {
+        return $this->displayOrder;
     }
 
     public function setDisplayname(DisplayName $displayname): void
@@ -103,5 +133,10 @@ class LinkItem
     public function setIconName(IconName $iconName): void
     {
         $this->iconName = $iconName;
+    }
+
+    public function setDisplayOrder(int $displayOrder): void
+    {
+        $this->displayOrder = $displayOrder;
     }
 }

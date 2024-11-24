@@ -2,6 +2,7 @@
 
 namespace LukaLtaApi\Api\LinkCollection\Create\Service;
 
+use DateTimeImmutable;
 use LukaLtaApi\Repository\LinkCollectionRepository;
 use LukaLtaApi\Value\LinkCollection\Description;
 use LukaLtaApi\Value\LinkCollection\DisplayName;
@@ -21,7 +22,8 @@ class CreateLinkService
         ?string $description,
         string $url,
         bool $isActive,
-        ?string $iconName
+        ?string $iconName,
+        int $displayOrder,
     ): void {
         $this->repository->create(
             LinkItem::from(
@@ -30,7 +32,9 @@ class CreateLinkService
                 Description::fromString($description),
                 LinkUrl::fromString($url),
                 $isActive,
-                IconName::fromString($iconName)
+                new DateTimeImmutable(),
+                IconName::fromString($iconName),
+                $displayOrder,
             )
         );
     }

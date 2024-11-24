@@ -20,9 +20,9 @@ class LinkCollectionRepository
     {
         $sql = <<<SQL
             INSERT INTO link_collection 
-                (displayname, description, url, is_active, icon_name)
+                (displayname, description, url, is_active, icon_name, display_order)
             VALUES 
-                (:displayname, :description, :url, :is_active, :icon_name)
+                (:displayname, :description, :url, :is_active, :icon_name, :display_order)
         SQL;
 
         try {
@@ -33,6 +33,7 @@ class LinkCollectionRepository
                 'url' => (string)$link->getUrl(),
                 'is_active' => $link->isActive() ? 1 : 0,
                 'icon_name' => $link->getIconName()?->getValue(),
+                'display_order' => $link->getDisplayOrder(),
             ]);
 
             $this->caching->addItem($link);
@@ -82,7 +83,8 @@ class LinkCollectionRepository
                 description = :description,
                 url = :url,
                 is_active = :is_active,
-                icon_name = :icon_name
+                icon_name = :icon_name,
+                display_order = :display_order
             WHERE link_id = :link_id
         SQL;
 
@@ -95,6 +97,7 @@ class LinkCollectionRepository
                 'is_active' => $linkItem->isActive() ? 1 : 0,
                 'icon_name' => $linkItem->getIconName()?->getValue(),
                 'link_id' => $linkItem->getId(),
+                'display_order' => $linkItem->getDisplayOrder(),
             ]);
 
             $this->caching->updateItem($linkItem);
