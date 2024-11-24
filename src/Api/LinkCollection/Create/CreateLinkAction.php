@@ -26,6 +26,7 @@ class CreateLinkAction extends ApiAction
             'url' => ['required' => true, 'location' => 'body'],
             'isActive' => ['required' => false, 'location' => 'body'],
             'iconName' => ['required' => false, 'location' => 'body'],
+            'displayOrder' => ['required' => false, 'location' => 'body'],
         ];
 
         $this->requestValidator->validate($request, $rules);
@@ -36,6 +37,7 @@ class CreateLinkAction extends ApiAction
             $request->getParsedBody()['url'],
             $request->getParsedBody()['isActive'] ?? false,
             $request->getParsedBody()['iconName'] ?? null,
+            $request->getParsedBody()['displayOrder'] ?? 0,
         );
 
         return ApiResult::from(JsonResult::from('Link created'))->getResponse($response);
