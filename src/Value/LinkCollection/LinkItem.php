@@ -56,13 +56,13 @@ class LinkItem
         );
     }
 
-    public function toArray(): array
+    public function toArray(bool $mustRef = false): array
     {
         return [
             'id' => $this->id,
             'displayname' => $this->displayname->__toString(),
             'description' => $this->description->getValue(),
-            'url' => $this->url->__toString(),
+            'url' => $mustRef ? $this->url->getAsTrackUrl() : $this->url->__toString(),
             'isActive' => $this->isActive,
             'createdOn' => $this->createdOn->format('Y-m-d H:i:s'),
             'iconName' => $this->iconName->getValue(),
