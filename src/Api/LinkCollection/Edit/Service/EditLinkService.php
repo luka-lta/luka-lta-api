@@ -8,6 +8,7 @@ use LukaLtaApi\Repository\LinkCollectionRepository;
 use LukaLtaApi\Value\LinkCollection\Description;
 use LukaLtaApi\Value\LinkCollection\DisplayName;
 use LukaLtaApi\Value\LinkCollection\IconName;
+use LukaLtaApi\Value\LinkCollection\LinkId;
 use LukaLtaApi\Value\LinkCollection\LinkUrl;
 
 class EditLinkService
@@ -25,7 +26,7 @@ class EditLinkService
         bool    $isActive,
         ?string $iconName
     ): void {
-        $linkItem = $this->repository->getById($linkId);
+        $linkItem = $this->repository->getById(LinkId::fromInt($linkId));
 
         if ($linkItem === null) {
             throw new LinkNotFoundException('Link not found', StatusCodeInterface::STATUS_NOT_FOUND);

@@ -2,6 +2,7 @@
 
 namespace LukaLtaApi\Service;
 
+use LukaLtaApi\Value\LinkCollection\LinkId;
 use LukaLtaApi\Value\LinkCollection\LinkItem;
 use Redis;
 use RedisException;
@@ -20,7 +21,7 @@ class LinkItemCachingService
         try {
             $this->redis->hset(
                 self::HASH_KEY,
-                $linkItem->getId(),
+                $linkItem->getLinkId()?->asInt(),
                 json_encode($linkItem->toArray(), JSON_THROW_ON_ERROR)
             );
         } catch (RedisException) {
@@ -28,10 +29,10 @@ class LinkItemCachingService
         }
     }
 
-    public function deleteItem(int $linkId): void
+    public function deleteItem(LinkId $linkId): void
     {
         try {
-            $this->redis->hdel(self::HASH_KEY, $linkId);
+            $this->redis->hdel(self::HASH_KEY, $linkId->asString());
         } catch (RedisException) {
             // Do nothing
         }
@@ -40,7 +41,7 @@ class LinkItemCachingService
     public function updateItem(LinkItem $item): bool
     {
         try {
-            $existingItem = $this->getItem($item->getId());
+            $existingItem = $this->getItem($item->getLinkId());
             if ($existingItem) {
                 $this->addItem($item);
                 return true;
@@ -51,10 +52,10 @@ class LinkItemCachingService
         return false;
     }
 
-    public function getItem(int $linkId): ?LinkItem
+    public function getItem(LinkId $linkId): ?LinkItem
     {
         try {
-            $itemData = $this->redis->hget(self::HASH_KEY, $linkId);
+            $itemData = $this->redis->hget(self::HASH_KEY, $linkId->asInt());
             if ($itemData) {
                 $dataArray = json_decode($itemData, true, 512, JSON_THROW_ON_ERROR);
                 return LinkItem::fromDatabase($dataArray);

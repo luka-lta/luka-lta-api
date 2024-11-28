@@ -4,6 +4,7 @@ namespace LukaLtaApi\Repository;
 
 use LukaLtaApi\Exception\ApiDatabaseException;
 use LukaLtaApi\Service\LinkItemCachingService;
+use LukaLtaApi\Value\LinkCollection\LinkId;
 use LukaLtaApi\Value\LinkCollection\LinkItem;
 use PDO;
 use PDOException;
@@ -45,7 +46,7 @@ class LinkCollectionRepository
         }
     }
 
-    public function getById(int $linkId): ?LinkItem
+    public function getById(LinkId $linkId): ?LinkItem
     {
         if ($linkItem = $this->caching->getItem($linkId)) {
             return $linkItem;
@@ -58,7 +59,7 @@ class LinkCollectionRepository
 
         try {
             $stmt = $this->pdo->prepare($sql);
-            $stmt->execute(['linkid' => $linkId]);
+            $stmt->execute(['linkid' => $linkId->asInt()]);
             $row = $stmt->fetch();
 
             if ($row === false) {
@@ -96,7 +97,7 @@ class LinkCollectionRepository
                 'url' => (string)$linkItem->getUrl(),
                 'is_active' => $linkItem->isActive() ? 1 : 0,
                 'icon_name' => $linkItem->getIconName()?->getValue(),
-                'link_id' => $linkItem->getId(),
+                'link_id' => $linkItem->getLinkId()?->asInt(),
                 'display_order' => $linkItem->getDisplayOrder(),
             ]);
 

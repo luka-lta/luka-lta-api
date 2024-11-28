@@ -3,7 +3,7 @@
 namespace LukaLtaApi\Api\Click\Track\Service;
 
 use LukaLtaApi\Repository\ClickRepository;
-use LukaLtaApi\Value\Tracking\UrlClick;
+use LukaLtaApi\Value\Tracking\Click;
 
 class ClickTrackService
 {
@@ -13,7 +13,7 @@ class ClickTrackService
     {
     }
 
-    public function track(UrlClick $click): void
+    public function track(Click $click): void
     {
         $this->repository->create($click);
     }
