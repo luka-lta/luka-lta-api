@@ -47,7 +47,7 @@ class ClickRepository
 
         try {
             $statement = $this->pdo->query($sql);
-            $rows = $statement->fetchAll(PDO::FETCH_ASSOC);
+            $rows = $statement->fetchAll();
 
             if ($rows === false) {
                 return null;

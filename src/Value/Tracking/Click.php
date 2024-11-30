@@ -41,9 +41,9 @@ class Click
             ClickId::fromInt($data['click_id']),
             LinkUrl::fromString($data['url']),
             new DateTimeImmutable($data['clicked_at']),
-            $data['ip_adress'],
-            $data['user_agent'],
-            $data['referer'],
+            $data['ip_adress'] ?? null,
+            $data['user_agent'] ?? null,
+            $data['referer'] ?? null,
         );
     }
 
