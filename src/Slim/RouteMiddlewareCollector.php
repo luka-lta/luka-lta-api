@@ -2,6 +2,7 @@
 
 namespace LukaLtaApi\Slim;
 
+use LukaLtaApi\Api\Click\GetAll\GetAllClicksAction;
 use LukaLtaApi\Api\Click\Track\ClickTrackAction;
 use LukaLtaApi\Api\LinkCollection\Create\CreateLinkAction;
 use LukaLtaApi\Api\LinkCollection\Edit\EditLinkAction;
@@ -86,8 +87,10 @@ class RouteMiddlewareCollector
                 $linkCollection->get('/links', GetAllLinksAction::class);
                 $linkCollection->put('/link/{linkId:[0-9]+}', EditLinkAction::class);
             });
+
             $app->group('/click', function (RouteCollectorProxy $click) {
                 $click->get('/track', ClickTrackAction::class);
+                $click->get('/all', GetAllClicksAction::class);
             });
         });
     }

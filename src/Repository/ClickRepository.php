@@ -3,7 +3,7 @@
 namespace LukaLtaApi\Repository;
 
 use LukaLtaApi\Exception\ApiDatabaseException;
-use LukaLtaApi\Value\Tracking\UrlClick;
+use LukaLtaApi\Value\Tracking\Click;
 use PDO;
 use PDOException;
 
@@ -14,7 +14,7 @@ class ClickRepository
     ) {
     }
 
-    public function create(UrlClick $click): void
+    public function create(Click $click): void
     {
         $sql = <<<SQL
             INSERT INTO url_clicks (url, clicked_at, ip_address, user_agent, referrer)
@@ -37,5 +37,29 @@ class ClickRepository
                 $exception
             );
         }
+    }
+
+    public function getAll(): ?array
+    {
+        $sql = <<<SQL
+            SELECT * FROM url_clicks
+        SQL;
+
+        try {
+            $statement = $this->pdo->query($sql);
+            $rows = $statement->fetchAll();
+
+            if ($rows === false) {
+                return null;
+            }
+
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException(
+                'Failed to fetch clicks',
+                previous: $exception
+            );
+        }
+
+        return array_map(static fn($row) => Click::fromDatabase($row), $rows);
     }
 }

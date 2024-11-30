@@ -10,7 +10,7 @@ use LukaLtaApi\Exception\MissingTargetUrlException;
 use LukaLtaApi\Value\LinkCollection\LinkUrl;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
-use LukaLtaApi\Value\Tracking\UrlClick;
+use LukaLtaApi\Value\Tracking\Click;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -40,7 +40,7 @@ class ClickTrackAction extends ApiAction
         $referer = $request->getServerParams()['HTTP_REFERER'] ?? null;
 
         $this->service->track(
-            UrlClick::from(
+            Click::from(
                 null,
                 $targetUrl,
                 new DateTimeImmutable(),

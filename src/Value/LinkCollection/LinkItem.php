@@ -7,7 +7,7 @@ use DateTimeImmutable;
 class LinkItem
 {
     private function __construct(
-        private readonly ?int              $id,
+        private readonly ?LinkId           $linkId,
         private DisplayName                $displayname,
         private Description                $description,
         private LinkUrl                    $url,
@@ -20,7 +20,7 @@ class LinkItem
     }
 
     public static function from(
-        ?int              $id,
+        ?LinkId           $linkId,
         DisplayName       $displayname,
         Description       $description,
         LinkUrl           $url,
@@ -31,7 +31,7 @@ class LinkItem
     ): self
     {
         return new self(
-            $id,
+            $linkId,
             $displayname,
             $description,
             $url,
@@ -45,7 +45,7 @@ class LinkItem
     public static function fromDatabase(array $data): self
     {
         return new self(
-            $data['link_id'] ?? null,
+            LinkId::fromInt($data['link_id']),
             DisplayName::fromString($data['displayname']),
             Description::fromString($data['description'] ?? null),
             LinkUrl::fromString($data['url']),
@@ -59,7 +59,7 @@ class LinkItem
     public function toArray(bool $mustRef = false): array
     {
         return [
-            'id' => $this->id,
+            'id' => $this->linkId->asInt(),
             'displayname' => $this->displayname->__toString(),
             'description' => $this->description->getValue(),
             'url' => $mustRef ? $this->url->getAsTrackUrl() : $this->url->__toString(),
@@ -70,9 +70,9 @@ class LinkItem
         ];
     }
 
-    public function getId(): ?int
+    public function getLinkId(): ?LinkId
     {
-        return $this->id;
+        return $this->linkId;
     }
 
     public function getDisplayName(): DisplayName
