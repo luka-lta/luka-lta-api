@@ -4,6 +4,7 @@ namespace LukaLtaApi\Repository;
 
 use LukaLtaApi\Exception\ApiDatabaseException;
 use LukaLtaApi\Service\LinkItemCachingService;
+use LukaLtaApi\Value\FilteredSqlQuery;
 use LukaLtaApi\Value\LinkCollection\LinkId;
 use LukaLtaApi\Value\LinkCollection\LinkItem;
 use PDO;
@@ -110,7 +111,7 @@ class LinkCollectionRepository
         }
     }
 
-    public function getAll(): ?array
+    public function getAll(FilteredSqlQuery $filteredSqlQuery): ?array
     {
         if ($linkItems = $this->caching->getAllItems()) {
             return $linkItems;
@@ -120,9 +121,12 @@ class LinkCollectionRepository
             SELECT * FROM link_collection
         SQL;
 
+        $sql .= $filteredSqlQuery->getQuery();
+
         try {
-            $statement = $this->pdo->query($sql);
-            $rows = $statement->fetchAll(PDO::FETCH_ASSOC);
+            $statement = $this->pdo->prepare($sql);
+            $statement->execute($filteredSqlQuery->getBindings());
+            $rows = $statement->fetchAll();
 
             if ($rows === false) {
                 return null;

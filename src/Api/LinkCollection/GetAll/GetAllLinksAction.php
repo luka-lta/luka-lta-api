@@ -19,7 +19,7 @@ class GetAllLinksAction extends ApiAction
     protected function execute(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $mustRef = $request->getQueryParams()['mustRef'] ?? false;
-        $links = $this->service->getAllLinks($mustRef);
+        $links = $this->service->getAllLinks($mustRef, $request->getQueryParams());
 
         $message = 'Links fetched successfully';
 
