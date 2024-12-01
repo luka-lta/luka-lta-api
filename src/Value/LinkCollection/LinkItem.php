@@ -59,7 +59,7 @@ class LinkItem
     public function toArray(bool $mustRef = false): array
     {
         return [
-            'id' => $this->linkId->asInt(),
+            'id' => $this->linkId?->asInt(),
             'displayname' => $this->displayname->__toString(),
             'description' => $this->description->getValue(),
             'url' => $mustRef ? $this->url->getAsTrackUrl() : $this->url->__toString(),
