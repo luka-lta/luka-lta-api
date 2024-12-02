@@ -15,8 +15,9 @@ class LinkItem
         private readonly DateTimeImmutable $createdOn,
         private IconName                   $iconName,
         private int                        $displayOrder,
-    )
-    {
+        private bool               $deactivated,
+        private ?DateTimeImmutable $deactivatedOn,
+    ) {
     }
 
     public static function from(
@@ -28,8 +29,7 @@ class LinkItem
         DateTimeImmutable $createdOn,
         IconName          $iconName,
         int               $displayOrder,
-    ): self
-    {
+    ): self {
         return new self(
             $linkId,
             $displayname,
@@ -38,7 +38,9 @@ class LinkItem
             $isActive ?? false,
             $createdOn,
             $iconName,
-            $displayOrder
+            $displayOrder,
+            false,
+            null,
         );
     }
 
@@ -50,9 +52,11 @@ class LinkItem
             Description::fromString($data['description'] ?? null),
             LinkUrl::fromString($data['url']),
             $data['is_active'],
-            new DateTimeImmutable($data['created_on']),
+            new DateTimeImmutable($data['created_at']),
             IconName::fromString($data['icon_name'] ?? null),
             $data['display_order'],
+            $data['deactivated'],
+            new DateTimeImmutable($data['deactivated_on']),
         );
     }
 
@@ -67,6 +71,8 @@ class LinkItem
             'createdOn' => $this->createdOn->format('Y-m-d H:i:s'),
             'iconName' => $this->iconName->getValue(),
             'displayOrder' => $this->displayOrder,
+            'deactivated' => $this->deactivated,
+            'deactivatedOn' => $this->deactivatedOn?->format('Y-m-d H:i:s'),
         ];
     }
 
@@ -110,6 +116,16 @@ class LinkItem
         return $this->displayOrder;
     }
 
+    public function isDeactivated(): bool
+    {
+        return $this->deactivated;
+    }
+
+    public function getDeactivatedOn(): ?DateTimeImmutable
+    {
+        return $this->deactivatedOn;
+    }
+
     public function setDisplayname(DisplayName $displayname): void
     {
         $this->displayname = $displayname;
@@ -138,5 +154,15 @@ class LinkItem
     public function setDisplayOrder(int $displayOrder): void
     {
         $this->displayOrder = $displayOrder;
+    }
+
+    public function setDeactivated(bool $deactivated): void
+    {
+        $this->deactivated = $deactivated;
+    }
+
+    public function setDeactivatedOn(?DateTimeImmutable $deactivatedOn): void
+    {
+        $this->deactivatedOn = $deactivatedOn;
     }
 }
