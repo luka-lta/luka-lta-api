@@ -110,6 +110,29 @@ class LinkCollectionRepository
         }
     }
 
+    public function disableLink(LinkId $linkId): void
+    {
+        $sql = <<<SQL
+            UPDATE link_collection
+            SET deactivated = :deactivated,
+                deactivated_at = NOW()
+            WHERE link_id = :link_id
+        SQL;
+
+        try {
+            $statement = $this->pdo->prepare($sql);
+            $statement->execute([
+                'link_id' => $linkId->asInt(),
+                'deactivated' => 1,
+            ]);
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException(
+                'Failed to disable link',
+                previous: $exception,
+            );
+        }
+    }
+
     public function getAll(): ?array
     {
         if ($linkItems = $this->caching->getAllItems()) {
@@ -127,7 +150,6 @@ class LinkCollectionRepository
             if ($rows === false) {
                 return null;
             }
-
         } catch (PDOException $exception) {
             throw new ApiDatabaseException(
                 'Failed to fetch links',
