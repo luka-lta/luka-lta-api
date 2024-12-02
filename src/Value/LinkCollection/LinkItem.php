@@ -56,7 +56,7 @@ class LinkItem
             IconName::fromString($data['icon_name'] ?? null),
             $data['display_order'],
             $data['deactivated'],
-            new DateTimeImmutable($data['deactivated_on']),
+            isset($data['deactivated_at']) ? new DateTimeImmutable($data['deactivated_at']) : null,
         );
     }
 

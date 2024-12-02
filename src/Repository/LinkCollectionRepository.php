@@ -112,6 +112,11 @@ class LinkCollectionRepository
 
     public function disableLink(LinkId $linkId): void
     {
+        if ($linkItem = $this->caching->getItem($linkId)) {
+            $linkItem->setDeactivated(true);
+            $this->caching->updateItem($linkItem);
+        }
+
         $sql = <<<SQL
             UPDATE link_collection
             SET deactivated = :deactivated,

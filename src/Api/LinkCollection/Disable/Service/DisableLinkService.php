@@ -24,6 +24,6 @@ class DisableLinkService
             throw new LinkNotFoundException('Link not found', StatusCodeInterface::STATUS_NOT_FOUND);
         }
 
-        $this->repository->disableLink($linkId);
+        $this->repository->disableLink($existsLink->getLinkId());
     }
 }

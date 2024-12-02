@@ -24,6 +24,11 @@ class LinkId implements IdentifierInterface
         return new self($linkId);
     }
 
+    public static function fromString(string $linkId): self
+    {
+        return new self((int)$linkId);
+    }
+
     public function asString(): string
     {
         return (string)$this->linkId;
