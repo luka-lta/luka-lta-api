@@ -3,7 +3,7 @@ services:
     build:
         context: .
         dockerfile: docker/nginx/Dockerfile
-    image: lukalta/api-nginx:0.1.0
+    image: ghcr.io/lukalta/api-nginx:dev
     container_name: 'nginx-luka-lta'
     ports:
       - '80:80'
@@ -20,7 +20,7 @@ services:
       context: .
       dockerfile: docker/php/Dockerfile
       target: development
-    image: lukalta/api-php-fpm:0.1.0
+    image: ghcr.io/lukalta/api-php-fpm:dev
     container_name: 'php-fpm-luka-lta'
     working_dir: /app
     environment:
