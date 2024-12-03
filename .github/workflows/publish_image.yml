@@ -23,12 +23,10 @@ jobs:
       - name: Build Docker image for nginx
         run: |
           docker compose -f docker-compose.development.yml build nginx
-          docker tag lukalta/api-nginx:dev ghcr.io/${{ github.repository_owner }}/api-nginx:dev
 
       - name: Build Docker image for php-fpm
         run: |
           docker compose -f docker-compose.development.yml build php-fpm
-          docker tag lukalta/api-php-fpm:dev ghcr.io/${{ github.repository_owner }}/api-php-fpm:dev
 
       - name: Push Docker image
         run: |
