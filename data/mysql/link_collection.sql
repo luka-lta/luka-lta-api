@@ -8,7 +8,9 @@ CREATE TABLE `link_collection`
     `created_at`    datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`    TIMESTAMP             DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `icon_name`     varchar(50)           DEFAULT NULL,
-    `display_order` int          NOT NULL DEFAULT '0'
+    `display_order`  int        NOT NULL DEFAULT '0',
+    `deactivated`    tinyint(1) NOT NULL DEFAULT '0',
+    `deactivated_at` datetime
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 ALTER TABLE `link_collection`
