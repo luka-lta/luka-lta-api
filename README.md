@@ -5,15 +5,12 @@ This is the official API for the projects: [luka-lta-frontend](), [luka-lta-back
 
 ## Requirements:
 
---- 
 
 - PHP 8.3 or higher
 - Docker 
 - PHP-redis-extension 8.3 or higher
 
 ## Endpoints:
-
----
 
 Default: `/api/v1/`
 
