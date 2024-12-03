@@ -65,7 +65,6 @@ class LinkCollectionRepository
             if ($row === false) {
                 return null;
             }
-
         } catch (PDOException $exception) {
             throw new ApiDatabaseException(
                 'Failed to fetch link by id',
