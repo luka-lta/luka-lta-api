@@ -25,8 +25,8 @@ class UserRepository
         try {
             $statement = $this->pdo->prepare($sql);
             $statement->execute([
-                'email' => $user->getEmail(),
-                'password' => $user->getPassword(),
+                'email' => $user->getEmail()->getEmail(),
+                'password' => $user->getPassword()->getPassword(),
                 'avatar_url' => $user->getAvatarUrl(),
             ]);
         } catch (PDOException $e) {
@@ -37,13 +37,13 @@ class UserRepository
     public function findUserByEmail(UserEmail $email): ?User
     {
         $sql = <<<SQL
-            SELECT email, password, avatar_url
+            SELECT *
             FROM users
             WHERE email = :email
         SQL;
 
         $statement = $this->pdo->prepare($sql);
-        $statement->execute(['email' => $email]);
+        $statement->execute(['email' => $email->getEmail()]);
 
         $row = $statement->fetch(PDO::FETCH_ASSOC);
 

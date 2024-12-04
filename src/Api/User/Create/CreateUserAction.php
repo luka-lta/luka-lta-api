@@ -7,6 +7,8 @@ use LukaLtaApi\Api\RequestValidator;
 use LukaLtaApi\Api\User\Create\Service\CreateUserService;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
+use LukaLtaApi\Value\User\UserEmail;
+use LukaLtaApi\Value\User\UserPassword;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -28,8 +30,8 @@ class CreateUserAction extends ApiAction
         $this->validator->validate($request, $rules);
 
         $this->service->createUser(
-            $request->getParsedBody()['email'],
-            $request->getParsedBody()['password']
+            UserEmail::from($request->getParsedBody()['email']),
+            UserPassword::fromPlain($request->getParsedBody()['password'])
         );
 
         return ApiResult::from(JsonResult::from('User created'))->getResponse($response);
