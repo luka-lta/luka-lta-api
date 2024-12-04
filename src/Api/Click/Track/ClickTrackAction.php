@@ -52,7 +52,8 @@ class ClickTrackAction extends ApiAction
 
         return ApiResult::from(
             JsonResult::from('Click tracked'),
-            StatusCodeInterface::STATUS_FOUND)
+            StatusCodeInterface::STATUS_FOUND
+        )
             ->getResponse($response)
             ->withHeader('Location', (string)$targetUrl);
     }

@@ -13,8 +13,7 @@ class GetAllClicksAction extends ApiAction
 {
     public function __construct(
         private readonly GetAllClicksService $service
-    )
-    {
+    ) {
     }
 
     protected function execute(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
