@@ -43,7 +43,7 @@ class UserRepository
         SQL;
 
         $statement = $this->pdo->prepare($sql);
-        $statement->execute(['email' => $email->getEmail()]);
+        $statement->execute(['email' => $email]);
 
         $row = $statement->fetch(PDO::FETCH_ASSOC);
 

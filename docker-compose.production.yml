@@ -25,6 +25,8 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
+      LOG_LEVEL: 'debug'
+      LOG_FILE_PATH: '/app/logs/error.log'
     volumes:
       - ./:/app:rw
     networks:

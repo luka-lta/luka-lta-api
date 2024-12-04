@@ -30,6 +30,8 @@ services:
       MYSQL_USER: 'testing'
       MYSQL_PASSWORD: '1234'
       JWT_SECRET: 'd17c14f3ff470cebe5f85df1efc966b0fcdc2096'
+      LOG_LEVEL: 'debug'
+      LOG_FILE_PATH: '/app/logs/error.log'
     volumes:
       - ./:/app:rw
     networks:
