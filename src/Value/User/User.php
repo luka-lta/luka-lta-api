@@ -12,7 +12,7 @@ class User
         private readonly ?UserId $userId,
         private readonly UserEmail  $email,
         private readonly UserPassword  $password,
-        private readonly string  $avatarUrl,
+        private readonly ?string  $avatarUrl,
         private readonly DateTimeImmutable  $createdAt,
         private readonly ?DateTimeImmutable  $updatedAt,
     ) {
@@ -21,13 +21,12 @@ class User
     public static function create(
         string $email,
         string $password,
-        string $avatarUrl,
     ): self {
         return new self(
             null,
             UserEmail::from($email),
             UserPassword::fromPlain($password),
-            $avatarUrl,
+            null,
             new DateTimeImmutable(),
             null,
         );
@@ -35,17 +34,19 @@ class User
 
     public static function fromDatabase(array $row): self
     {
+        $date = $row['updated_at'] === null ? null : new DateTimeImmutable($row['updated_at']);
+
         return new self(
             UserId::fromInt($row['user_id']),
             UserEmail::from($row['email']),
             UserPassword::fromHash($row['password']),
             $row['avatar_url'],
             new DateTimeImmutable($row['created_at']),
-            new DateTimeImmutable($row['updated_at']),
+            $date,
         );
     }
 
-    public function getAvatarUrl(): string
+    public function getAvatarUrl(): ?string
     {
         return $this->avatarUrl;
     }
