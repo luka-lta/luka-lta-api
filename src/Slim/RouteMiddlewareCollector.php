@@ -9,6 +9,7 @@ use LukaLtaApi\Api\LinkCollection\Disable\DisableLinkAction;
 use LukaLtaApi\Api\LinkCollection\Edit\EditLinkAction;
 use LukaLtaApi\Api\LinkCollection\GetAll\GetAllLinksAction;
 use LukaLtaApi\Api\User\Create\CreateUserAction;
+use LukaLtaApi\Api\User\Update\UpdateUserAction;
 use LukaLtaApi\Slim\Middleware\CORSMiddleware;
 use Monolog\Logger;
 use Psr\Http\Message\ResponseInterface;
@@ -98,6 +99,7 @@ class RouteMiddlewareCollector
 
             $app->group('/user', function (RouteCollectorProxy $user) {
                 $user->post('/create', CreateUserAction::class);
+                $user->post('/{userId:[0-9]+}', UpdateUserAction::class);
             });
         });
     }

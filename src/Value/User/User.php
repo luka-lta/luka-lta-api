@@ -10,9 +10,9 @@ class User
 {
     private function __construct(
         private readonly ?UserId $userId,
-        private readonly UserEmail  $email,
-        private readonly UserPassword  $password,
-        private readonly ?string  $avatarUrl,
+        private UserEmail  $email,
+        private UserPassword  $password,
+        private ?string  $avatarUrl,
         private readonly DateTimeImmutable  $createdAt,
         private readonly ?DateTimeImmutable  $updatedAt,
     ) {
@@ -74,5 +74,20 @@ class User
     public function getUserId(): ?UserId
     {
         return $this->userId;
+    }
+
+    public function setEmail(UserEmail $email): void
+    {
+        $this->email = $email;
+    }
+
+    public function setPassword(UserPassword $password): void
+    {
+        $this->password = $password;
+    }
+
+    public function setAvatarUrl(?string $avatarUrl): void
+    {
+        $this->avatarUrl = $avatarUrl;
     }
 }
