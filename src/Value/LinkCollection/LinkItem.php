@@ -29,7 +29,12 @@ class LinkItem
     ): self {
         return new self(
             $linkId,
-            LinkMetaData::from($displayname, $description, $url, $isActive ?? false),
+            LinkMetaData::from(
+                $displayname,
+                $description,
+                $url,
+                $isActive ?? false,
+            ),
             $createdOn,
             $iconName,
             $displayOrder,
