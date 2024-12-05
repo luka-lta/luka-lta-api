@@ -28,7 +28,8 @@ class CreateUserService
         $this->repository->createUser(
             User::create(
                 $email->getEmail(),
-                $password->getPassword())
+                $password->getPassword()
+            )
         );
     }
 }

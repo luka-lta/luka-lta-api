@@ -15,21 +15,16 @@ class LinkMetaData
     }
 
     public static function from(
-        DisplayName $displayName,
-        Description $description,
-        LinkUrl $linkUrl,
+        string $displayName,
+        string $description,
+        string $linkUrl,
         bool $isActive
     ): self {
-        return new self($displayName, $description, $linkUrl, $isActive);
-    }
-
-    public static function fromDatabase(array $row): self
-    {
         return new self(
-            DisplayName::fromString($row['displayname']),
-            Description::fromString($data['description'] ?? null),
-            LinkUrl::fromString($row['link_url']),
-            $row['is_active'],
+            DisplayName::fromString($displayName),
+            Description::fromString($description),
+            LinkUrl::fromString($linkUrl),
+            $isActive
         );
     }
 

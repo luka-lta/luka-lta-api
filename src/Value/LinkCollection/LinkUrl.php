@@ -17,7 +17,7 @@ class LinkUrl
             );
         }
 
-       if (!filter_var($value, FILTER_VALIDATE_URL)) {
+        if (!filter_var($value, FILTER_VALIDATE_URL)) {
             throw new ApiInvalidArgumentException(
                 'URL is not valid',
                 StatusCodeInterface::STATUS_BAD_REQUEST

@@ -19,9 +19,9 @@ class LinkItem
 
     public static function from(
         ?LinkId           $linkId,
-        DisplayName       $displayname,
-        Description       $description,
-        LinkUrl           $url,
+        string       $displayname,
+        string       $description,
+        string           $url,
         ?bool             $isActive,
         DateTimeImmutable $createdOn,
         IconName          $iconName,
@@ -47,7 +47,12 @@ class LinkItem
     {
         return new self(
             LinkId::fromInt($data['link_id']),
-            LinkMetaData::fromDatabase($data),
+            LinkMetaData::from(
+                $data['displayname'],
+                $data['description'],
+                $data['url'],
+                $data['is_active'],
+            ),
             new DateTimeImmutable($data['created_at']),
             IconName::fromString($data['icon_name'] ?? null),
             $data['display_order'],
