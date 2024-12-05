@@ -2,28 +2,28 @@
 
 namespace LukaLtaApi\App\Factory;
 
-use Monolog\Formatter\LineFormatter;
-use Monolog\Handler\StreamHandler;
+use Monolog\Formatter\JsonFormatter;
+use Monolog\Handler\RotatingFileHandler;
 use Monolog\Logger;
+use Monolog\Processor\WebProcessor;
+use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 
 class LoggerFactory
 {
-    public function __invoke(): Logger
+    public function __invoke(): LoggerInterface
     {
+        $logFilePath = getenv('LOG_FILE_PATH') ?: '/app/logs/error.log';
+        $logLevel = getenv('LOG_LEVEL') ?: LogLevel::DEBUG;
+
         $logger = new Logger('ApiLogger');
 
-        $streamHandler = new StreamHandler('/app/logs/error.log', LogLevel::DEBUG);
+        $rotatingHandler = new RotatingFileHandler($logFilePath, 7, $logLevel);
+        $rotatingHandler->setFormatter(new JsonFormatter());
 
-        $formatter = new LineFormatter(
-            "[%datetime%] %channel%.%level_name%: %message% %context% %extra%\n",
-            null,
-            true,
-            true
-        );
-        $streamHandler->setFormatter($formatter);
+        $logger->pushProcessor(new WebProcessor());
 
-        $logger->pushHandler($streamHandler);
+        $logger->pushHandler($rotatingHandler);
 
         return $logger;
     }

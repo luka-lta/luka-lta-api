@@ -2,7 +2,6 @@
 
 namespace LukaLtaApi\Api\LinkCollection\Edit;
 
-use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Api\ApiAction;
 use LukaLtaApi\Api\LinkCollection\Edit\Service\EditLinkService;
 use LukaLtaApi\Api\RequestValidator;

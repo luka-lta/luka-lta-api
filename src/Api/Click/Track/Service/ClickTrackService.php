@@ -9,8 +9,7 @@ class ClickTrackService
 {
     public function __construct(
         private readonly ClickRepository $repository
-    )
-    {
+    ) {
     }
 
     public function track(Click $click): void

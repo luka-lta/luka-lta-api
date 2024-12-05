@@ -23,7 +23,8 @@ class Description
 
         if (!preg_match('/^[A-Za-z0-9,.\s!?]{1,500}$/', $value)) {
             throw new ApiInvalidArgumentException(
-                'Description must not be longer than 500 characters and can only contain letters, numbers, spaces, and the following characters: , . ! ?',
+                'Description must not be longer than 500 characters and can only contain letters, 
+                numbers, spaces, and the following characters: , . ! ?',
                 StatusCodeInterface::STATUS_BAD_REQUEST
             );
         }

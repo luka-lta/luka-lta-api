@@ -52,7 +52,6 @@ class ClickRepository
             if ($rows === false) {
                 return null;
             }
-
         } catch (PDOException $exception) {
             throw new ApiDatabaseException(
                 'Failed to fetch clicks',
