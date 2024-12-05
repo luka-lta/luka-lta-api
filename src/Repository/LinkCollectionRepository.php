@@ -29,10 +29,10 @@ class LinkCollectionRepository
         try {
             $statement = $this->pdo->prepare($sql);
             $statement->execute([
-                'displayname' => (string)$link->getDisplayName(),
-                'description' => $link->getDescription()?->getValue(),
-                'url' => (string)$link->getUrl(),
-                'is_active' => $link->isActive() ? 1 : 0,
+                'displayname' => (string)$link->getMetaData()->getDisplayName(),
+                'description' => $link->getMetaData()->getDescription()?->getValue(),
+                'url' => (string)$link->getMetaData()->getLinkUrl(),
+                'is_active' => $link->getMetaData()->isActive() ? 1 : 0,
                 'icon_name' => $link->getIconName()?->getValue(),
                 'display_order' => $link->getDisplayOrder(),
             ]);
@@ -91,10 +91,10 @@ class LinkCollectionRepository
         try {
             $statement = $this->pdo->prepare($sql);
             $statement->execute([
-                'displayname' => (string)$linkItem->getDisplayName(),
-                'description' => $linkItem->getDescription()?->getValue(),
-                'url' => (string)$linkItem->getUrl(),
-                'is_active' => $linkItem->isActive() ? 1 : 0,
+                'displayname' => (string)$linkItem->getMetaData()->getDisplayName(),
+                'description' => $linkItem->getMetaData()->getDescription()?->getValue(),
+                'url' => (string)$linkItem->getMetaData()->getLinkUrl(),
+                'is_active' => $linkItem->getMetaData()->isActive() ? 1 : 0,
                 'icon_name' => $linkItem->getIconName()?->getValue(),
                 'link_id' => $linkItem->getLinkId()?->asInt(),
                 'display_order' => $linkItem->getDisplayOrder(),

@@ -8,10 +8,7 @@ class LinkItem
 {
     private function __construct(
         private readonly ?LinkId           $linkId,
-        private DisplayName                $displayname,
-        private Description                $description,
-        private LinkUrl                    $url,
-        private bool                       $isActive,
+        private LinkMetaData $metaData,
         private readonly DateTimeImmutable $createdOn,
         private IconName                   $iconName,
         private int                        $displayOrder,
@@ -32,10 +29,7 @@ class LinkItem
     ): self {
         return new self(
             $linkId,
-            $displayname,
-            $description,
-            $url,
-            $isActive ?? false,
+            LinkMetaData::from($displayname, $description, $url, $isActive ?? false),
             $createdOn,
             $iconName,
             $displayOrder,
@@ -48,10 +42,7 @@ class LinkItem
     {
         return new self(
             LinkId::fromInt($data['link_id']),
-            DisplayName::fromString($data['displayname']),
-            Description::fromString($data['description'] ?? null),
-            LinkUrl::fromString($data['url']),
-            $data['is_active'],
+            LinkMetaData::fromDatabase($data),
             new DateTimeImmutable($data['created_at']),
             IconName::fromString($data['icon_name'] ?? null),
             $data['display_order'],
@@ -64,10 +55,10 @@ class LinkItem
     {
         return [
             'id' => $this->linkId?->asInt(),
-            'displayname' => $this->displayname->__toString(),
-            'description' => $this->description->getValue(),
-            'url' => $mustRef ? $this->url->getAsTrackUrl() : $this->url->__toString(),
-            'isActive' => $this->isActive,
+            'displayname' => (string)$this->metaData->getDisplayName(),
+            'description' => $this->metaData->getDescription()->getValue(),
+            'url' => $mustRef ? $this->metaData->getLinkUrl()->getAsTrackUrl() : (string)$this->metaData->getLinkUrl(),
+            'isActive' => $this->metaData->isActive(),
             'createdOn' => $this->createdOn->format('Y-m-d H:i:s'),
             'iconName' => $this->iconName->getValue(),
             'displayOrder' => $this->displayOrder,
@@ -81,24 +72,9 @@ class LinkItem
         return $this->linkId;
     }
 
-    public function getDisplayName(): DisplayName
+    public function getMetaData(): LinkMetaData
     {
-        return $this->displayname;
-    }
-
-    public function getDescription(): Description
-    {
-        return $this->description;
-    }
-
-    public function getUrl(): LinkUrl
-    {
-        return $this->url;
-    }
-
-    public function isActive(): bool
-    {
-        return $this->isActive;
+        return $this->metaData;
     }
 
     public function getCreatedOn(): DateTimeImmutable
@@ -126,24 +102,9 @@ class LinkItem
         return $this->deactivatedOn;
     }
 
-    public function setDisplayname(DisplayName $displayname): void
+    public function setMetaData(LinkMetaData $metaData): void
     {
-        $this->displayname = $displayname;
-    }
-
-    public function setDescription(Description $description): void
-    {
-        $this->description = $description;
-    }
-
-    public function setUrl(LinkUrl $url): void
-    {
-        $this->url = $url;
-    }
-
-    public function setIsActive(bool $isActive): void
-    {
-        $this->isActive = $isActive;
+        $this->metaData = $metaData;
     }
 
     public function setIconName(IconName $iconName): void

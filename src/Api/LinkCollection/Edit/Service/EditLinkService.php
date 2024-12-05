@@ -32,10 +32,13 @@ class EditLinkService
             throw new LinkNotFoundException('Link not found', StatusCodeInterface::STATUS_NOT_FOUND);
         }
 
-        $linkItem->setDisplayname(DisplayName::fromString($displayname));
-        $linkItem->setDescription(Description::fromString($description));
-        $linkItem->setUrl(LinkUrl::fromString($url));
-        $linkItem->setIsActive($isActive);
+        $linkMetaData = $linkItem->getMetaData();
+
+        $linkMetaData->setDisplayName(DisplayName::fromString($displayname));
+        $linkMetaData->setDescription(Description::fromString($description));
+        $linkMetaData->setLinkUrl(LinkUrl::fromString($url));
+        $linkMetaData->setIsActive($isActive);
+
         $linkItem->setIconName(IconName::fromString($iconName));
 
         $this->repository->update($linkItem);
