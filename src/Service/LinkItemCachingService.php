@@ -25,7 +25,7 @@ class LinkItemCachingService
                 json_encode($linkItem->toArray(), JSON_THROW_ON_ERROR)
             );
         } catch (RedisException) {
-            // Do nothing
+            return;
         }
     }
 
@@ -34,7 +34,7 @@ class LinkItemCachingService
         try {
             $this->redis->hdel(self::HASH_KEY, $linkId->asString());
         } catch (RedisException) {
-            // Do nothing
+            return;
         }
     }
 
@@ -47,7 +47,7 @@ class LinkItemCachingService
                 return true;
             }
         } catch (RedisException) {
-            // Do nothing
+            return false;
         }
         return false;
     }
@@ -61,7 +61,7 @@ class LinkItemCachingService
                 return LinkItem::fromDatabase($dataArray);
             }
         } catch (RedisException) {
-            // Do nothing
+            return null;
         }
         return null;
     }
@@ -71,7 +71,7 @@ class LinkItemCachingService
         try {
             $items = $this->redis->hgetall(self::HASH_KEY);
         } catch (RedisException) {
-            // Do nothing
+            return null;
         }
 
         if (!$items) {
@@ -89,7 +89,7 @@ class LinkItemCachingService
         try {
             $this->redis->del([self::HASH_KEY]);
         } catch (RedisException) {
-            // Do nothing
+            return;
         }
     }
 }
