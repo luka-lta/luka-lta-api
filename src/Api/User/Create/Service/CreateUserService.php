@@ -18,14 +18,14 @@ class CreateUserService
 
     public function createUser(UserEmail $email, UserPassword $password): void
     {
-        if ($this->repository->findUserByEmail($email) !== null) {
+        if ($this->repository->findByEmail($email) !== null) {
             throw new ApiUserAlreadyExistsException(
                 'User already exists with this email',
                 StatusCodeInterface::STATUS_BAD_REQUEST
             );
         }
 
-        $this->repository->createUser(
+        $this->repository->create(
             User::create(
                 $email->getEmail(),
                 $password->getPassword()
