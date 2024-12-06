@@ -2,6 +2,7 @@
 
 namespace LukaLtaApi\Slim;
 
+use LukaLtaApi\Api\Auth\AuthAction;
 use LukaLtaApi\Api\Click\GetAll\GetAllClicksAction;
 use LukaLtaApi\Api\Click\Track\ClickTrackAction;
 use LukaLtaApi\Api\LinkCollection\Create\CreateLinkAction;
@@ -85,6 +86,8 @@ class RouteMiddlewareCollector
     public function registerApiRoutes(App $app): void
     {
         $app->group('/api/v1', function (RouteCollectorProxy $app) {
+            $app->post('/auth', AuthAction::class);
+
             $app->group('/linkCollection', function (RouteCollectorProxy $linkCollection) {
                 $linkCollection->post('/create', CreateLinkAction::class);
                 $linkCollection->get('/links', GetAllLinksAction::class);

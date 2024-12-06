@@ -29,7 +29,9 @@ services:
       MYSQL_HOST: 'mysql-luka-lta'
       MYSQL_USER: 'testing'
       MYSQL_PASSWORD: '1234'
-      JWT_SECRET: 'd17c14f3ff470cebe5f85df1efc966b0fcdc2096'
+      JWT_SECRET: 'D17c14F3ff!470cEbe5f85df1efc966b0Fcdc@2096'
+      JWT_NORMAL_EXPIRATION_TIME: 86400
+      JWT_EXTENDED_EXPIRATION_TIME: 604800
       LOG_LEVEL: 'debug'
       LOG_FILE_PATH: '/app/logs/error.log'
     volumes:

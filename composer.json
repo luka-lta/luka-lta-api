@@ -24,7 +24,8 @@
         "firebase/php-jwt": "^6.10",
         "slim/slim": "4.*",
         "slim/psr7": "^1.7",
-        "slim/http": "^1.4"
+        "slim/http": "^1.4",
+        "rbdwllr/reallysimplejwt": "^5.0"
     },
     "require-dev": {
         "roave/security-advisories": "dev-latest",
