@@ -16,7 +16,7 @@ class LinkMetaData
 
     public static function from(
         string $displayName,
-        string $description,
+        ?string $description,
         string $linkUrl,
         bool $isActive
     ): self {

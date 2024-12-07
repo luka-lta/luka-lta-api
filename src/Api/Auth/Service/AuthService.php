@@ -7,7 +7,6 @@ use LukaLtaApi\Exception\ApiAuthException;
 use LukaLtaApi\Exception\ApiUserNotExistsException;
 use LukaLtaApi\Repository\UserRepository;
 use LukaLtaApi\Value\User\UserEmail;
-use ReallySimpleJWT\Jwt;
 use ReallySimpleJWT\Token;
 
 class AuthService
@@ -17,7 +16,7 @@ class AuthService
     ) {
     }
 
-    public function login(UserEmail $email, string $password): Jwt
+    public function login(UserEmail $email, string $password): array
     {
         $user = $this->repository->findByEmail($email);
 
@@ -30,13 +29,17 @@ class AuthService
         }
 
         $expiresIn = time() + (int)getenv('JWT_NORMAL_EXPIRATION_TIME');
-
-        return Token::builder(getenv('JWT_SECRET'))
+        $token = Token::builder(getenv('JWT_SECRET'))
             ->setIssuer('https://api.luka-lta.dev')
             ->setPayloadClaim('email', $user->getEmail()->getEmail())
             ->setPayloadClaim('sub', $user->getUserId()?->asString())
             ->setIssuedAt(time())
             ->setExpiration($expiresIn)
             ->build();
+
+        return [
+            'token' => $token->getToken(),
+            'user' => $user->toArray(),
+        ];
     }
 }

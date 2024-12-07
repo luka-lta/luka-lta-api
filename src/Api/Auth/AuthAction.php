@@ -37,7 +37,8 @@ class AuthAction extends ApiAction
             JsonResult::from(
                 'User logged in',
                 [
-                    'token' => $jwt->getToken()
+                    'jwt' => $jwt['token'],
+                    'user' => $jwt['user'],
                 ]
             )
         )->getResponse($response);
