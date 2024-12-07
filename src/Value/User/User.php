@@ -46,6 +46,17 @@ class User
         );
     }
 
+    public function toArray(): array
+    {
+        return  [
+            'userId' => $this->userId?->asInt(),
+            'email' => $this->email->getEmail(),
+            'avatarUrl' => $this->avatarUrl,
+            'createdAt' => $this->createdAt->format('Y-m-d H:i:s'),
+            'updatedAt' => $this->updatedAt?->format('Y-m-d H:i:s'),
+        ];
+    }
+
     public function getAvatarUrl(): ?string
     {
         return $this->avatarUrl;
