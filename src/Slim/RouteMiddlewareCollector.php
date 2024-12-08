@@ -11,6 +11,7 @@ use LukaLtaApi\Api\LinkCollection\Edit\EditLinkAction;
 use LukaLtaApi\Api\LinkCollection\GetAll\GetAllLinksAction;
 use LukaLtaApi\Api\User\Create\CreateUserAction;
 use LukaLtaApi\Api\User\Update\UpdateUserAction;
+use LukaLtaApi\Slim\Middleware\AuthMiddleware;
 use LukaLtaApi\Slim\Middleware\CORSMiddleware;
 use Monolog\Logger;
 use Psr\Http\Message\ResponseInterface;
@@ -93,17 +94,17 @@ class RouteMiddlewareCollector
                 $linkCollection->get('/links', GetAllLinksAction::class);
                 $linkCollection->put('/link/{linkId:[0-9]+}', EditLinkAction::class);
                 $linkCollection->delete('/link/{linkId:[0-9]+}', DisableLinkAction::class);
-            });
+            })->add(AuthMiddleware::class);
 
             $app->group('/click', function (RouteCollectorProxy $click) {
                 $click->get('/track', ClickTrackAction::class);
-                $click->get('/all', GetAllClicksAction::class);
+                $click->get('/all', GetAllClicksAction::class)->add(AuthMiddleware::class);
             });
 
             $app->group('/user', function (RouteCollectorProxy $user) {
                 $user->post('/create', CreateUserAction::class);
                 $user->post('/{userId:[0-9]+}', UpdateUserAction::class);
-            });
+            })->add(AuthMiddleware::class);
         });
     }
 }
