@@ -10,9 +10,9 @@ class RedisFactory
     {
         $client = new Redis();
 
-        $client->connect('redis-luka-lta');
+        $client->connect(getenv('REDIS_HOST'), getenv('REDIS_PORT'));
         $client->auth([
-            'password' => '1234',
+            'password' => getenv('REDIS_PASSWORD'),
         ]);
 
         return $client;
