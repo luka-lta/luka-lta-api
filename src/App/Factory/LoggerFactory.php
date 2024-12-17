@@ -11,7 +11,7 @@ use Psr\Log\LogLevel;
 
 class LoggerFactory
 {
-    public function __invoke(): LoggerInterface
+    public function __invoke(): Logger
     {
         $logFilePath = getenv('LOG_FILE_PATH') ?: '/app/logs/error.log';
         $logLevel = getenv('LOG_LEVEL') ?: LogLevel::DEBUG;

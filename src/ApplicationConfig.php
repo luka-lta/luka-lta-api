@@ -6,6 +6,7 @@ use DI\Definition\Source\DefinitionArray;
 use LukaLtaApi\App\Factory\LoggerFactory;
 use LukaLtaApi\App\Factory\PdoFactory;
 use LukaLtaApi\App\Factory\RedisFactory;
+use Monolog\Logger;
 use PDO;
 use Psr\Log\LoggerInterface;
 use Redis;
@@ -21,7 +22,7 @@ class ApplicationConfig extends DefinitionArray
     private function getConfig(): array
     {
         return [
-            LoggerInterface::class => factory(LoggerFactory::class),
+            Logger::class => factory(LoggerFactory::class),
             PDO::class => factory(PdoFactory::class),
             Redis::class => factory(RedisFactory::class),
         ];

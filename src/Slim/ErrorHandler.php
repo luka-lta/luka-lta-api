@@ -2,9 +2,9 @@
 
 namespace LukaLtaApi\Slim;
 
+use Monolog\Logger;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Psr\Log\LoggerInterface;
 use Slim\Exception\HttpMethodNotAllowedException;
 use Slim\Exception\HttpNotFoundException;
 use Throwable;
@@ -12,7 +12,7 @@ use Throwable;
 class ErrorHandler
 {
     public function __construct(
-        private readonly LoggerInterface $logger,
+        private readonly Logger $logger,
     ) {
     }
 
