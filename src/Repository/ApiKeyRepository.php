@@ -42,10 +42,10 @@ class ApiKeyRepository
         }
     }
 
-    public function getApiKeyByOrigin(KeyOrigin $origin): ApiKeyObject
+    public function getApiKeyByOrigin(KeyOrigin $origin): ?ApiKeyObject
     {
         $sql = <<<SQL
-            SELECT origin, created_at, created_by, expires_at, api_key
+            SELECT id, origin, created_at, created_by, expires_at, api_key
             FROM api_keys
             WHERE origin = :origin
         SQL;
@@ -56,10 +56,7 @@ class ApiKeyRepository
             $row = $stmt->fetch();
 
             if ($row === false) {
-                throw new ApiDatabaseException(
-                    'API key not found',
-                    StatusCodeInterface::STATUS_NOT_FOUND
-                );
+                return null;
             }
 
             return ApiKeyObject::fromDatabase($row);

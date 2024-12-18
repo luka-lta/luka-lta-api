@@ -31,10 +31,11 @@ class CreateApiKeyAction extends ApiAction
         $this->validator->validate($request, $rules);
 
         $body = $request->getParsedBody();
+        $createdBy = (int)$request->getAttribute('userId');
 
         $apiKey = $this->service->create(
             $body['origin'],
-            (int)$request->getAttribute('userId'),
+            $createdBy,
             $body['expiresAt'] ?? null
         );
 

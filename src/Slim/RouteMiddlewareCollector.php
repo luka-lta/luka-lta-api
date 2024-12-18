@@ -109,7 +109,7 @@ class RouteMiddlewareCollector
             $app->group('/user', function (RouteCollectorProxy $user) {
                 $user->post('/create', CreateUserAction::class);
                 $user->post('/{userId:[0-9]+}', UpdateUserAction::class);
-            });
+            })->add(AuthMiddleware::class);
         });
     }
 }

@@ -53,7 +53,11 @@ class ApiKeyObject
 
     public function isValid(): bool
     {
-        return $this->expiresAt === null || $this->expiresAt > new DateTimeImmutable();
+        if ($this->expiresAt === null) {
+            return true;
+        }
+
+        return $this->expiresAt > new DateTimeImmutable();
     }
 
     public function toArray(): array
