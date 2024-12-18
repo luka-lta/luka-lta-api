@@ -2,6 +2,7 @@
 
 namespace LukaLtaApi\Slim;
 
+use LukaLtaApi\Api\ApiKey\Create\CreateApiKeyAction;
 use LukaLtaApi\Api\Auth\AuthAction;
 use LukaLtaApi\Api\Click\GetAll\GetAllClicksAction;
 use LukaLtaApi\Api\Click\Track\ClickTrackAction;
@@ -89,6 +90,10 @@ class RouteMiddlewareCollector
         $app->group('/api/v1', function (RouteCollectorProxy $app) {
             $app->post('/auth', AuthAction::class);
 
+            $app->group('/key', function (RouteCollectorProxy $key) {
+                $key->post('/create', CreateApiKeyAction::class);
+            })->add(AuthMiddleware::class);
+
             $app->group('/linkCollection', function (RouteCollectorProxy $linkCollection) {
                 $linkCollection->post('/create', CreateLinkAction::class);
                 $linkCollection->get('/links', GetAllLinksAction::class);
@@ -104,7 +109,7 @@ class RouteMiddlewareCollector
             $app->group('/user', function (RouteCollectorProxy $user) {
                 $user->post('/create', CreateUserAction::class);
                 $user->post('/{userId:[0-9]+}', UpdateUserAction::class);
-            })->add(AuthMiddleware::class);
+            });
         });
     }
 }
