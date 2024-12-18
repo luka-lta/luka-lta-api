@@ -52,6 +52,7 @@ class AuthMiddleware implements MiddlewareInterface
             $request = $request->withAttribute('userId', $payload['sub']);
         }
 
+        $request = $request->withAttribute('userId', $payload['sub']);
         return $handler->handle($request);
     }
 

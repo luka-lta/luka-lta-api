@@ -23,10 +23,8 @@ class CreateApiKeyAction extends ApiAction
 
     protected function execute(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        // TODO: User id aus JWT Token holen
         $rules = [
             'origin' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
-            'createdBy' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
             'expiresAt' => ['required' => false, 'location' => RequestValidator::LOCATION_BODY],
         ];
 
@@ -36,7 +34,7 @@ class CreateApiKeyAction extends ApiAction
 
         $apiKey = $this->service->create(
             $body['origin'],
-            (int)$body['createdBy'],
+            (int)$request->getAttribute('userId'),
             $body['expiresAt'] ?? null
         );
 
