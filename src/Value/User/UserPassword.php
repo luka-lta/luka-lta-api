@@ -30,7 +30,7 @@ class UserPassword
             );
         }
 
-        $hashedPassword = password_hash($plainPassword, PASSWORD_BCRYPT, ['cost' => 12]);
+        $hashedPassword = password_hash($plainPassword, PASSWORD_DEFAULT);
 
         return new self($hashedPassword);
     }
