@@ -31,7 +31,7 @@ class CreateUserAction extends ApiAction
 
         $this->service->createUser(
             UserEmail::from($request->getParsedBody()['email']),
-            UserPassword::fromPlain($request->getParsedBody()['password'])
+            $request->getParsedBody()['password']
         );
 
         return ApiResult::from(JsonResult::from('User created'))->getResponse($response);

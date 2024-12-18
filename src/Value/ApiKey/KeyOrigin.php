@@ -12,7 +12,7 @@ class KeyOrigin
     private function __construct(
         private readonly string $origin,
     ) {
-        if (filter_input(FILTER_VALIDATE_URL, $origin) === false) {
+        if (filter_var($this->origin, FILTER_VALIDATE_URL) === false) {
             throw new InvalidOriginException('Invalid origin', StatusCodeInterface::STATUS_BAD_REQUEST);
         }
     }

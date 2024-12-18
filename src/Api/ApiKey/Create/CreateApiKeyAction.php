@@ -23,6 +23,7 @@ class CreateApiKeyAction extends ApiAction
 
     protected function execute(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
+        // TODO: User id aus JWT Token holen
         $rules = [
             'origin' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
             'createdBy' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
