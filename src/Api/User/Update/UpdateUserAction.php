@@ -31,11 +31,13 @@ class UpdateUserAction extends ApiAction
 
         $this->validator->validate($request, $rules);
 
+        $uploadedFiles = $request->getUploadedFiles();
+
         $this->service->update(
             UserId::fromString($request->getAttribute('userId')),
             UserEmail::from($request->getParsedBody()['email']),
             UserPassword::fromPlain($request->getParsedBody()['password']),
-            $request->getParsedBody()['avatarUrl']
+            $uploadedFiles
         );
 
         return ApiResult::from(JsonResult::from('User updated'))->getResponse($response);
