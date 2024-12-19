@@ -15,7 +15,7 @@ services:
     networks:
       - lukaLta-shared
 
-  php-fpm:
+  php-fpm-api:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
