@@ -6,6 +6,7 @@ use LukaLtaApi\Api\ApiKey\Create\CreateApiKeyAction;
 use LukaLtaApi\Api\Auth\AuthAction;
 use LukaLtaApi\Api\Click\GetAll\GetAllClicksAction;
 use LukaLtaApi\Api\Click\Track\ClickTrackAction;
+use LukaLtaApi\Api\Health\GetHealthAction;
 use LukaLtaApi\Api\LinkCollection\Create\CreateLinkAction;
 use LukaLtaApi\Api\LinkCollection\Disable\DisableLinkAction;
 use LukaLtaApi\Api\LinkCollection\Edit\EditLinkAction;
@@ -89,6 +90,7 @@ class RouteMiddlewareCollector
     {
         $app->group('/api/v1', function (RouteCollectorProxy $app) {
             $app->post('/auth', AuthAction::class);
+            $app->get('/health', GetHealthAction::class);
 
             $app->group('/key', function (RouteCollectorProxy $key) {
                 $key->post('/create', CreateApiKeyAction::class);
