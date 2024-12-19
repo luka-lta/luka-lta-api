@@ -125,4 +125,27 @@ class UserRepository
 
         return User::fromDatabase($row);
     }
+
+    public function getAll(): ?array
+    {
+        $sql = <<<SQL
+            SELECT * FROM users
+        SQL;
+
+        try {
+            $statement = $this->pdo->query($sql);
+            $rows = $statement->fetchAll();
+
+            if (empty($rows)) {
+                return null;
+            }
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException(
+                'Failed to fetch users',
+                previous: $exception
+            );
+        }
+
+        return array_map(static fn($row) => User::fromDatabase($row), $rows);
+    }
 }
