@@ -1,35 +1,36 @@
 {
-    "name": "luka-lta/luka-lta-api",
-    "description": "This is a api",
-    "type": "project",
-    "license": "MIT",
-    "autoload": {
-        "psr-4": {
-            "LukaLtaApi\\": "src/"
-        }
-    },
-    "authors": [
-        {
-            "name": "luka-lta"
-        }
-    ],
-    "minimum-stability": "stable",
-    "require": {
-        "php": "^8.3",
-        "php-di/php-di": "^7.0",
-        "php-di/slim-bridge": "^3.4",
-        "monolog/monolog": "^3.7",
-        "ext-pdo": "*",
-        "ext-redis": "*",
-        "firebase/php-jwt": "^6.10",
-        "slim/slim": "4.*",
-        "slim/psr7": "^1.7",
-        "slim/http": "^1.4",
-        "rbdwllr/reallysimplejwt": "^5.0"
-    },
-    "require-dev": {
-        "roave/security-advisories": "dev-latest",
-        "phpmd/phpmd": "2.*",
-        "squizlabs/php_codesniffer": "3.*"
+  "name": "luka-lta/luka-lta-api",
+  "description": "This is a api",
+  "type": "project",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "LukaLtaApi\\": "src/"
     }
+  },
+  "authors": [
+    {
+      "name": "luka-lta"
+    }
+  ],
+  "minimum-stability": "stable",
+  "require": {
+    "php": "^8.3",
+    "php-di/php-di": "^7.0",
+    "php-di/slim-bridge": "^3.4",
+    "monolog/monolog": "^3.7",
+    "ext-pdo": "*",
+    "ext-redis": "*",
+    "firebase/php-jwt": "^6.10",
+    "slim/slim": "4.*",
+    "slim/psr7": "^1.7",
+    "slim/http": "^1.4",
+    "rbdwllr/reallysimplejwt": "^5.0",
+    "ext-fileinfo": "*"
+  },
+  "require-dev": {
+    "roave/security-advisories": "dev-latest",
+    "phpmd/phpmd": "2.*",
+    "squizlabs/php_codesniffer": "3.*"
+  }
 }

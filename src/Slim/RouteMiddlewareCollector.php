@@ -11,6 +11,7 @@ use LukaLtaApi\Api\LinkCollection\Create\CreateLinkAction;
 use LukaLtaApi\Api\LinkCollection\Disable\DisableLinkAction;
 use LukaLtaApi\Api\LinkCollection\Edit\EditLinkAction;
 use LukaLtaApi\Api\LinkCollection\GetAll\GetAllLinksAction;
+use LukaLtaApi\Api\User\Avatar\GetAvatarAction;
 use LukaLtaApi\Api\User\Create\CreateUserAction;
 use LukaLtaApi\Api\User\GetAll\GetAllUsersAction;
 use LukaLtaApi\Api\User\Update\UpdateUserAction;
@@ -92,6 +93,7 @@ class RouteMiddlewareCollector
         $app->group('/api/v1', function (RouteCollectorProxy $app) {
             $app->post('/auth', AuthAction::class);
             $app->get('/health', GetHealthAction::class);
+            $app->get('/avatar/{filename}', GetAvatarAction::class);
 
             $app->group('/key', function (RouteCollectorProxy $key) {
                 $key->post('/create', CreateApiKeyAction::class);
