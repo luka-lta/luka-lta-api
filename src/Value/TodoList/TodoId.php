@@ -9,16 +9,16 @@ use LukaLtaApi\Value\IdentifierInterface;
 class TodoId implements IdentifierInterface
 {
     private function __construct(
-        private readonly int $id
+        private readonly ?int $id
     ) {
     }
 
-    public static function fromInt(int $id): self
+    public static function fromInt(?int $id): self
     {
         return new self($id);
     }
 
-    public static function fromString(string $id): self
+    public static function fromString(?string $id): self
     {
         return new self((int) $id);
     }

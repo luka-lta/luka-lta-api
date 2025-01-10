@@ -42,6 +42,30 @@ class ApiKeyRepository
         }
     }
 
+    public function loadAll(): ?array
+    {
+        $sql = <<<SQL
+            SELECT id, origin, created_at, created_by, expires_at, api_key
+            FROM api_keys
+        SQL;
+
+        try {
+            $stmt = $this->pdo->query($sql);
+            $rows = $stmt->fetchAll();
+
+            if (empty($rows)) {
+                return null;
+            }
+        } catch (PDOException) {
+            throw new ApiDatabaseException(
+                'Failed to load API keys',
+                StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }
+
+        return array_map(static fn($row) => ApiKeyObject::fromDatabase($row), $rows);
+    }
+
     public function getApiKeyByOrigin(KeyOrigin $origin): ?ApiKeyObject
     {
         $sql = <<<SQL

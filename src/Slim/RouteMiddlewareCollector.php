@@ -3,6 +3,7 @@
 namespace LukaLtaApi\Slim;
 
 use LukaLtaApi\Api\ApiKey\Create\CreateApiKeyAction;
+use LukaLtaApi\Api\ApiKey\GetAll\GetAllApiKeysAction;
 use LukaLtaApi\Api\Auth\AuthAction;
 use LukaLtaApi\Api\Click\GetAll\GetAllClicksAction;
 use LukaLtaApi\Api\Click\Track\ClickTrackAction;
@@ -11,6 +12,7 @@ use LukaLtaApi\Api\LinkCollection\Create\CreateLinkAction;
 use LukaLtaApi\Api\LinkCollection\Disable\DisableLinkAction;
 use LukaLtaApi\Api\LinkCollection\Edit\EditLinkAction;
 use LukaLtaApi\Api\LinkCollection\GetAll\GetAllLinksAction;
+use LukaLtaApi\Api\Todo\Create\CreateTodoAction;
 use LukaLtaApi\Api\User\Avatar\GetAvatarAction;
 use LukaLtaApi\Api\User\Create\CreateUserAction;
 use LukaLtaApi\Api\User\GetAll\GetAllUsersAction;
@@ -97,6 +99,11 @@ class RouteMiddlewareCollector
 
             $app->group('/key', function (RouteCollectorProxy $key) {
                 $key->post('/create', CreateApiKeyAction::class);
+                $key->get('/all', GetAllApiKeysAction::class);
+            })->add(AuthMiddleware::class);
+
+            $app->group('/todo', function (RouteCollectorProxy $todo) {
+                $todo->post('/create', CreateTodoAction::class);
             })->add(AuthMiddleware::class);
 
             $app->group('/linkCollection', function (RouteCollectorProxy $linkCollection) {

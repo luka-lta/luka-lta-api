@@ -36,7 +36,7 @@ services:
       JWT_NORMAL_EXPIRATION_TIME: 86400
       JWT_EXTENDED_EXPIRATION_TIME: 604800
       LOG_LEVEL: 'debug'
-      LOG_FILE_PATH: '/app/logs/error.log'
+      LOG_FILE_PATH: '/app/logs'
     volumes:
       - ./:/app:rw
     networks:

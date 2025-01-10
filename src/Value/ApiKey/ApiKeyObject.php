@@ -65,10 +65,10 @@ class ApiKeyObject
         return [
             'id' => $this->keyId?->asInt(),
             'origin' => $this->origin->__toString(),
-            'created_by' => $this->createdBy->asInt(),
-            'created_at' => $this->createdAt->format('Y-m-d H:i:s'),
-            'expires_at' => $this->expiresAt?->format('Y-m-d H:i:s'),
-            'api_key' => $this->apiKey->__toString(),
+            'createdBy' => $this->createdBy->asInt(),
+            'createdAt' => $this->createdAt->format('Y-m-d H:i:s'),
+            'expiresAt' => $this->expiresAt?->format('Y-m-d H:i:s'),
+            'apiKey' => $this->apiKey->__toString(),
         ];
     }
 
