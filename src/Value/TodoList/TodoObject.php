@@ -25,8 +25,8 @@ class TodoObject
         int $ownerId,
         string $title,
         ?string $description,
-        string $status,
-        string $priority,
+        ?string $status,
+        ?string $priority,
         ?string $dueDate,
     ): self {
         return new self(

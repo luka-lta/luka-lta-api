@@ -30,8 +30,12 @@ class TodoPriority
         }
     }
 
-    public static function fromString(string $priority): self
+    public static function fromString(?string $priority): self
     {
+        if ($priority === null) {
+            return new self(self::PRIORITIE_MEDIUM);
+        }
+
         return new self($priority);
     }
 

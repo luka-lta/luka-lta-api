@@ -6,7 +6,9 @@ namespace LukaLtaApi\Repository;
 
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Exception\ApiDatabaseException;
+use LukaLtaApi\Value\TodoList\TodoId;
 use LukaLtaApi\Value\TodoList\TodoObject;
+use LukaLtaApi\Value\TodoList\TodoOwnerId;
 use PDO;
 use PDOException;
 
@@ -76,7 +78,7 @@ class TodoRepository
         }
     }
 
-    public function delete(int $todoId): void
+    public function delete(TodoId $todoId): void
     {
         $sql = <<<SQL
             DELETE FROM todo_list
@@ -85,7 +87,7 @@ class TodoRepository
 
         try {
             $stmt = $this->pdo->prepare($sql);
-            $stmt->execute(['todo_id' => $todoId]);
+            $stmt->execute(['todo_id' => $todoId->asInt()]);
         } catch (PDOException $exception) {
             throw new ApiDatabaseException(
                 'Failed to delete Todo',
@@ -95,7 +97,7 @@ class TodoRepository
         }
     }
 
-    public function load(int $todoId): ?TodoObject
+    public function load(TodoId $todoId): ?TodoObject
     {
         $sql = <<<SQL
             SELECT todo_id, owner_id, title, description, status, priority, due_date, created_at, updated_at
@@ -105,7 +107,7 @@ class TodoRepository
 
         try {
             $stmt = $this->pdo->prepare($sql);
-            $stmt->execute(['todo_id' => $todoId]);
+            $stmt->execute(['todo_id' => $todoId->asInt()]);
             $row = $stmt->fetch();
 
             if ($row === false) {
@@ -122,15 +124,17 @@ class TodoRepository
         }
     }
 
-    public function loadAll(): ?array
+    public function loadAllByOwnerId(TodoOwnerId $ownerId): ?array
     {
         $sql = <<<SQL
             SELECT todo_id, owner_id, title, description, status, priority, due_date, created_at, updated_at
             FROM todo_list
+            WHERE owner_id = :owner_id
         SQL;
 
         try {
-            $stmt = $this->pdo->query($sql);
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute(['owner_id' => $ownerId->asInt()]);
             $rows = $stmt->fetchAll();
 
             if (empty($rows)) {

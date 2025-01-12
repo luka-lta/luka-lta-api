@@ -18,8 +18,8 @@ class CreateTodoService
         int $ownerId,
         string $title,
         ?string $description,
-        string $status,
-        string $priority,
+        ?string $status,
+        ?string $priority,
         ?string $dueDate,
     ): void {
         $todo = TodoObject::create(

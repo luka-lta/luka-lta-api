@@ -2,28 +2,31 @@
 
 declare(strict_types=1);
 
-namespace LukaLtaApi\Api\Todo\Create;
+namespace LukaLtaApi\Api\Todo\Update;
 
 use LukaLtaApi\Api\ApiAction;
 use LukaLtaApi\Api\RequestValidator;
-use LukaLtaApi\Api\Todo\Create\Service\CreateTodoService;
+use LukaLtaApi\Api\Todo\Update\Service\UpdateTodoService;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
+use LukaLtaApi\Value\TodoList\TodoId;
+use LukaLtaApi\Value\TodoList\TodoOwnerId;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-class CreateTodoAction extends ApiAction
+class UpdateTodoAction extends ApiAction
 {
     public function __construct(
-        private readonly CreateTodoService $createTodoService,
-        private readonly RequestValidator $requestValidator
+        private readonly RequestValidator $requestValidator,
+        private readonly UpdateTodoService $service,
     ) {
     }
 
     protected function execute(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $body = $request->getParsedBody();
-        $ownerId = (int)$request->getAttribute('userId');
+        $ownerId = TodoOwnerId::fromString($request->getAttribute('userId'));
+        $todoId = TodoId::fromString($request->getAttribute('todoId'));
 
         $rules = [
             'title' => ['required' => true, 'location' => 'body'],
@@ -35,8 +38,9 @@ class CreateTodoAction extends ApiAction
 
         $this->requestValidator->validate($request, $rules);
 
-        $this->createTodoService->create(
+        $this->service->update(
             $ownerId,
+            $todoId,
             $body['title'],
             $body['description'] ?? null,
             $body['status'] ?? null,
@@ -44,6 +48,6 @@ class CreateTodoAction extends ApiAction
             $body['dueDate'] ?? null,
         );
 
-        return ApiResult::from(JsonResult::from('Todo created'))->getResponse($response);
+        return ApiResult::from(JsonResult::from('Todo updated'))->getResponse($response);
     }
 }

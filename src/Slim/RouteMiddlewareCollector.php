@@ -13,6 +13,9 @@ use LukaLtaApi\Api\LinkCollection\Disable\DisableLinkAction;
 use LukaLtaApi\Api\LinkCollection\Edit\EditLinkAction;
 use LukaLtaApi\Api\LinkCollection\GetAll\GetAllLinksAction;
 use LukaLtaApi\Api\Todo\Create\CreateTodoAction;
+use LukaLtaApi\Api\Todo\Delete\DeleteTodoAction;
+use LukaLtaApi\Api\Todo\GetAll\GetAllTodoAction;
+use LukaLtaApi\Api\Todo\Update\UpdateTodoAction;
 use LukaLtaApi\Api\User\Avatar\GetAvatarAction;
 use LukaLtaApi\Api\User\Create\CreateUserAction;
 use LukaLtaApi\Api\User\GetAll\GetAllUsersAction;
@@ -104,6 +107,9 @@ class RouteMiddlewareCollector
 
             $app->group('/todo', function (RouteCollectorProxy $todo) {
                 $todo->post('/create', CreateTodoAction::class);
+                $todo->put('/{todoId:[0-9]+}', UpdateTodoAction::class);
+                $todo->get('/all', GetAllTodoAction::class);
+                $todo->delete('/{todoId:[0-9]+}', DeleteTodoAction::class);
             })->add(AuthMiddleware::class);
 
             $app->group('/linkCollection', function (RouteCollectorProxy $linkCollection) {
