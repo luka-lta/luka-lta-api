@@ -22,12 +22,12 @@ class TodoDueDate
         return new self(new DateTimeImmutable($dueDate));
     }
 
-    public function toString(): string
+    public function toString(): ?string
     {
-        return $this->dueDate->format('Y-m-d');
+        return $this->dueDate?->format('Y-m-d');
     }
 
-    public function toDateObject(): DateTimeImmutable
+    public function toDateObject(): ?DateTimeImmutable
     {
         return $this->dueDate;
     }

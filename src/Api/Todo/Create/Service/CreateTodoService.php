@@ -21,7 +21,7 @@ class CreateTodoService
         ?string $status,
         ?string $priority,
         ?string $dueDate,
-    ): void {
+    ): TodoObject {
         $todo = TodoObject::create(
             $ownerId,
             $title,
@@ -32,5 +32,7 @@ class CreateTodoService
         );
 
         $this->todoRepository->create($todo);
+
+        return $todo;
     }
 }

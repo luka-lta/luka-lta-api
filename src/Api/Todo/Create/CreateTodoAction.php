@@ -35,7 +35,7 @@ class CreateTodoAction extends ApiAction
 
         $this->requestValidator->validate($request, $rules);
 
-        $this->createTodoService->create(
+        $createdTodo = $this->createTodoService->create(
             $ownerId,
             $body['title'],
             $body['description'] ?? null,
@@ -44,6 +44,8 @@ class CreateTodoAction extends ApiAction
             $body['dueDate'] ?? null,
         );
 
-        return ApiResult::from(JsonResult::from('Todo created'))->getResponse($response);
+        return ApiResult::from(JsonResult::from('Todo created', [
+            'todo' => $createdTodo->toArray(),
+        ]))->getResponse($response);
     }
 }

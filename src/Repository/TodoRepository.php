@@ -34,7 +34,7 @@ class TodoRepository
                 'description' => $todo->getDescription()?->toString(),
                 'status' => $todo->getStatus()->toString(),
                 'priority' => $todo->getPriority()->toString(),
-                'due_date' => $todo->getDueDate()?->toDateObject()->format('Y-m-d H:i:s'),
+                'due_date' => $todo->getDueDate()?->toDateObject()?->format('Y-m-d H:i:s'),
                 'created_at' => $todo->getCreatedAt()->format('Y-m-d H:i:s'),
             ]);
         } catch (PDOException $exception) {

@@ -68,7 +68,7 @@ class TodoObject
             'priority' => $this->priority->toString(),
             'dueDate' => $this->dueDate->toString(),
             'createdAt' => $this->createdAt->format('Y-m-d H:i:s'),
-            'updatedAt' => $this->updatedAt->format('Y-m-d H:i:s'),
+            'updatedAt' => $this->updatedAt?->format('Y-m-d H:i:s'),
         ];
     }
 
