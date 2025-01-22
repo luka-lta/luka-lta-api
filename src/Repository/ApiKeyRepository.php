@@ -63,7 +63,7 @@ class ApiKeyRepository
         try {
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute();
-            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $rows = $stmt->fetchAll();
 
             if (empty($rows)) {
                 return null;
@@ -93,14 +93,14 @@ class ApiKeyRepository
                     ];
                 }
             }
-
-            return array_map(static fn($data) => ApiKeyObject::fromDatabase($data), $groupedData);
         } catch (PDOException) {
             throw new ApiDatabaseException(
                 'Failed to load API keys with permissions',
                 StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR
             );
         }
+
+        return array_values(array_map(static fn($data) => ApiKeyObject::fromDatabase($data), $groupedData));
     }
 
     public function getApiKeyByOrigin(KeyOrigin $origin): ?ApiKeyObject
