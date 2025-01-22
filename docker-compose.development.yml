@@ -29,14 +29,14 @@ services:
       MYSQL_HOST: 'mysql-luka-lta'
       MYSQL_USER: 'testing'
       MYSQL_PASSWORD: '1234'
-      REIDS_HOST: 'redis-luka-lta'
+      REDIS_HOST: 'redis-luka-lta'
       REDIS_PORT: '6379'
       REDIS_PASSWORD: '1234'
       JWT_SECRET: 'D17c14F3ff!470cEbe5f85df1efc966b0Fcdc@2096'
       JWT_NORMAL_EXPIRATION_TIME: 86400
       JWT_EXTENDED_EXPIRATION_TIME: 604800
       LOG_LEVEL: 'debug'
-      LOG_FILE_PATH: '/app/logs/error.log'
+      LOG_FILE_PATH: '/app/logs'
     volumes:
       - ./:/app:rw
     networks:

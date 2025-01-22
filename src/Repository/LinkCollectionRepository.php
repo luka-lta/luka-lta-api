@@ -151,7 +151,7 @@ class LinkCollectionRepository
             $statement = $this->pdo->query($sql);
             $rows = $statement->fetchAll(PDO::FETCH_ASSOC);
 
-            if ($rows === false) {
+            if (empty($rows)) {
                 return null;
             }
         } catch (PDOException $exception) {

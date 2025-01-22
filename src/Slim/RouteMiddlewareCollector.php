@@ -3,6 +3,7 @@
 namespace LukaLtaApi\Slim;
 
 use LukaLtaApi\Api\ApiKey\Create\CreateApiKeyAction;
+use LukaLtaApi\Api\ApiKey\GetAll\GetAllApiKeysAction;
 use LukaLtaApi\Api\Auth\AuthAction;
 use LukaLtaApi\Api\Click\GetAll\GetAllClicksAction;
 use LukaLtaApi\Api\Click\Track\ClickTrackAction;
@@ -11,6 +12,10 @@ use LukaLtaApi\Api\LinkCollection\Create\CreateLinkAction;
 use LukaLtaApi\Api\LinkCollection\Disable\DisableLinkAction;
 use LukaLtaApi\Api\LinkCollection\Edit\EditLinkAction;
 use LukaLtaApi\Api\LinkCollection\GetAll\GetAllLinksAction;
+use LukaLtaApi\Api\Todo\Create\CreateTodoAction;
+use LukaLtaApi\Api\Todo\Delete\DeleteTodoAction;
+use LukaLtaApi\Api\Todo\GetAll\GetAllTodoAction;
+use LukaLtaApi\Api\Todo\Update\UpdateTodoAction;
 use LukaLtaApi\Api\User\Avatar\GetAvatarAction;
 use LukaLtaApi\Api\User\Create\CreateUserAction;
 use LukaLtaApi\Api\User\GetAll\GetAllUsersAction;
@@ -96,25 +101,33 @@ class RouteMiddlewareCollector
             $app->get('/avatar/{filename}', GetAvatarAction::class);
 
             $app->group('/key', function (RouteCollectorProxy $key) {
-                $key->post('/create', CreateApiKeyAction::class);
+                $key->post('/', CreateApiKeyAction::class);
+                $key->get('/', GetAllApiKeysAction::class);
+            })->add(AuthMiddleware::class);
+
+            $app->group('/todo', function (RouteCollectorProxy $todo) {
+                $todo->post('/', CreateTodoAction::class);
+                $todo->put('/{todoId:[0-9]+}', UpdateTodoAction::class);
+                $todo->get('/', GetAllTodoAction::class);
+                $todo->delete('/{todoId:[0-9]+}', DeleteTodoAction::class);
             })->add(AuthMiddleware::class);
 
             $app->group('/linkCollection', function (RouteCollectorProxy $linkCollection) {
-                $linkCollection->post('/create', CreateLinkAction::class);
-                $linkCollection->get('/links', GetAllLinksAction::class);
-                $linkCollection->put('/link/{linkId:[0-9]+}', EditLinkAction::class);
-                $linkCollection->delete('/link/{linkId:[0-9]+}', DisableLinkAction::class);
+                $linkCollection->post('/', CreateLinkAction::class);
+                $linkCollection->get('/', GetAllLinksAction::class);
+                $linkCollection->put('/{linkId:[0-9]+}', EditLinkAction::class);
+                $linkCollection->delete('/{linkId:[0-9]+}', DisableLinkAction::class);
             })->add(AuthMiddleware::class);
 
             $app->group('/click', function (RouteCollectorProxy $click) {
                 $click->get('/track', ClickTrackAction::class);
-                $click->get('/all', GetAllClicksAction::class)->add(AuthMiddleware::class);
+                $click->get('/', GetAllClicksAction::class)->add(AuthMiddleware::class);
             });
 
             $app->group('/user', function (RouteCollectorProxy $user) {
-                $user->post('/create', CreateUserAction::class);
-                $user->post('/{userId:[0-9]+}', UpdateUserAction::class);
-                $user->get('/all', GetAllUsersAction::class);
+                $user->post('/', CreateUserAction::class);
+                $user->put('/{userId:[0-9]+}', UpdateUserAction::class);
+                $user->get('/', GetAllUsersAction::class);
             })->add(AuthMiddleware::class);
         });
     }
