@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace LukaLtaApi\Value\ApiKey;
 
 use DateTimeImmutable;
+use LukaLtaApi\Value\Permission\Permission;
 use LukaLtaApi\Value\User\UserId;
 
 class ApiKeyObject
@@ -16,6 +17,7 @@ class ApiKeyObject
         private readonly DateTimeImmutable $createdAt,
         private readonly ?DateTimeImmutable $expiresAt,
         private readonly ApiKey $apiKey,
+        private readonly array $permissions = []
     ) {
     }
 
@@ -24,6 +26,7 @@ class ApiKeyObject
         int $createdBy,
         string $createdAt,
         ?string $expiresAt,
+        array $permissions = []
     ): self {
         $expires = $expiresAt === null ? null : new DateTimeImmutable($expiresAt);
 
@@ -34,12 +37,18 @@ class ApiKeyObject
             new DateTimeImmutable($createdAt),
             $expires,
             ApiKey::generateApiKey(),
+            $permissions,
         );
     }
 
     public static function fromDatabase(array $data): self
     {
         $expiresAt = $data['expires_at'] === null ? null : new DateTimeImmutable($data['expires_at']);
+
+        $permissions = array_map(
+            static fn(array $row) => Permission::fromDatabase($row),
+            $data['permissions'] ?? []
+        );
 
         return new self(
             KeyId::fromInt($data['id']),
@@ -48,6 +57,7 @@ class ApiKeyObject
             new DateTimeImmutable($data['created_at']),
             $expiresAt,
             ApiKey::from($data['api_key']),
+            $permissions,
         );
     }
 
@@ -69,6 +79,11 @@ class ApiKeyObject
             'createdAt' => $this->createdAt->format('Y-m-d H:i:s'),
             'expiresAt' => $this->expiresAt?->format('Y-m-d H:i:s'),
             'apiKey' => $this->apiKey->__toString(),
+            'permissions' => array_map(static fn(Permission $p) => [
+                'id' => $p->getPermissionId(),
+                'name' => $p->getName(),
+                'description' => $p->getDescription(),
+            ], $this->permissions),
         ];
     }
 
@@ -105,5 +120,10 @@ class ApiKeyObject
     public function setOrigin(KeyOrigin $origin): void
     {
         $this->origin = $origin;
+    }
+
+    public function getPermissions(): array
+    {
+        return $this->permissions;
     }
 }

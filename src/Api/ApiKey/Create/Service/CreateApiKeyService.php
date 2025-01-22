@@ -10,20 +10,22 @@ use LukaLtaApi\Value\ApiKey\ApiKeyObject;
 class CreateApiKeyService
 {
     public function __construct(
-        private readonly ApiKeyRepository $repository
+        private readonly ApiKeyRepository $repository,
     ) {
     }
 
     public function create(
         string $keyOrigin,
         int $createdBy,
-        ?string $expiresAt
+        ?string $expiresAt,
+        array $permissions,
     ): ApiKeyObject {
         $apiKey = ApiKeyObject::create(
             $keyOrigin,
             $createdBy,
             date('Y-m-d H:i:s'),
-            $expiresAt
+            $expiresAt,
+            $permissions,
         );
 
         $this->repository->create($apiKey);

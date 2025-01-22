@@ -12,6 +12,7 @@ use LukaLtaApi\Api\LinkCollection\Create\CreateLinkAction;
 use LukaLtaApi\Api\LinkCollection\Disable\DisableLinkAction;
 use LukaLtaApi\Api\LinkCollection\Edit\EditLinkAction;
 use LukaLtaApi\Api\LinkCollection\GetAll\GetAllLinksAction;
+use LukaLtaApi\Api\Permission\GetPermissions\GetPermissionsAction;
 use LukaLtaApi\Api\Todo\Create\CreateTodoAction;
 use LukaLtaApi\Api\Todo\Delete\DeleteTodoAction;
 use LukaLtaApi\Api\Todo\GetAll\GetAllTodoAction;
@@ -20,6 +21,9 @@ use LukaLtaApi\Api\User\Avatar\GetAvatarAction;
 use LukaLtaApi\Api\User\Create\CreateUserAction;
 use LukaLtaApi\Api\User\GetAll\GetAllUsersAction;
 use LukaLtaApi\Api\User\Update\UpdateUserAction;
+use LukaLtaApi\Repository\ApiKeyRepository;
+use LukaLtaApi\Service\PermissionService;
+use LukaLtaApi\Slim\Middleware\ApiKeyPermissionMiddleware;
 use LukaLtaApi\Slim\Middleware\AuthMiddleware;
 use LukaLtaApi\Slim\Middleware\CORSMiddleware;
 use Monolog\Logger;
@@ -100,34 +104,83 @@ class RouteMiddlewareCollector
             $app->get('/health', GetHealthAction::class);
             $app->get('/avatar/{filename}', GetAvatarAction::class);
 
-            $app->group('/key', function (RouteCollectorProxy $key) {
-                $key->post('/', CreateApiKeyAction::class);
-                $key->get('/', GetAllApiKeysAction::class);
+            $app->group('/key', function (RouteCollectorProxy $key) use ($app) {
+                $key->post('/', CreateApiKeyAction::class)
+                    ->add(new ApiKeyPermissionMiddleware(
+                        $app->getContainer()?->get(PermissionService::class),
+                        ['Create API keys']
+                    ));
+                $key->get('/', GetAllApiKeysAction::class)
+                    ->add(new ApiKeyPermissionMiddleware(
+                        $app->getContainer()?->get(PermissionService::class),
+                        ['Read API keys']
+                    ));
             })->add(AuthMiddleware::class);
 
-            $app->group('/todo', function (RouteCollectorProxy $todo) {
-                $todo->post('/', CreateTodoAction::class);
-                $todo->put('/{todoId:[0-9]+}', UpdateTodoAction::class);
-                $todo->get('/', GetAllTodoAction::class);
-                $todo->delete('/{todoId:[0-9]+}', DeleteTodoAction::class);
+            $app->group('/todo', function (RouteCollectorProxy $todo) use ($app) {
+                $todo->post('/', CreateTodoAction::class)
+                    ->add(new ApiKeyPermissionMiddleware(
+                        $app->getContainer()?->get(PermissionService::class),
+                        ['Create todos']
+                    ));
+                $todo->put('/{todoId:[0-9]+}', UpdateTodoAction::class)
+                    ->add(new ApiKeyPermissionMiddleware(
+                        $app->getContainer()?->get(PermissionService::class),
+                        ['Edit todos']
+                    ));
+                $todo->get('/', GetAllTodoAction::class)
+                    ->add(new ApiKeyPermissionMiddleware(
+                        $app->getContainer()?->get(PermissionService::class),
+                        ['Read todos']
+                    ));
+                $todo->delete('/{todoId:[0-9]+}', DeleteTodoAction::class)
+                    ->add(new ApiKeyPermissionMiddleware(
+                        $app->getContainer()?->get(PermissionService::class),
+                        ['Delete todos']
+                    ));
             })->add(AuthMiddleware::class);
 
-            $app->group('/linkCollection', function (RouteCollectorProxy $linkCollection) {
-                $linkCollection->post('/', CreateLinkAction::class);
-                $linkCollection->get('/', GetAllLinksAction::class);
-                $linkCollection->put('/{linkId:[0-9]+}', EditLinkAction::class);
+            $app->group('/linkCollection', function (RouteCollectorProxy $linkCollection) use ($app) {
+                $linkCollection->post('/', CreateLinkAction::class)
+                    ->add(new ApiKeyPermissionMiddleware(
+                        $app->getContainer()?->get(PermissionService::class),
+                        ['Create links']
+                    ));
+                $linkCollection->get('/', GetAllLinksAction::class)
+                    ->add(new ApiKeyPermissionMiddleware(
+                        $app->getContainer()?->get(PermissionService::class),
+                        ['Read links']
+                    ));
+                $linkCollection->put('/{linkId:[0-9]+}', EditLinkAction::class)
+                    ->add(new ApiKeyPermissionMiddleware(
+                        $app->getContainer()?->get(PermissionService::class),
+                        ['Edit links']
+                    ));
                 $linkCollection->delete('/{linkId:[0-9]+}', DisableLinkAction::class);
             })->add(AuthMiddleware::class);
 
-            $app->group('/click', function (RouteCollectorProxy $click) {
+            $app->group('/click', function (RouteCollectorProxy $click) use ($app) {
                 $click->get('/track', ClickTrackAction::class);
-                $click->get('/', GetAllClicksAction::class)->add(AuthMiddleware::class);
+                $click->get('/', GetAllClicksAction::class)
+                    ->add(AuthMiddleware::class)
+                    ->add(new ApiKeyPermissionMiddleware(
+                        $app->getContainer()?->get(PermissionService::class),
+                        ['Get clicks']
+                    ));
             });
 
             $app->group('/user', function (RouteCollectorProxy $user) {
                 $user->post('/', CreateUserAction::class);
                 $user->put('/{userId:[0-9]+}', UpdateUserAction::class);
                 $user->get('/', GetAllUsersAction::class);
+            })->add(AuthMiddleware::class);
+
+            $app->group('/permissions', function (RouteCollectorProxy $permissions) use ($app) {
+                $permissions->get('/', GetPermissionsAction::class)
+                    ->add(new ApiKeyPermissionMiddleware(
+                        $app->getContainer()?->get(PermissionService::class),
+                        ['Read permissions']
+                    ));
             })->add(AuthMiddleware::class);
         });
     }
