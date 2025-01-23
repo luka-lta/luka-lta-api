@@ -101,9 +101,31 @@ class ApiKeyRepository
     public function getApiKeyByOrigin(KeyOrigin $origin): ?ApiKeyObject
     {
         $sql = <<<SQL
-            SELECT key_id, origin, created_at, created_by, expires_at, api_key
-            FROM api_keys
-            WHERE origin = :origin
+            SELECT 
+                ak.key_id, 
+                ak.origin, 
+                ak.created_at, 
+                ak.created_by, 
+                ak.expires_at, 
+                ak.api_key,
+                COALESCE(
+                NULLIF(
+                    JSON_ARRAYAGG(
+                        JSON_OBJECT(
+                            'permission_id', p.permission_id,
+                            'permission_name', p.permission_name,
+                            'permission_description', p.permission_description
+                        )
+                    ),
+                JSON_ARRAY(NULL)
+                ),
+                JSON_ARRAY()
+                ) AS permissions
+            FROM api_keys ak
+            LEFT JOIN api_key_permissions akp ON ak.key_id = akp.api_key_id
+            LEFT JOIN permissions p ON akp.permission_id = p.permission_id
+            WHERE ak.origin = :origin
+            GROUP BY ak.key_id
         SQL;
 
         try {
