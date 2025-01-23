@@ -6,6 +6,7 @@ namespace LukaLtaApi\Value\ApiKey;
 
 use DateTimeImmutable;
 use LukaLtaApi\Value\Permission\Permission;
+use LukaLtaApi\Value\Permission\Permissions;
 use LukaLtaApi\Value\User\UserId;
 
 class ApiKeyObject
@@ -17,7 +18,7 @@ class ApiKeyObject
         private readonly DateTimeImmutable $createdAt,
         private readonly ?DateTimeImmutable $expiresAt,
         private readonly ApiKey $apiKey,
-        private readonly array $permissions = []
+        private readonly Permissions $permissions,
     ) {
     }
 
@@ -26,7 +27,7 @@ class ApiKeyObject
         int $createdBy,
         string $createdAt,
         ?string $expiresAt,
-        array $permissions = []
+        Permissions $permissions
     ): self {
         $expires = $expiresAt === null ? null : new DateTimeImmutable($expiresAt);
 
@@ -45,19 +46,16 @@ class ApiKeyObject
     {
         $expiresAt = $data['expires_at'] === null ? null : new DateTimeImmutable($data['expires_at']);
 
-        $permissions = array_map(
-            static fn(array $row) => Permission::fromDatabase($row),
-            $data['permissions'] ?? []
-        );
+        $permissions = json_decode($data['permissions'], true, 512, JSON_THROW_ON_ERROR);
 
         return new self(
-            KeyId::fromInt($data['id']),
+            KeyId::fromInt($data['key_id']),
             KeyOrigin::fromString($data['origin']),
             UserId::fromInt($data['created_by']),
             new DateTimeImmutable($data['created_at']),
             $expiresAt,
             ApiKey::from($data['api_key']),
-            $permissions,
+            Permissions::from(...$permissions),
         );
     }
 
@@ -72,6 +70,13 @@ class ApiKeyObject
 
     public function toArray(): array
     {
+        $permissions = [];
+
+        /** @var Permission $permission */
+        foreach ($this->permissions as $permission) {
+            $permissions[] = $permission->toArray();
+        }
+
         return [
             'id' => $this->keyId?->asInt(),
             'origin' => $this->origin->__toString(),
@@ -79,11 +84,7 @@ class ApiKeyObject
             'createdAt' => $this->createdAt->format('Y-m-d H:i:s'),
             'expiresAt' => $this->expiresAt?->format('Y-m-d H:i:s'),
             'apiKey' => $this->apiKey->__toString(),
-            'permissions' => array_map(static fn(Permission $p) => [
-                'id' => $p->getPermissionId(),
-                'name' => $p->getName(),
-                'description' => $p->getDescription(),
-            ], $this->permissions),
+            'permissions' => $permissions
         ];
     }
 
@@ -122,7 +123,7 @@ class ApiKeyObject
         $this->origin = $origin;
     }
 
-    public function getPermissions(): array
+    public function getPermissions(): Permissions
     {
         return $this->permissions;
     }

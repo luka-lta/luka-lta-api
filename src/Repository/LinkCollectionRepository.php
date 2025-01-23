@@ -6,6 +6,7 @@ use LukaLtaApi\Exception\ApiDatabaseException;
 use LukaLtaApi\Service\LinkItemCachingService;
 use LukaLtaApi\Value\LinkCollection\LinkId;
 use LukaLtaApi\Value\LinkCollection\LinkItem;
+use LukaLtaApi\Value\LinkCollection\LinkItems;
 use PDO;
 use PDOException;
 
@@ -137,22 +138,18 @@ class LinkCollectionRepository
         }
     }
 
-    public function getAll(): ?array
+    public function getAll(): LinkItems
     {
-        if ($linkItems = $this->caching->getAllItems()) {
-            return $linkItems;
-        }
-
         $sql = <<<SQL
             SELECT * FROM link_collection
         SQL;
 
         try {
             $statement = $this->pdo->query($sql);
-            $rows = $statement->fetchAll(PDO::FETCH_ASSOC);
 
-            if (empty($rows)) {
-                return null;
+            $linkItems = [];
+            foreach ($statement as $row) {
+                $linkItems[] = LinkItem::fromDatabase($row);
             }
         } catch (PDOException $exception) {
             throw new ApiDatabaseException(
@@ -161,6 +158,6 @@ class LinkCollectionRepository
             );
         }
 
-        return array_map(static fn($row) => LinkItem::fromDatabase($row), $rows);
+        return LinkItems::from(...$linkItems);
     }
 }

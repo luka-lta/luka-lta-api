@@ -15,6 +15,12 @@ class GetPermissionsService
 
     public function getPermissions(): ?array
     {
-        return $this->permissionRepository->getAvailablePermissions();
+        $permissions = $this->permissionRepository->getAvailablePermissions();
+
+        if ($permissions->count() === 0) {
+            return null;
+        }
+
+        return $permissions->toArray();
     }
 }

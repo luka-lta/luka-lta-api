@@ -23,10 +23,19 @@ class Permission
     public static function fromDatabase(array $row): self
     {
         return new self(
-            (int)$row['id'],
-            $row['name'],
-            $row['description'],
+            (int)$row['permission_id'],
+            $row['permission_name'],
+            $row['permission_description'],
         );
+    }
+
+    public function toArray(): array
+    {
+        return [
+            'permissionId' => $this->permissionId,
+            'name' => $this->name,
+            'description' => $this->description,
+        ];
     }
 
     public function getPermissionId(): ?int

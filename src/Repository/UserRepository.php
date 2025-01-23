@@ -7,6 +7,7 @@ use LukaLtaApi\Exception\ApiDatabaseException;
 use LukaLtaApi\Value\User\User;
 use LukaLtaApi\Value\User\UserEmail;
 use LukaLtaApi\Value\User\UserId;
+use LukaLtaApi\Value\User\Users;
 use PDO;
 use PDOException;
 
@@ -126,7 +127,7 @@ class UserRepository
         return User::fromDatabase($row);
     }
 
-    public function getAll(): ?array
+    public function getAll(): Users
     {
         $sql = <<<SQL
             SELECT * FROM users
@@ -134,10 +135,10 @@ class UserRepository
 
         try {
             $statement = $this->pdo->query($sql);
-            $rows = $statement->fetchAll();
 
-            if (empty($rows)) {
-                return null;
+            $users = [];
+            foreach ($statement as $row) {
+                $users[] = User::fromDatabase($row);
             }
         } catch (PDOException $exception) {
             throw new ApiDatabaseException(
@@ -146,6 +147,6 @@ class UserRepository
             );
         }
 
-        return array_map(static fn($row) => User::fromDatabase($row), $rows);
+        return Users::from(...$users);
     }
 }

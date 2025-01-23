@@ -18,10 +18,10 @@ class GetAllApiKeysService
     {
         $apiKeys = $this->repository->loadAll();
 
-        if ($apiKeys === null) {
+        if ($apiKeys->count() === 0) {
             return null;
         }
 
-        return array_map(static fn(ApiKeyObject $key) => $key->toArray(), $apiKeys);
+        return $apiKeys->toArray();
     }
 }

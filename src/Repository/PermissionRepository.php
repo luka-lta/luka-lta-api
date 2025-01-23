@@ -6,6 +6,8 @@ namespace LukaLtaApi\Repository;
 
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Exception\ApiDatabaseException;
+use LukaLtaApi\Value\Permission\Permission;
+use LukaLtaApi\Value\Permission\Permissions;
 use PDO;
 use PDOException;
 
@@ -16,7 +18,7 @@ class PermissionRepository
     ) {
     }
 
-    public function getAvailablePermissions(): ?array
+    public function getAvailablePermissions(): Permissions
     {
         $sql = <<<SQL
             SELECT *
@@ -25,18 +27,19 @@ class PermissionRepository
 
         try {
             $stmt = $this->pdo->query($sql);
-            $rows = $stmt->fetchAll();
 
-            if (empty($rows)) {
-                return null;
+
+            $permissions = [];
+            foreach ($stmt as $row) {
+                $permissions[] = Permission::fromDatabase($row);
             }
-
-            return $rows;
         } catch (PDOException) {
             throw new ApiDatabaseException(
                 'Failed to load permissions',
                 StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR
             );
         }
+
+        return Permissions::fromObjects(...$permissions);
     }
 }
