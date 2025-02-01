@@ -16,11 +16,10 @@ class GetAllLinksService
     {
         $links = $this->repository->getAll();
 
-        if ($links === null) {
+        if ($links->count() === 0) {
             return null;
         }
 
-        // Wandelt jedes LinkItem-Objekt in ein Array um
-        return array_map(static fn(LinkItem $link) => $link->toArray($mustRef), $links);
+        return $links->toArray($mustRef);
     }
 }

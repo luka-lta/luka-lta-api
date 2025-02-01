@@ -26,6 +26,7 @@ class CreateApiKeyAction extends ApiAction
         $rules = [
             'origin' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
             'expiresAt' => ['required' => false, 'location' => RequestValidator::LOCATION_BODY],
+            'permissions' => ['required' => false, 'location' => RequestValidator::LOCATION_BODY],
         ];
 
         $this->validator->validate($request, $rules);
@@ -36,7 +37,8 @@ class CreateApiKeyAction extends ApiAction
         $apiKey = $this->service->create(
             $body['origin'],
             $createdBy,
-            $body['expiresAt'] ?? null
+            $body['expiresAt'] ?? null,
+            $body['permissions'] ?? [],
         );
 
         return ApiResult::from(

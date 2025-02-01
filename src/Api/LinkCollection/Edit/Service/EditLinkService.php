@@ -9,6 +9,7 @@ use LukaLtaApi\Value\LinkCollection\Description;
 use LukaLtaApi\Value\LinkCollection\DisplayName;
 use LukaLtaApi\Value\LinkCollection\IconName;
 use LukaLtaApi\Value\LinkCollection\LinkId;
+use LukaLtaApi\Value\LinkCollection\LinkItem;
 use LukaLtaApi\Value\LinkCollection\LinkUrl;
 
 class EditLinkService
@@ -25,7 +26,7 @@ class EditLinkService
         string  $url,
         bool    $isActive,
         ?string $iconName
-    ): void {
+    ): LinkItem {
         $linkItem = $this->repository->getById(LinkId::fromInt($linkId));
 
         if ($linkItem === null) {
@@ -42,5 +43,7 @@ class EditLinkService
         $linkItem->setIconName(IconName::fromString($iconName));
 
         $this->repository->update($linkItem);
+
+        return $linkItem;
     }
 }

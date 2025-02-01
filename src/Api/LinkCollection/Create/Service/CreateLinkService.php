@@ -21,8 +21,8 @@ class CreateLinkService
         bool $isActive,
         ?string $iconName,
         int $displayOrder,
-    ): void {
-        $this->repository->create(
+    ): LinkItem {
+        return $this->repository->create(
             LinkItem::from(
                 null,
                 $displayname,

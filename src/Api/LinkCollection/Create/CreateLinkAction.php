@@ -2,6 +2,7 @@
 
 namespace LukaLtaApi\Api\LinkCollection\Create;
 
+use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Api\ApiAction;
 use LukaLtaApi\Api\LinkCollection\Create\Service\CreateLinkService;
 use LukaLtaApi\Api\RequestValidator;
@@ -13,7 +14,7 @@ use Psr\Http\Message\ServerRequestInterface;
 class CreateLinkAction extends ApiAction
 {
     public function __construct(
-        private readonly RequestValidator $requestValidator,
+        private readonly RequestValidator  $requestValidator,
         private readonly CreateLinkService $service,
     ) {
     }
@@ -31,7 +32,7 @@ class CreateLinkAction extends ApiAction
 
         $this->requestValidator->validate($request, $rules);
 
-        $this->service->create(
+        $createdLink = $this->service->create(
             $request->getParsedBody()['displayname'],
             $request->getParsedBody()['description'] ?? null,
             $request->getParsedBody()['url'],
@@ -40,6 +41,11 @@ class CreateLinkAction extends ApiAction
             $request->getParsedBody()['displayOrder'] ?? 0,
         );
 
-        return ApiResult::from(JsonResult::from('Link created'))->getResponse($response);
+        return ApiResult::from(
+            JsonResult::from('Link created', [
+                'link' => $createdLink->toArray()
+            ]),
+            StatusCodeInterface::STATUS_CREATED
+        )->getResponse($response);
     }
 }

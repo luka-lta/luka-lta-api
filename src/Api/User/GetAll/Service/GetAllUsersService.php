@@ -16,13 +16,12 @@ class GetAllUsersService
 
     public function getAll(): ?array
     {
-        $links = $this->repository->getAll();
+        $users = $this->repository->getAll();
 
-        if ($links === null) {
+        if ($users->count() === 0) {
             return null;
         }
 
-        // Wandelt jedes User-Objekt in ein Array um
-        return array_map(static fn(User $link) => $link->toArray(), $links);
+        return $users->toArray();
     }
 }
