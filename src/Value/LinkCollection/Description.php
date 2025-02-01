@@ -8,17 +8,15 @@ use LukaLtaApi\Exception\ApiInvalidArgumentException;
 class Description
 {
     private function __construct(
-        private readonly ?string $value
+        private ?string $value
     ) {
         if ($value === null) {
             return;
         }
 
         if (empty($value)) {
-            throw new ApiInvalidArgumentException(
-                'Description cannot be empty',
-                StatusCodeInterface::STATUS_BAD_REQUEST
-            );
+            $this->value = null;
+            return;
         }
 
         if (!preg_match('/^[A-Za-z0-9,.\s!?]{1,500}$/', $value)) {

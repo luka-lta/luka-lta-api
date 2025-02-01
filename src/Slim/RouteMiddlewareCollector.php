@@ -21,7 +21,6 @@ use LukaLtaApi\Api\User\Avatar\GetAvatarAction;
 use LukaLtaApi\Api\User\Create\CreateUserAction;
 use LukaLtaApi\Api\User\GetAll\GetAllUsersAction;
 use LukaLtaApi\Api\User\Update\UpdateUserAction;
-use LukaLtaApi\Repository\ApiKeyRepository;
 use LukaLtaApi\Service\PermissionService;
 use LukaLtaApi\Slim\Middleware\ApiKeyPermissionMiddleware;
 use LukaLtaApi\Slim\Middleware\AuthMiddleware;

@@ -7,7 +7,7 @@ use DateTimeImmutable;
 class LinkItem
 {
     private function __construct(
-        private readonly ?LinkId           $linkId,
+        private ?LinkId           $linkId,
         private LinkMetaData $metaData,
         private readonly DateTimeImmutable $createdOn,
         private IconName                   $iconName,
@@ -110,6 +110,11 @@ class LinkItem
     public function getDeactivatedOn(): ?DateTimeImmutable
     {
         return $this->deactivatedOn;
+    }
+
+    public function setLinkId(?LinkId $linkId): void
+    {
+        $this->linkId = $linkId;
     }
 
     public function setMetaData(LinkMetaData $metaData): void

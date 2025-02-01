@@ -18,7 +18,7 @@ class LinkCollectionRepository
     ) {
     }
 
-    public function create(LinkItem $link): void
+    public function create(LinkItem $link): LinkItem
     {
         $sql = <<<SQL
             INSERT INTO link_collection 
@@ -39,12 +39,15 @@ class LinkCollectionRepository
             ]);
 
             $this->caching->addItem($link);
+            $link->setLinkId(LinkId::fromInt((int)$this->pdo->lastInsertId()));
         } catch (PDOException $exception) {
             throw new ApiDatabaseException(
                 'Failed to create new link',
                 previous: $exception
             );
         }
+
+        return $link;
     }
 
     public function getById(LinkId $linkId): ?LinkItem
@@ -76,7 +79,7 @@ class LinkCollectionRepository
         return LinkItem::fromDatabase($row);
     }
 
-    public function update(LinkItem $linkItem): void
+    public function update(LinkItem $linkItem): LinkItem
     {
         $sql = <<<SQL
             UPDATE link_collection
@@ -108,6 +111,8 @@ class LinkCollectionRepository
                 previous: $exception
             );
         }
+
+        return $linkItem;
     }
 
     public function disableLink(LinkId $linkId): void

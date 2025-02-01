@@ -37,8 +37,10 @@ class EditLinkAction extends ApiAction
         $isActive = $request->getParsedBody()['isActive'] ?? false;
         $iconName = $request->getParsedBody()['iconName'] ?? null;
 
-        $this->service->edit($linkId, $displayname, $description, $url, $isActive, $iconName);
+        $editedLink = $this->service->edit($linkId, $displayname, $description, $url, $isActive, $iconName);
 
-        return ApiResult::from(JsonResult::from('Link edited'))->getResponse($response);
+        return ApiResult::from(JsonResult::from('Link edited', [
+            'link' => $editedLink->toArray()
+        ]))->getResponse($response);
     }
 }
