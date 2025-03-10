@@ -8,10 +8,11 @@ use LukaLtaApi\Api\Auth\AuthAction;
 use LukaLtaApi\Api\Click\GetAll\GetAllClicksAction;
 use LukaLtaApi\Api\Click\Track\ClickTrackAction;
 use LukaLtaApi\Api\Health\GetHealthAction;
-use LukaLtaApi\Api\LinkCollection\Create\CreateLinkAction;
-use LukaLtaApi\Api\LinkCollection\Disable\DisableLinkAction;
-use LukaLtaApi\Api\LinkCollection\Edit\EditLinkAction;
-use LukaLtaApi\Api\LinkCollection\GetAll\GetAllLinksAction;
+use LukaLtaApi\Api\LinkCollection\Action\CreateLinkAction;
+use LukaLtaApi\Api\LinkCollection\Action\DisableLinkAction;
+use LukaLtaApi\Api\LinkCollection\Action\EditLinkAction;
+use LukaLtaApi\Api\LinkCollection\Action\GetAllLinksAction;
+use LukaLtaApi\Api\LinkCollection\Action\GetDetailLink;
 use LukaLtaApi\Api\Permission\GetPermissions\GetPermissionsAction;
 use LukaLtaApi\Api\Todo\Create\CreateTodoAction;
 use LukaLtaApi\Api\Todo\Delete\DeleteTodoAction;
@@ -146,6 +147,11 @@ class RouteMiddlewareCollector
                         ['Create links']
                     ));
                 $linkCollection->get('/', GetAllLinksAction::class)
+                    ->add(new ApiKeyPermissionMiddleware(
+                        $app->getContainer()?->get(PermissionService::class),
+                        ['Read links']
+                    ));
+                $linkCollection->get('/{linkId:[0-9]+}', GetDetailLink::class)
                     ->add(new ApiKeyPermissionMiddleware(
                         $app->getContainer()?->get(PermissionService::class),
                         ['Read links']

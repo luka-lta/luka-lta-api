@@ -1,19 +1,17 @@
 <?php
 
-namespace LukaLtaApi\Api\LinkCollection\Edit;
+namespace LukaLtaApi\Api\LinkCollection\Action;
 
 use LukaLtaApi\Api\ApiAction;
-use LukaLtaApi\Api\LinkCollection\Edit\Service\EditLinkService;
+use LukaLtaApi\Api\LinkCollection\Service\LinkCollectionService;
 use LukaLtaApi\Api\RequestValidator;
-use LukaLtaApi\Value\Result\ApiResult;
-use LukaLtaApi\Value\Result\JsonResult;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 class EditLinkAction extends ApiAction
 {
     public function __construct(
-        private readonly EditLinkService $service,
+        private readonly LinkCollectionService $service,
         private readonly RequestValidator $requestValidator,
     ) {
     }
@@ -29,18 +27,6 @@ class EditLinkAction extends ApiAction
         ];
 
         $this->requestValidator->validate($request, $rules);
-
-        $linkId = (int) $request->getAttribute('linkId');
-        $displayname = $request->getParsedBody()['displayname'];
-        $description = $request->getParsedBody()['description'] ?? null;
-        $url = $request->getParsedBody()['url'];
-        $isActive = $request->getParsedBody()['isActive'] ?? false;
-        $iconName = $request->getParsedBody()['iconName'] ?? null;
-
-        $editedLink = $this->service->edit($linkId, $displayname, $description, $url, $isActive, $iconName);
-
-        return ApiResult::from(JsonResult::from('Link edited', [
-            'link' => $editedLink->toArray()
-        ]))->getResponse($response);
+        return $this->service->editLink($request)->getResponse($response);
     }
 }

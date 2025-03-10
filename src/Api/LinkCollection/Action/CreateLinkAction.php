@@ -1,13 +1,10 @@
 <?php
 
-namespace LukaLtaApi\Api\LinkCollection\Create;
+namespace LukaLtaApi\Api\LinkCollection\Action;
 
-use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Api\ApiAction;
-use LukaLtaApi\Api\LinkCollection\Create\Service\CreateLinkService;
+use LukaLtaApi\Api\LinkCollection\Service\LinkCollectionService;
 use LukaLtaApi\Api\RequestValidator;
-use LukaLtaApi\Value\Result\ApiResult;
-use LukaLtaApi\Value\Result\JsonResult;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -15,7 +12,7 @@ class CreateLinkAction extends ApiAction
 {
     public function __construct(
         private readonly RequestValidator  $requestValidator,
-        private readonly CreateLinkService $service,
+        private readonly LinkCollectionService $service,
     ) {
     }
 
@@ -32,20 +29,6 @@ class CreateLinkAction extends ApiAction
 
         $this->requestValidator->validate($request, $rules);
 
-        $createdLink = $this->service->create(
-            $request->getParsedBody()['displayname'],
-            $request->getParsedBody()['description'] ?? null,
-            $request->getParsedBody()['url'],
-            $request->getParsedBody()['isActive'] ?? false,
-            $request->getParsedBody()['iconName'] ?? null,
-            $request->getParsedBody()['displayOrder'] ?? 0,
-        );
-
-        return ApiResult::from(
-            JsonResult::from('Link created', [
-                'link' => $createdLink->toArray()
-            ]),
-            StatusCodeInterface::STATUS_CREATED
-        )->getResponse($response);
+        return $this->service->createLink($request)->getResponse($response);
     }
 }

@@ -30,16 +30,11 @@ class JsonResult implements ResultInterface
 
     public function toArray(): array
     {
-        $defaultMessage = [
+        $bodyArray = [
             'message' => $this->message,
+            'data' => $this->fields,
         ];
 
-        if ($this->fields) {
-            foreach ($this->fields as $key => $value) {
-                $defaultMessage[$key] = $value;
-            }
-        }
-
-        return $defaultMessage;
+        return $bodyArray;
     }
 }
