@@ -123,11 +123,6 @@ class LinkCollectionService
     public function editLink(ServerRequestInterface $request): ApiResult
     {
         $linkId = (int) $request->getAttribute('linkId');
-        $displayname = $request->getParsedBody()['displayname'];
-        $description = $request->getParsedBody()['description'] ?? null;
-        $url = $request->getParsedBody()['url'];
-        $isActive = $request->getParsedBody()['isActive'] ?? false;
-        $iconName = $request->getParsedBody()['iconName'] ?? null;
 
         $linkItem = $this->repository->getById(LinkId::fromInt($linkId));
 
@@ -138,17 +133,35 @@ class LinkCollectionService
             );
         }
 
-        $linkMetaData = $linkItem->getMetaData();
-
-        $linkMetaData->setDisplayName(DisplayName::fromString($displayname));
-        $linkMetaData->setDescription(Description::fromString($description));
-        $linkMetaData->setLinkUrl(LinkUrl::fromString($url));
-        $linkMetaData->setIsActive($isActive);
-
-        $linkItem->setIconName(IconName::fromString($iconName));
+        $this->checkUserHasChanges($linkItem, $request->getParsedBody());
 
         $this->repository->update($linkItem);
 
         return ApiResult::from(JsonResult::from('Link edited', ['link' => $linkItem->toArray()]));
+    }
+
+    private function checkUserHasChanges(LinkItem $linkItem, array $parsedBody): void
+    {
+        $linkMetaData = $linkItem->getMetaData();
+
+        if (isset($parsedBody['displayname'])) {
+            $linkMetaData->setDisplayName(DisplayName::fromString($parsedBody['displayname']));
+        }
+
+        if (array_key_exists('description', $parsedBody)) {
+            $linkMetaData->setDescription(Description::fromString($parsedBody['description'] ?? null));
+        }
+
+        if (isset($parsedBody['url'])) {
+            $linkMetaData->setLinkUrl(LinkUrl::fromString($parsedBody['url']));
+        }
+
+        if (isset($parsedBody['isActive'])) {
+            $linkMetaData->setIsActive((bool) $parsedBody['isActive']);
+        }
+
+        if (array_key_exists('iconName', $parsedBody)) {
+            $linkItem->setIconName(IconName::fromString($parsedBody['iconName'] ?? null));
+        }
     }
 }
