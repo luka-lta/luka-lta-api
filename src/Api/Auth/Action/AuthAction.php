@@ -1,6 +1,6 @@
 <?php
 
-namespace LukaLtaApi\Api\Auth;
+namespace LukaLtaApi\Api\Auth\Action;
 
 use LukaLtaApi\Api\ApiAction;
 use LukaLtaApi\Api\Auth\Service\AuthService;

@@ -28,7 +28,6 @@ class PermissionRepository
         try {
             $stmt = $this->pdo->query($sql);
 
-
             $permissions = [];
             foreach ($stmt as $row) {
                 $permissions[] = Permission::fromDatabase($row);

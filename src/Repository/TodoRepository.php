@@ -6,6 +6,7 @@ namespace LukaLtaApi\Repository;
 
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Exception\ApiDatabaseException;
+use LukaLtaApi\Value\TodoList\Tasks;
 use LukaLtaApi\Value\TodoList\TodoId;
 use LukaLtaApi\Value\TodoList\TodoObject;
 use LukaLtaApi\Value\TodoList\TodoOwnerId;
@@ -67,7 +68,7 @@ class TodoRepository
                 'description' => $todo->getDescription()?->toString(),
                 'status' => $todo->getStatus()->toString(),
                 'priority' => $todo->getPriority()->toString(),
-                'due_date' => $todo->getDueDate()?->toDateObject()->format('Y-m-d H:i:s'),
+                'due_date' => $todo->getDueDate()?->toDateObject()?->format('Y-m-d H:i:s'),
             ]);
         } catch (PDOException $exception) {
             throw new ApiDatabaseException(
@@ -124,7 +125,7 @@ class TodoRepository
         }
     }
 
-    public function loadAllByOwnerId(TodoOwnerId $ownerId): ?array
+    public function loadAllByOwnerId(TodoOwnerId $ownerId): Tasks
     {
         $sql = <<<SQL
             SELECT todo_id, owner_id, title, description, status, priority, due_date, created_at, updated_at
@@ -135,13 +136,11 @@ class TodoRepository
         try {
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute(['owner_id' => $ownerId->asInt()]);
-            $rows = $stmt->fetchAll();
 
-            if (empty($rows)) {
-                return null;
+            $tasks = [];
+            foreach ($stmt as $row) {
+                $tasks[] = TodoObject::fromDatabase($row);
             }
-
-            return array_map(static fn($row) => TodoObject::fromDatabase($row), $rows);
         } catch (PDOException $exception) {
             throw new ApiDatabaseException(
                 'Failed to load Todo list',
@@ -149,5 +148,7 @@ class TodoRepository
                 $exception
             );
         }
+
+        return Tasks::fromObjects(...$tasks);
     }
 }
