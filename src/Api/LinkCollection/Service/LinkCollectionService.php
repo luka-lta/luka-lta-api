@@ -54,7 +54,7 @@ class LinkCollectionService
     {
         $mustRef = $request->getQueryParams()['mustRef'] ?? false;
 
-        $links = $this->repository->getAll($mustRef);
+        $links = $this->repository->getAll();
 
         if ($links->count() === 0) {
             return ApiResult::from(
@@ -63,7 +63,12 @@ class LinkCollectionService
             );
         }
 
-        return ApiResult::from(JsonResult::from('Links fetched successfully', ['links' => $links->toArray()]));
+        return ApiResult::from(
+            JsonResult::from('Links fetched successfully', [
+                    'links' => $links->toArray($mustRef)
+                ]
+            )
+        );
     }
 
     public function createLink(ServerRequestInterface $request): ApiResult
@@ -122,7 +127,7 @@ class LinkCollectionService
 
     public function editLink(ServerRequestInterface $request): ApiResult
     {
-        $linkId = (int) $request->getAttribute('linkId');
+        $linkId = (int)$request->getAttribute('linkId');
 
         $linkItem = $this->repository->getById(LinkId::fromInt($linkId));
 
@@ -157,7 +162,7 @@ class LinkCollectionService
         }
 
         if (isset($parsedBody['isActive'])) {
-            $linkMetaData->setIsActive((bool) $parsedBody['isActive']);
+            $linkMetaData->setIsActive((bool)$parsedBody['isActive']);
         }
 
         if (array_key_exists('iconName', $parsedBody)) {

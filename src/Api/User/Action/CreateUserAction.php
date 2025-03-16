@@ -1,21 +1,17 @@
 <?php
 
-namespace LukaLtaApi\Api\User\Create;
+namespace LukaLtaApi\Api\User\Action;
 
 use LukaLtaApi\Api\ApiAction;
 use LukaLtaApi\Api\RequestValidator;
-use LukaLtaApi\Api\User\Create\Service\CreateUserService;
-use LukaLtaApi\Value\Result\ApiResult;
-use LukaLtaApi\Value\Result\JsonResult;
-use LukaLtaApi\Value\User\UserEmail;
-use LukaLtaApi\Value\User\UserPassword;
+use LukaLtaApi\Api\User\Service\UserService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 class CreateUserAction extends ApiAction
 {
     public function __construct(
-        private readonly CreateUserService $service,
+        private readonly UserService $service,
         private readonly RequestValidator $validator,
     ) {
     }
@@ -29,11 +25,6 @@ class CreateUserAction extends ApiAction
 
         $this->validator->validate($request, $rules);
 
-        $this->service->createUser(
-            UserEmail::from($request->getParsedBody()['email']),
-            $request->getParsedBody()['password']
-        );
-
-        return ApiResult::from(JsonResult::from('User created'))->getResponse($response);
+        return $this->service->createUser($request->getParsedBody())->getResponse($response);
     }
 }
