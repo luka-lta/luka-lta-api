@@ -28,6 +28,8 @@ jobs:
           docker buildx build --platform linux/amd64,linux/arm64 \
             -t ghcr.io/luka-lta/luka-lta-api/api-nginx:dev \
             -f docker/nginx/Dockerfile \
+            --cache-from=type=gha \
+            --cache-to=type=gha,mode=max \
             --push \
             .
 
@@ -36,5 +38,7 @@ jobs:
           docker buildx build --platform linux/amd64,linux/arm64 \
             -t ghcr.io/luka-lta/luka-lta-api/api-php-fpm:dev \
             -f docker/php/Dockerfile \
+            --cache-from=type=gha \
+            --cache-to=type=gha,mode=max \
             --push \
             .
