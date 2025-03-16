@@ -22,15 +22,18 @@ jobs:
 
       - name: Build Docker image for nginx
         run: |
-          docker buildx build --platform linux/amd64,linux/arm64 \                                                                                                                                                                                                       ─╯ 
-          -t ghcr.io/luka-lta/luka-lta-api/api-nginx:dev \
-          -f docker/nginx/Dockerfile \
-          --push .
-    
+          docker buildx build --platform linux/amd64,linux/arm64 \
+            -t ghcr.io/luka-lta/luka-lta-api/api-nginx:dev \
+            -f docker/nginx/Dockerfile \
+            --push \
+            .
+
+
 
       - name: Build and push Docker image for php-fpm
         run: |
-          docker buildx build --platform linux/amd64,linux/arm64 \                                                                                                                                                                                                       ─╯ 
-          -t ghcr.io/luka-lta/luka-lta-api/api-php-fpm:dev \
-          -f docker/php/Dockerfile \
-          --push .
+          docker buildx build --platform linux/amd64,linux/arm64 \
+            -t ghcr.io/luka-lta/luka-lta-api/api-php-fpm:dev \
+            -f docker/php/Dockerfile \
+            --push \
+            .
