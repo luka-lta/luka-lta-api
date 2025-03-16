@@ -12,7 +12,6 @@ use LukaLtaApi\Value\Result\JsonResult;
 use LukaLtaApi\Value\User\User;
 use LukaLtaApi\Value\User\UserEmail;
 use LukaLtaApi\Value\User\UserId;
-use LukaLtaApi\Value\User\UserPassword;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use RuntimeException;
@@ -29,7 +28,7 @@ class UserService
         $email = $body['email'];
         $password = $body['password'];
 
-        if ($this->repository->findByEmail($email) !== null) {
+        if ($this->repository->findByEmail(UserEmail::from($email)) !== null) {
             return ApiResult::from(
                 JsonResult::from('User already exists with this email'),
                 StatusCodeInterface::STATUS_BAD_REQUEST
