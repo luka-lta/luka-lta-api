@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace LukaLtaApi\Api\Health;
+namespace LukaLtaApi\Api\Health\Action;
 
 use LukaLtaApi\Api\ApiAction;
 use LukaLtaApi\Value\Result\ApiResult;

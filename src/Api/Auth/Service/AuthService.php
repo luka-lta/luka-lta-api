@@ -6,6 +6,8 @@ use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Exception\ApiAuthException;
 use LukaLtaApi\Exception\ApiUserNotExistsException;
 use LukaLtaApi\Repository\UserRepository;
+use LukaLtaApi\Value\Result\ApiResult;
+use LukaLtaApi\Value\Result\JsonResult;
 use LukaLtaApi\Value\User\UserEmail;
 use ReallySimpleJWT\Token;
 
@@ -16,16 +18,22 @@ class AuthService
     ) {
     }
 
-    public function login(UserEmail $email, string $password): array
+    public function login(UserEmail $email, string $password): ApiResult
     {
         $user = $this->repository->findByEmail($email);
 
         if ($user === null) {
-            throw new ApiUserNotExistsException('User not found', StatusCodeInterface::STATUS_NOT_FOUND);
+            return ApiResult::from(
+                JsonResult::from('User not found'),
+                StatusCodeInterface::STATUS_NOT_FOUND
+            );
         }
 
         if (!$user->getPassword()->verify($password)) {
-            throw new ApiAuthException('Invalid password', StatusCodeInterface::STATUS_UNAUTHORIZED);
+            return ApiResult::from(
+                JsonResult::from('Invalid password'),
+                StatusCodeInterface::STATUS_UNAUTHORIZED
+            );
         }
 
         $expiresIn = time() + (int)getenv('JWT_NORMAL_EXPIRATION_TIME');
@@ -37,9 +45,9 @@ class AuthService
             ->setExpiration($expiresIn)
             ->build();
 
-        return [
+        return ApiResult::from(JsonResult::from('User logged in', [
             'token' => $token->getToken(),
             'user' => $user->toArray(),
-        ];
+        ]));
     }
 }
