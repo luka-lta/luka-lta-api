@@ -60,6 +60,8 @@ class TaskService
             );
         }
 
+        $this->todoRepository->delete($todoId);
+
         return ApiResult::from(JsonResult::from('Task deleted'));
     }
 
