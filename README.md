@@ -1,11 +1,11 @@
+# luka-lta-api
+
 [![Contributors][contributors-shield]][contributors-url]
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
-[![project_license][license-shield]][license-url]
+[![License][license-shield]][license-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
-
-
 
 <!-- PROJECT LOGO -->
 <br />
@@ -17,7 +17,7 @@
 <h3 align="center">luka-lta-api</h3>
 
   <p align="center">
-    Backend API for my system
+    Backend API for managing links and clicks in my system.
     <br />
     <a href="https://github.com/luka-lta/luka-lta-api"><strong>Explore the docs »</strong></a>
     <br />
@@ -30,95 +30,35 @@
   </p>
 </div>
 
+---
 
-
-<!-- TABLE OF CONTENTS -->
-<details>
-  <summary>Table of Contents</summary>
-  <ol>
-    <li>
-      <a href="#about-the-project">About The Project</a>
-      <ul>
-        <li><a href="#built-with">Built With</a></li>
-      </ul>
-    </li>
-    <li>
-      <a href="#getting-started">Getting Started</a>
-      <ul>
-        <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#installation">Installation</a></li>
-      </ul>
-    </li>
-    <li><a href="#usage">Usage</a></li>
-    <li><a href="#roadmap">Roadmap</a></li>
-    <li><a href="#contributing">Contributing</a></li>
-    <li><a href="#license">License</a></li>
-    <li><a href="#contact">Contact</a></li>
-    <li><a href="#acknowledgments">Acknowledgments</a></li>
-  </ol>
-</details>
-
-
-
-<!-- ABOUT THE PROJECT -->
 ## About The Project
-This is a backend api with php and slim framework. It is used to manage links and clicks for my system.
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
+This backend API is built with PHP and the Slim framework. It manages link collections, tracks click events, and supports API key authentication for secure access.
 
 ### Built With
 
-* [![PHP][php]][php-url]
+- ![PHP][php]
+- [Slim Framework](https://www.slimframework.com/)
+- Docker
+- MySQL
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
-<!-- GETTING STARTED -->
 ## Getting Started
 
-This is an example of how you may give instructions on setting up your project locally.
-To get a local copy up and running follow these simple example steps.
+### Prerequisites
 
-## Requirements:
+Ensure you have the following installed:
 
 - PHP 8.3 or higher
 - Docker
-- PHP-redis-extension 8.3 or higher
+- PHP Redis extension 8.3 or higher
 
-## Endpoints:
+### Installation
 
-Default: `/api/v1/`
-
-### Authentication:
-- `POST /auth` | Authenticate user and retrieve an access token
-
-### API Keys:
-- `POST /key/create` | Generate a new API key (requires authentication)
-
-### LinkCollection:
-- `GET /linkCollection/links` | Get all available links (requires authentication)
-- `POST /linkCollection/create` | Create a new link (requires authentication)
-- `PUT /linkCollection/{linkId}` | Edit an existing link (requires authentication)
-- `DELETE /linkCollection/{linkId}` | Disable an existing link (requires authentication)
-
-### Clicks:
-- `GET /click/track` | Track a click event
-- `GET /click/all` | Get all click events (requires authentication)
-
-### User Management:
-- `POST /user/create` | Create a new user
-- `POST /user/{userId}` | Update an existing user (requires authentication)
-
-## Setup Instructions
-
-### Installation:
 1. Clone the repository:
    ```bash
-   git clone https://github.com/luka-lta/luka-lta-backend.git
-   cd luka-lta-backend
+   git clone https://github.com/luka-lta/luka-lta-api.git
+   cd luka-lta-api
    ```
 
 2. Install dependencies using Composer:
@@ -136,78 +76,81 @@ Default: `/api/v1/`
    php artisan migrate
    ```
 
-### Testing the API:
-- Use tools like [Postman](https://www.postman.com/) or [cURL](https://curl.se/) to test the endpoints.
+### Testing the API
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+Use tools like [Postman](https://www.postman.com/) or [cURL](https://curl.se/) to test the endpoints.
 
+---
 
+## API Endpoints
 
-<!-- USAGE EXAMPLES -->
-## Usage
+### Authentication
+- `POST /auth` – Authenticate user and retrieve an access token
 
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
+### API Keys
+- `POST /key/create` – Generate a new API key (requires authentication)
 
-_For more examples, please refer to the [Documentation](https://example.com)_
+### Link Collection
+- `GET /linkCollection/links` – Get all available links (requires authentication)
+- `POST /linkCollection/create` – Create a new link (requires authentication)
+- `PUT /linkCollection/{linkId}` – Edit an existing link (requires authentication)
+- `DELETE /linkCollection/{linkId}` – Disable an existing link (requires authentication)
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+### Click Tracking
+- `GET /click/track` – Track a click event
+- `GET /click/all` – Get all click events (requires authentication)
 
+### User Management
+- `POST /user/create` – Create a new user
+- `POST /user/{userId}` – Update an existing user (requires authentication)
 
+---
 
-<!-- CONTRIBUTING -->
+## Roadmap
+
+See the [open issues](https://github.com/luka-lta/luka-lta-api/issues) for a list of proposed features and known issues.
+
+---
+
 ## Contributing
 
-Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+Contributions are what make the open-source community amazing! Any contributions you make are **greatly appreciated**.
 
-If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
-Don't forget to give the project a star! Thanks again!
+1. Fork the project
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a pull request
 
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-### Top contributors:
+### Top Contributors
 
 <a href="https://github.com/luka-lta/luka-lta-api/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=luka-lta/luka-lta-api" alt="contrib.rocks image" />
+  <img src="https://contrib.rocks/image?repo=luka-lta/luka-lta-api" alt="Contributors" />
 </a>
 
+---
 
-
-<!-- LICENSE -->
 ## License
 
-Distributed under the project_license. See `LICENSE.txt` for more information.
+Distributed under the MIT License. See `LICENSE.txt` for more information.
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+---
 
-
-
-<!-- CONTACT -->
 ## Contact
 
-luka-lta - info@luka-lta.dev
+**luka-lta** – [info@luka-lta.dev](mailto:info@luka-lta.dev)
 
 Project Link: [https://github.com/luka-lta/luka-lta-api](https://github.com/luka-lta/luka-lta-api/)
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+---
 
-
-
-<!-- ACKNOWLEDGMENTS -->
 ## Acknowledgments
 
-* []()
-* []()
-* []()
+- [Slim Framework](https://www.slimframework.com/)
+- [PHP](https://www.php.net/)
+- [Docker](https://www.docker.com/)
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
+---
 
 [contributors-shield]: https://img.shields.io/github/contributors/luka-lta/luka-lta-api.svg?style=for-the-badge
 [contributors-url]: https://github.com/luka-lta/luka-lta-api/graphs/contributors
@@ -221,5 +164,5 @@ Project Link: [https://github.com/luka-lta/luka-lta-api](https://github.com/luka
 [license-url]: https://github.com/luka-lta/luka-lta-api/blob/master/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://linkedin.com/in/linkedin_username
-[PHP]: https://img.shields.io/badge/php-000000?style=for-the-badge&logo=php&logoColor=white
-[php-url]: https://php.com/
+[php]: https://img.shields.io/badge/php-000000?style=for-the-badge&logo=php&logoColor=white
+
