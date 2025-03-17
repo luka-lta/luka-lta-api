@@ -28,19 +28,9 @@ class AuthAction extends ApiAction
 
         $this->validator->validate($request, $rules);
 
-        $jwt = $this->service->login(
+        return $this->service->login(
             UserEmail::from($request->getParsedBody()['email']),
             $request->getParsedBody()['password']
-        );
-
-        return ApiResult::from(
-            JsonResult::from(
-                'User logged in',
-                [
-                    'jwt' => $jwt['token'],
-                    'user' => $jwt['user'],
-                ]
-            )
         )->getResponse($response);
     }
 }

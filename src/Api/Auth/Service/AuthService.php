@@ -3,8 +3,6 @@
 namespace LukaLtaApi\Api\Auth\Service;
 
 use Fig\Http\Message\StatusCodeInterface;
-use LukaLtaApi\Exception\ApiAuthException;
-use LukaLtaApi\Exception\ApiUserNotExistsException;
 use LukaLtaApi\Repository\UserRepository;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
