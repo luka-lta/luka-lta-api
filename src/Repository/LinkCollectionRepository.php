@@ -2,6 +2,8 @@
 
 namespace LukaLtaApi\Repository;
 
+use Latitude\QueryBuilder\QueryFactory;
+use LukaLtaApi\Api\LinkCollection\Value\LinkTreeExtraFilter;
 use LukaLtaApi\Exception\ApiDatabaseException;
 use LukaLtaApi\Service\LinkItemCachingService;
 use LukaLtaApi\Value\LinkCollection\LinkId;
@@ -15,6 +17,7 @@ class LinkCollectionRepository
     public function __construct(
         private readonly PDO $pdo,
         private readonly LinkItemCachingService $caching,
+        private readonly QueryFactory $queryFactory,
     ) {
     }
 
@@ -143,14 +146,16 @@ class LinkCollectionRepository
         }
     }
 
-    public function getAll(): LinkItems
+    public function getAll(LinkTreeExtraFilter $filter): LinkItems
     {
-        $sql = <<<SQL
-            SELECT * FROM link_collection
-        SQL;
+        $select = $this->queryFactory->select('*')->from('link_collection');
+
+        $query = $filter->createSqlFilter($select);
+        $sql = $query->compile();
 
         try {
-            $statement = $this->pdo->query($sql);
+            $statement = $this->pdo->prepare($sql->sql());
+            $statement->execute($sql->params());
 
             $linkItems = [];
             foreach ($statement as $row) {

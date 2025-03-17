@@ -2,21 +2,18 @@
 
 declare(strict_types=1);
 
-namespace LukaLtaApi\Api\ApiKey\Create;
+namespace LukaLtaApi\Api\ApiKey\Action;
 
-use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Api\ApiAction;
-use LukaLtaApi\Api\ApiKey\Create\Service\CreateApiKeyService;
+use LukaLtaApi\Api\ApiKey\Service\ApiKeyService;
 use LukaLtaApi\Api\RequestValidator;
-use LukaLtaApi\Value\Result\ApiResult;
-use LukaLtaApi\Value\Result\JsonResult;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 class CreateApiKeyAction extends ApiAction
 {
     public function __construct(
-        private readonly CreateApiKeyService $service,
+        private readonly ApiKeyService $service,
         private readonly RequestValidator    $validator,
     ) {
     }
@@ -31,21 +28,6 @@ class CreateApiKeyAction extends ApiAction
 
         $this->validator->validate($request, $rules);
 
-        $body = $request->getParsedBody();
-        $createdBy = (int)$request->getAttribute('userId');
-
-        $apiKey = $this->service->create(
-            $body['origin'],
-            $createdBy,
-            $body['expiresAt'] ?? null,
-            $body['permissions'] ?? [],
-        );
-
-        return ApiResult::from(
-            JsonResult::from('Api key created successfully', [
-                'apiKey' => (string)$apiKey->getApiKey(),
-            ]),
-            StatusCodeInterface::STATUS_CREATED
-        )->getResponse($response);
+        return $this->service->create($request)->getResponse($response);
     }
 }

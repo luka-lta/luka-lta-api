@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace LukaLtaApi\Api\User\Value;
+namespace LukaLtaApi\Api\LinkCollection\Value;
 
 use LukaLtaApi\Value\AbstractDataTableFilterParameter;
 
-class UserExtraFilter extends AbstractDataTableFilterParameter
+class LinkTreeExtraFilter extends AbstractDataTableFilterParameter
 {
     protected function getExtraFilterName(): array
     {
         return [
-            'email',
+            'display_name',
+            'is_active',
             'created_at',
-            'updated_at',
         ];
     }
 }

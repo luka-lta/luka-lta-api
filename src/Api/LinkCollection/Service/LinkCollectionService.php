@@ -6,6 +6,7 @@ namespace LukaLtaApi\Api\LinkCollection\Service;
 
 use DateTimeImmutable;
 use Fig\Http\Message\StatusCodeInterface;
+use LukaLtaApi\Api\LinkCollection\Value\LinkTreeExtraFilter;
 use LukaLtaApi\Repository\LinkCollectionRepository;
 use LukaLtaApi\Value\LinkCollection\Description;
 use LukaLtaApi\Value\LinkCollection\DisplayName;
@@ -52,9 +53,10 @@ class LinkCollectionService
 
     public function getAllLinks(ServerRequestInterface $request): ApiResult
     {
+        $filter = LinkTreeExtraFilter::parseFromQuery($request->getQueryParams());
         $mustRef = $request->getQueryParams()['mustRef'] ?? false;
 
-        $links = $this->repository->getAll();
+        $links = $this->repository->getAll($filter);
 
         if ($links->count() === 0) {
             return ApiResult::from(
