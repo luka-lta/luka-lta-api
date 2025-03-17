@@ -11,7 +11,7 @@ class LinkTreeExtraFilter extends AbstractDataTableFilterParameter
     protected function getExtraFilterName(): array
     {
         return [
-            'display_name',
+            'displayname',
             'is_active',
             'created_at',
         ];
