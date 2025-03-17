@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace LukaLtaApi\Api\User\Service;
 
 use Fig\Http\Message\StatusCodeInterface;
+use LukaLtaApi\Api\User\Value\UserExtraFilter;
 use LukaLtaApi\Exception\ApiAvatarUploadException;
 use LukaLtaApi\Repository\UserRepository;
 use LukaLtaApi\Value\Result\ApiResult;
@@ -109,8 +110,10 @@ class UserService
         );
     }
 
-    public function getAllUsers(): ApiResult
+    public function getAllUsers(ServerRequestInterface $request): ApiResult
     {
+        $filter = UserExtraFilter::parseFromQuery($request->getQueryParams());
+
         $users = $this->repository->getAll();
 
         if ($users->count() === 0) {

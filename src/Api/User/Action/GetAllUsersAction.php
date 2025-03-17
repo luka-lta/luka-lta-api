@@ -18,6 +18,6 @@ class GetAllUsersAction extends ApiAction
 
     protected function execute(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        return $this->service->getAllUsers()->getResponse($response);
+        return $this->service->getAllUsers($request)->getResponse($response);
     }
 }
