@@ -114,7 +114,7 @@ class UserService
     {
         $filter = UserExtraFilter::parseFromQuery($request->getQueryParams());
 
-        $users = $this->repository->getAll();
+        $users = $this->repository->getAll($filter);
 
         if ($users->count() === 0) {
             return ApiResult::from(
