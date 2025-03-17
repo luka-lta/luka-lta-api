@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace LukaLtaApi\Repository;
 
 use Fig\Http\Message\StatusCodeInterface;
+use Latitude\QueryBuilder\QueryFactory;
+use LukaLtaApi\Api\ApiKey\Value\ApiKeyExtraFilter;
 use LukaLtaApi\Exception\ApiDatabaseException;
 use LukaLtaApi\Value\ApiKey\ApiKeyObject;
 use LukaLtaApi\Value\ApiKey\ApiKeyObjects;
@@ -19,6 +21,7 @@ class ApiKeyRepository
 {
     public function __construct(
         private readonly PDO $pdo,
+        private readonly QueryFactory $queryFactory,
     ) {
     }
 

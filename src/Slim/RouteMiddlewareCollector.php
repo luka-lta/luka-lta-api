@@ -2,8 +2,8 @@
 
 namespace LukaLtaApi\Slim;
 
-use LukaLtaApi\Api\ApiKey\Create\CreateApiKeyAction;
-use LukaLtaApi\Api\ApiKey\GetAll\GetAllApiKeysAction;
+use LukaLtaApi\Api\ApiKey\Action\CreateApiKeyAction;
+use LukaLtaApi\Api\ApiKey\Action\GetAllApiKeysAction;
 use LukaLtaApi\Api\Auth\Action\AuthAction;
 use LukaLtaApi\Api\Click\GetAll\GetAllClicksAction;
 use LukaLtaApi\Api\Click\Track\ClickTrackAction;

@@ -3,6 +3,8 @@
 namespace LukaLtaApi\Repository;
 
 use Fig\Http\Message\StatusCodeInterface;
+use Latitude\QueryBuilder\QueryFactory;
+use LukaLtaApi\Api\User\Value\UserExtraFilter;
 use LukaLtaApi\Exception\ApiDatabaseException;
 use LukaLtaApi\Value\User\User;
 use LukaLtaApi\Value\User\UserEmail;
@@ -15,6 +17,7 @@ class UserRepository
 {
     public function __construct(
         private readonly PDO $pdo,
+        private readonly QueryFactory $queryFactory,
     ) {
         $this->pdo->beginTransaction();
     }
@@ -127,14 +130,16 @@ class UserRepository
         return User::fromDatabase($row);
     }
 
-    public function getAll(): Users
+    public function getAll(UserExtraFilter $filter): Users
     {
-        $sql = <<<SQL
-            SELECT * FROM users
-        SQL;
+        $select = $this->queryFactory->select('*')->from('users');
+
+        $query = $filter->createSqlFilter($select);
+        $sql = $query->compile();
 
         try {
-            $statement = $this->pdo->query($sql);
+            $statement = $this->pdo->prepare($sql->sql());
+            $statement->execute($sql->params());
 
             $users = [];
             foreach ($statement as $row) {
