@@ -21,11 +21,16 @@ class PreviewTokenService
 
     public function createToken(ServerRequestInterface $request): ApiResult
     {
-        $userId = UserId::fromString($request->getAttribute('userId'));
+        $body = $request->getParsedBody();
+        $createdBy = UserId::fromString($request->getAttribute('userId'));
+        $maxUse = $body['maxUse'] ?? 1;
+        $isActive = $body['isActive'] ?? true;
 
         $token = PreviewToken::create(
             PreviewToken::generateToken(),
-            $userId,
+            $maxUse,
+            $isActive,
+            $createdBy,
         );
 
         $this->repository->createToken($token);

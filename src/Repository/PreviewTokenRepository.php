@@ -20,14 +20,16 @@ class PreviewTokenRepository
     public function createToken(PreviewToken $token): void
     {
         $sql = <<<SQL
-            INSERT INTO preview_access_tokens (token, created_by, created_at)
-            VALUES (:token, :created_by, :created_at)
+            INSERT INTO preview_access_tokens (token, max_uses, is_active, created_by, created_at)
+            VALUES (:token, :max_uses, :is_active, :created_by, :created_at)
         SQL;
 
         try {
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([
                 'token' => $token->getToken(),
+                'max_uses' => $token->getMaxUse(),
+                'is_active' => $token->isActive(),
                 'created_by' => $token->getUserId()->asInt(),
                 'created_at' => $token->getCreatedAt()?->format('Y-m-d H:i:s'),
             ]);

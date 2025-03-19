@@ -11,15 +11,25 @@ class PreviewToken
 {
     private function __construct(
         private readonly string             $token,
+        private readonly int                $maxUse,
+        private readonly int                $used,
+        private readonly bool               $isActive,
         private readonly UserId             $userId,
         private readonly ?DateTimeImmutable $createdAt,
     ) {
     }
 
-    public static function create(string $token, UserId $createdBy): self
-    {
+    public static function create(
+        string $token,
+        int    $maxUse,
+        bool   $isActive,
+        UserId $createdBy
+    ): self {
         return new self(
             $token,
+            $maxUse,
+            0,
+            $isActive,
             $createdBy,
             new DateTimeImmutable(),
         );
@@ -29,6 +39,9 @@ class PreviewToken
     {
         return new self(
             $row['token'],
+            $row['max_use'],
+            $row['used'],
+            $row['is_active'],
             UserId::fromInt($row['created_by']),
             new DateTimeImmutable($row['created_at']),
         );
@@ -46,6 +59,21 @@ class PreviewToken
     public function getCreatedAt(): ?DateTimeImmutable
     {
         return $this->createdAt;
+    }
+
+    public function getUsed(): int
+    {
+        return $this->used;
+    }
+
+    public function getMaxUse(): int
+    {
+        return $this->maxUse;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->isActive;
     }
 
     public function getToken(): string
