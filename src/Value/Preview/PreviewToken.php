@@ -51,7 +51,7 @@ class PreviewToken
     {
         return substr(
             str_shuffle(
-                str_repeat('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789', 6)
+                str_repeat('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', 6)
             ), 0, 6
         );
     }
