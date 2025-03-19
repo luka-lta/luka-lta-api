@@ -10,17 +10,19 @@ use LukaLtaApi\Value\User\UserId;
 class PreviewToken
 {
     private function __construct(
-        private readonly string $token,
-        private readonly UserId $userId,
+        private readonly string             $token,
+        private readonly UserId             $userId,
         private readonly ?DateTimeImmutable $createdAt,
     ) {
     }
 
-    public static function create(UserId $createdBy): self
+    public static function create(string $token, UserId $createdBy): self
     {
         return new self(
-            rand
-        )
+            $token,
+            $createdBy,
+            new DateTimeImmutable(),
+        );
     }
 
     public static function fromDatabase(array $row): self
@@ -29,6 +31,15 @@ class PreviewToken
             $row['token'],
             UserId::fromInt($row['created_by']),
             new DateTimeImmutable($row['created_at']),
+        );
+    }
+
+    public static function generateToken(): string
+    {
+        return substr(
+            str_shuffle(
+                str_repeat('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789', 6)
+            ), 0, 6
         );
     }
 
