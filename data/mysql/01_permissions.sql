@@ -12,7 +12,11 @@ INSERT INTO `permissions` (`permission_id`, `permission_name`, `permission_descr
 VALUES (1, 'Create links', 'Create new links for LinkCollection'),
        (2, 'Delete Links', 'Delete links from LinkCollection'),
        (3, 'Edit Links', 'Edit Links from the LinkCollection'),
-       (4, 'Read Links', 'Get all links from the LinkCollection');
+       (4, 'Read Links', 'Get all links from the LinkCollection'),
+       (5, 'Read Clicks', 'Get all Clicks from the LinkCollection'),
+       (6, 'Create Api keys', 'Create new Api keys for Api access'),
+       (7, 'Read Api keys', 'Read Api keys'),
+       (8, 'Read Permissions', 'Read the permissions');
 
 ALTER TABLE `permissions`
     ADD PRIMARY KEY (`permission_id`),
