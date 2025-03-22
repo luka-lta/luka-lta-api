@@ -22,7 +22,8 @@ class LinkCollectionService
 {
     public function __construct(
         private readonly LinkCollectionRepository $repository,
-    ) {
+    )
+    {
     }
 
     public function getDetailLink(array $attributes): ApiResult
@@ -54,7 +55,11 @@ class LinkCollectionService
     public function getAllLinks(ServerRequestInterface $request): ApiResult
     {
         $filter = LinkTreeExtraFilter::parseFromQuery($request->getQueryParams());
-        $mustRef = $request->getQueryParams()['mustRef'] ?? false;
+        $mustRef = filter_var(
+            $request->getQueryParams()['mustRef'] ?? false,
+            FILTER_VALIDATE_BOOL,
+            FILTER_NULL_ON_FAILURE
+        ) ?? false;
 
         $links = $this->repository->getAll($filter);
 
@@ -67,9 +72,8 @@ class LinkCollectionService
 
         return ApiResult::from(
             JsonResult::from('Links fetched successfully', [
-                    'links' => $links->toArray($mustRef)
-                ]
-            )
+                'links' => $links->toArray($mustRef)
+            ])
         );
     }
 
