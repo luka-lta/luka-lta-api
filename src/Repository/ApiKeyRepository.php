@@ -149,20 +149,20 @@ class ApiKeyRepository
         }
     }
 
-    public function hasPermission(KeyId $apiKeyId, string $permissionName): bool
+    public function hasPermission(KeyId $apiKeyId, int $permissionId): bool
     {
         $query = "
             SELECT COUNT(*) as count
             FROM api_key_permissions akp
             INNER JOIN permissions p ON akp.permission_id = p.permission_id
-            WHERE akp.api_key_id = :apiKeyId AND p.permission_name = :permissionName
+            WHERE akp.api_key_id = :apiKeyId AND p.permission_id = :permissionId
         ";
 
         try {
             $stmt = $this->pdo->prepare($query);
             $stmt->execute([
                 'apiKeyId' => $apiKeyId->asInt(),
-                'permissionName' => $permissionName,
+                'permissionId' => $permissionId,
             ]);
         } catch (PDOException) {
             throw new ApiDatabaseException(

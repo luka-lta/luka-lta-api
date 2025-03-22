@@ -26,6 +26,7 @@ use LukaLtaApi\Service\PermissionService;
 use LukaLtaApi\Slim\Middleware\ApiKeyPermissionMiddleware;
 use LukaLtaApi\Slim\Middleware\AuthMiddleware;
 use LukaLtaApi\Slim\Middleware\CORSMiddleware;
+use LukaLtaApi\Value\Permission\Permission;
 use Monolog\Logger;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -108,12 +109,12 @@ class RouteMiddlewareCollector
                 $key->post('/', CreateApiKeyAction::class)
                     ->add(new ApiKeyPermissionMiddleware(
                         $app->getContainer()?->get(PermissionService::class),
-                        ['Create API keys']
+                        [Permission::CREATE_API_KEYS]
                     ));
                 $key->get('/', GetAllApiKeysAction::class)
                     ->add(new ApiKeyPermissionMiddleware(
                         $app->getContainer()?->get(PermissionService::class),
-                        ['Read API keys']
+                        [Permission::READ_API_KEYS]
                     ));
             })->add(AuthMiddleware::class);
 
@@ -144,22 +145,22 @@ class RouteMiddlewareCollector
                 $linkCollection->post('/', CreateLinkAction::class)
                     ->add(new ApiKeyPermissionMiddleware(
                         $app->getContainer()?->get(PermissionService::class),
-                        ['Create links']
+                        [Permission::CREATE_LINKS]
                     ));
                 $linkCollection->get('/', GetAllLinksAction::class)
                     ->add(new ApiKeyPermissionMiddleware(
                         $app->getContainer()?->get(PermissionService::class),
-                        ['Read links']
+                        [Permission::VIEW_LINKS]
                     ));
                 $linkCollection->get('/{linkId:[0-9]+}', GetDetailLink::class)
                     ->add(new ApiKeyPermissionMiddleware(
                         $app->getContainer()?->get(PermissionService::class),
-                        ['Read links']
+                        [Permission::VIEW_LINKS]
                     ));
                 $linkCollection->put('/{linkId:[0-9]+}', EditLinkAction::class)
                     ->add(new ApiKeyPermissionMiddleware(
                         $app->getContainer()?->get(PermissionService::class),
-                        ['Edit links']
+                        [Permission::EDIT_LINKS]
                     ));
                 $linkCollection->delete('/{linkId:[0-9]+}', DisableLinkAction::class);
             })->add(AuthMiddleware::class);
@@ -170,7 +171,7 @@ class RouteMiddlewareCollector
                     ->add(AuthMiddleware::class)
                     ->add(new ApiKeyPermissionMiddleware(
                         $app->getContainer()?->get(PermissionService::class),
-                        ['Get clicks']
+                        [Permission::VIEW_CLICKS]
                     ));
             });
 
@@ -184,7 +185,7 @@ class RouteMiddlewareCollector
                 $permissions->get('/', GetPermissionsAction::class)
                     ->add(new ApiKeyPermissionMiddleware(
                         $app->getContainer()?->get(PermissionService::class),
-                        ['Read permissions']
+                        [Permission::READ_PERMISSIONS]
                     ));
             })->add(AuthMiddleware::class);
         });

@@ -6,6 +6,15 @@ namespace LukaLtaApi\Value\Permission;
 
 class Permission
 {
+    public const int CREATE_LINKS = 1;
+    public const int DELETE_LINKS = 2;
+    public const int EDIT_LINKS = 3;
+    public const int VIEW_LINKS = 4;
+    public const int VIEW_CLICKS = 5;
+    public const int CREATE_API_KEYS = 6;
+    public const int READ_API_KEYS = 7;
+    public const int READ_PERMISSIONS = 8;
+
     private function __construct(
         private readonly ?int $permissionId,
         private readonly string $name,
