@@ -13,7 +13,7 @@ class LinkItems implements Countable, IteratorAggregate, JsonSerializable
 {
     private readonly array $links;
 
-    public function __construct(LinkItem ...$linkItem)
+    private function __construct(LinkItem ...$linkItem)
     {
         $this->links = $linkItem;
     }

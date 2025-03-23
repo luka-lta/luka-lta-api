@@ -34,9 +34,4 @@ class LinkUrl
     {
         return $this->value;
     }
-
-    public function getAsTrackUrl(): string
-    {
-        return 'https://api.luka-lta.dev/api/v1/click/track?targetUrl=' . urlencode($this->value);
-    }
 }

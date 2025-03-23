@@ -5,8 +5,8 @@ namespace LukaLtaApi\Slim;
 use LukaLtaApi\Api\ApiKey\Action\CreateApiKeyAction;
 use LukaLtaApi\Api\ApiKey\Action\GetAllApiKeysAction;
 use LukaLtaApi\Api\Auth\Action\AuthAction;
-use LukaLtaApi\Api\Click\GetAll\GetAllClicksAction;
-use LukaLtaApi\Api\Click\Track\ClickTrackAction;
+use LukaLtaApi\Api\Click\Action\ClickTrackAction;
+use LukaLtaApi\Api\Click\Action\GetAllClicksAction;
 use LukaLtaApi\Api\Health\Action\GetHealthAction;
 use LukaLtaApi\Api\LinkCollection\Action\CreateLinkAction;
 use LukaLtaApi\Api\LinkCollection\Action\DisableLinkAction;
@@ -166,7 +166,7 @@ class RouteMiddlewareCollector
             })->add(AuthMiddleware::class);
 
             $app->group('/click', function (RouteCollectorProxy $click) use ($app) {
-                $click->get('/track', ClickTrackAction::class);
+                $click->post('/track/{clickTag}', ClickTrackAction::class);
                 $click->get('/', GetAllClicksAction::class)
                     ->add(AuthMiddleware::class)
                     ->add(new ApiKeyPermissionMiddleware(
