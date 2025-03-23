@@ -29,6 +29,6 @@ class ClickTag
 
     public function getAsTracking(): string
     {
-        return 'https://luka-lta.dev/redirect&clickTag=' . $this->value;
+        return 'https://luka-lta.dev/redirect/' . $this->value;
     }
 }
