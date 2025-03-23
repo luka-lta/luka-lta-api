@@ -65,7 +65,7 @@ class LinkCollectionService
 
         if ($links->count() === 0) {
             return ApiResult::from(
-                JsonResult::from('No links found'),
+                JsonResult::from('No links found', ['links' => []]),
                 StatusCodeInterface::STATUS_NOT_FOUND
             );
         }

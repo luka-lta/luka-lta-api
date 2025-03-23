@@ -26,7 +26,7 @@ class ClickService
     {
         $clickTag = ClickTag::fromString($request->getAttribute('clickTag'));
         $body = $request->getParsedBody();
-        $ipAdress = $body['ipAdress'] ?? null;
+        $ipAddress = $body['ipAddress'] ?? null;
         $userAgent = $body['userAgent'] ?? null;
         $referer = $body['referrer'] ?? null;
 
@@ -44,7 +44,7 @@ class ClickService
             $clickTag,
             $linkItem->getMetaData()->getLinkUrl(),
             new DateTimeImmutable(),
-            $ipAdress,
+            $ipAddress,
             $userAgent,
             $referer
         );
@@ -64,7 +64,7 @@ class ClickService
 
         if ($clicks->count() === 0) {
             return ApiResult::from(
-                JsonResult::from('No clicks found'),
+                JsonResult::from('No clicks found', ['clicks' => []]),
                 StatusCodeInterface::STATUS_NOT_FOUND
             );
         }
