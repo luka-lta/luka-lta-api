@@ -16,14 +16,14 @@ use LukaLtaApi\Value\LinkCollection\LinkItem;
 use LukaLtaApi\Value\LinkCollection\LinkUrl;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
+use LukaLtaApi\Value\Tracking\ClickTag;
 use Psr\Http\Message\ServerRequestInterface;
 
 class LinkCollectionService
 {
     public function __construct(
         private readonly LinkCollectionRepository $repository,
-    )
-    {
+    ) {
     }
 
     public function getDetailLink(array $attributes): ApiResult
@@ -65,7 +65,7 @@ class LinkCollectionService
 
         if ($links->count() === 0) {
             return ApiResult::from(
-                JsonResult::from('No links found'),
+                JsonResult::from('No links found', ['links' => []]),
                 StatusCodeInterface::STATUS_NOT_FOUND
             );
         }
@@ -84,6 +84,7 @@ class LinkCollectionService
         $createdLink = $this->repository->create(
             LinkItem::from(
                 null,
+                ClickTag::generateTag(),
                 $body['displayname'],
                 $body['description'] ?? null,
                 $body['url'],
@@ -126,7 +127,7 @@ class LinkCollectionService
         }
 
         $link->setDeactivated(true);
-        $this->repository->update($link);
+        $this->repository->disableLink($link->getLinkId());
 
         return ApiResult::from(JsonResult::from('Link disabled'));
     }

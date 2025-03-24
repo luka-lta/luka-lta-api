@@ -4,6 +4,7 @@ namespace LukaLtaApi\Repository;
 
 use LukaLtaApi\Exception\ApiDatabaseException;
 use LukaLtaApi\Value\Tracking\Click;
+use LukaLtaApi\Value\Tracking\Clicks;
 use PDO;
 use PDOException;
 
@@ -14,17 +15,18 @@ class ClickRepository
     ) {
     }
 
-    public function create(Click $click): void
+    public function recordClick(Click $click): void
     {
         $sql = <<<SQL
-            INSERT INTO url_clicks (url, clicked_at, ip_address, user_agent, referrer)
-            VALUES (:url, :click_date, :ip_address, :user_agent, :referrer)
+            INSERT INTO url_clicks (url, click_tag, clicked_at, ip_address, user_agent, referrer)
+            VALUES (:url, :click_tag, :click_date, :ip_address, :user_agent, :referrer)
         SQL;
 
         try {
             $statement = $this->pdo->prepare($sql);
             $statement->execute([
                 'url' => (string)$click->getUrl(),
+                'click_tag' => $click->getTag()->getValue(),
                 'click_date' => $click->getClickedAt()?->format('Y-m-d H:i:s'),
                 'ip_address' => $click->getIpAdress(),
                 'user_agent' => $click->getUserAgent(),
@@ -39,18 +41,19 @@ class ClickRepository
         }
     }
 
-    public function getAll(): ?array
+    public function getAll(): Clicks
     {
         $sql = <<<SQL
             SELECT * FROM url_clicks
         SQL;
 
         try {
-            $statement = $this->pdo->query($sql);
-            $rows = $statement->fetchAll();
+            $statement = $this->pdo->prepare($sql);
+            $statement->execute();
 
-            if ($rows === false) {
-                return null;
+            $clicks = [];
+            foreach ($statement as $row) {
+                $clicks[] = Click::fromDatabase($row);
             }
         } catch (PDOException $exception) {
             throw new ApiDatabaseException(
@@ -59,6 +62,6 @@ class ClickRepository
             );
         }
 
-        return array_map(static fn($row) => Click::fromDatabase($row), $rows);
+        return Clicks::from(...$clicks);
     }
 }

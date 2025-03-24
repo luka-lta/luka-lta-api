@@ -9,6 +9,7 @@ use LukaLtaApi\Service\LinkItemCachingService;
 use LukaLtaApi\Value\LinkCollection\LinkId;
 use LukaLtaApi\Value\LinkCollection\LinkItem;
 use LukaLtaApi\Value\LinkCollection\LinkItems;
+use LukaLtaApi\Value\Tracking\ClickTag;
 use PDO;
 use PDOException;
 
@@ -25,14 +26,15 @@ class LinkCollectionRepository
     {
         $sql = <<<SQL
             INSERT INTO link_collection 
-                (displayname, description, url, is_active, icon_name, display_order)
+                (click_tag, displayname, description, url, is_active, icon_name, display_order)
             VALUES 
-                (:displayname, :description, :url, :is_active, :icon_name, :display_order)
+                (:click_tag, :displayname, :description, :url, :is_active, :icon_name, :display_order)
         SQL;
 
         try {
             $statement = $this->pdo->prepare($sql);
             $statement->execute([
+                'click_tag' => $link->getClickTag()->getValue(),
                 'displayname' => (string)$link->getMetaData()->getDisplayName(),
                 'description' => $link->getMetaData()->getDescription()?->getValue(),
                 'url' => (string)$link->getMetaData()->getLinkUrl(),
@@ -51,6 +53,31 @@ class LinkCollectionRepository
         }
 
         return $link;
+    }
+
+    public function getByClickTag(ClickTag $tag): ?LinkItem
+    {
+        $sql = <<<SQL
+            SELECT * FROM link_collection
+            WHERE click_tag = :clickTag
+        SQL;
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute(['clickTag' => $tag->getValue()]);
+            $row = $stmt->fetch();
+
+            if ($row === false) {
+                return null;
+            }
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException(
+                'Failed to fetch link by clickTag',
+                previous: $exception
+            );
+        }
+
+        return LinkItem::fromDatabase($row);
     }
 
     public function getById(LinkId $linkId): ?LinkItem
