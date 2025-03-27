@@ -14,6 +14,9 @@ use LukaLtaApi\Api\LinkCollection\Action\EditLinkAction;
 use LukaLtaApi\Api\LinkCollection\Action\GetAllLinksAction;
 use LukaLtaApi\Api\LinkCollection\Action\GetDetailLink;
 use LukaLtaApi\Api\Permission\Action\GetPermissionsAction;
+use LukaLtaApi\Api\PreviewToken\Action\CreatePreviewTokenAction;
+use LukaLtaApi\Api\PreviewToken\Action\ListPreviewTokensAction;
+use LukaLtaApi\Api\Register\Action\RegisterUserAction;
 use LukaLtaApi\Api\Todo\Action\CreateTodoAction;
 use LukaLtaApi\Api\Todo\Action\DeleteTodoAction;
 use LukaLtaApi\Api\Todo\Action\GetAllTodoAction;
@@ -102,6 +105,7 @@ class RouteMiddlewareCollector
     {
         $app->group('/api/v1', function (RouteCollectorProxy $app) {
             $app->post('/auth', AuthAction::class);
+            $app->post('/register', RegisterUserAction::class);
             $app->get('/health', GetHealthAction::class);
             $app->get('/avatar/{filename}', GetAvatarAction::class);
 
@@ -187,6 +191,22 @@ class RouteMiddlewareCollector
                         $app->getContainer()?->get(PermissionService::class),
                         [Permission::READ_PERMISSIONS]
                     ));
+            })->add(AuthMiddleware::class);
+
+            $app->group('/previewToken', function (RouteCollectorProxy $previewToken) use ($app) {
+                $previewToken->post('/', CreatePreviewTokenAction::class)->add(
+                    new ApiKeyPermissionMiddleware(
+                        $app->getContainer()?->get(PermissionService::class),
+                        ['Create preview tokens']
+                    )
+                );
+
+                $previewToken->get('/', ListPreviewTokensAction::class)->add(
+                    new ApiKeyPermissionMiddleware(
+                        $app->getContainer()?->get(PermissionService::class),
+                        ['Read preview tokens']
+                    )
+                );
             })->add(AuthMiddleware::class);
         });
     }
