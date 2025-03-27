@@ -16,6 +16,7 @@ use LukaLtaApi\Value\LinkCollection\LinkItem;
 use LukaLtaApi\Value\LinkCollection\LinkUrl;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
+use LukaLtaApi\Value\Tracking\ClickTag;
 use Psr\Http\Message\ServerRequestInterface;
 
 class LinkCollectionService
@@ -54,22 +55,25 @@ class LinkCollectionService
     public function getAllLinks(ServerRequestInterface $request): ApiResult
     {
         $filter = LinkTreeExtraFilter::parseFromQuery($request->getQueryParams());
-        $mustRef = $request->getQueryParams()['mustRef'] ?? false;
+        $mustRef = filter_var(
+            $request->getQueryParams()['mustRef'] ?? false,
+            FILTER_VALIDATE_BOOL,
+            FILTER_NULL_ON_FAILURE
+        ) ?? false;
 
         $links = $this->repository->getAll($filter);
 
         if ($links->count() === 0) {
             return ApiResult::from(
-                JsonResult::from('No links found'),
+                JsonResult::from('No links found', ['links' => []]),
                 StatusCodeInterface::STATUS_NOT_FOUND
             );
         }
 
         return ApiResult::from(
             JsonResult::from('Links fetched successfully', [
-                    'links' => $links->toArray($mustRef)
-                ]
-            )
+                'links' => $links->toArray($mustRef)
+            ])
         );
     }
 
@@ -80,6 +84,7 @@ class LinkCollectionService
         $createdLink = $this->repository->create(
             LinkItem::from(
                 null,
+                ClickTag::generateTag(),
                 $body['displayname'],
                 $body['description'] ?? null,
                 $body['url'],
@@ -122,7 +127,7 @@ class LinkCollectionService
         }
 
         $link->setDeactivated(true);
-        $this->repository->update($link);
+        $this->repository->disableLink($link->getLinkId());
 
         return ApiResult::from(JsonResult::from('Link disabled'));
     }

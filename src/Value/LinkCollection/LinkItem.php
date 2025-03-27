@@ -3,22 +3,25 @@
 namespace LukaLtaApi\Value\LinkCollection;
 
 use DateTimeImmutable;
+use LukaLtaApi\Value\Tracking\ClickTag;
 
 class LinkItem
 {
     private function __construct(
-        private ?LinkId           $linkId,
-        private LinkMetaData $metaData,
+        private ?LinkId                    $linkId,
+        private readonly ClickTag          $clickTag,
+        private LinkMetaData               $metaData,
         private readonly DateTimeImmutable $createdOn,
         private IconName                   $iconName,
         private int                        $displayOrder,
-        private bool               $deactivated,
-        private ?DateTimeImmutable $deactivatedOn,
+        private bool                       $deactivated,
+        private ?DateTimeImmutable         $deactivatedOn,
     ) {
     }
 
     public static function from(
         ?LinkId           $linkId,
+        ClickTag          $clickTag,
         string       $displayname,
         string       $description,
         string           $url,
@@ -29,6 +32,7 @@ class LinkItem
     ): self {
         return new self(
             $linkId,
+            $clickTag,
             LinkMetaData::from(
                 $displayname,
                 $description,
@@ -47,6 +51,7 @@ class LinkItem
     {
         return new self(
             LinkId::fromInt($data['link_id']),
+            ClickTag::fromString($data['click_tag']),
             LinkMetaData::from(
                 $data['displayname'],
                 $data['description'],
@@ -65,9 +70,10 @@ class LinkItem
     {
         return [
             'id' => $this->linkId?->asInt(),
+            'clickTag' => $this->clickTag->getValue(),
             'displayname' => (string)$this->metaData->getDisplayName(),
             'description' => $this->metaData->getDescription()->getValue(),
-            'url' => $mustRef ? $this->metaData->getLinkUrl()->getAsTrackUrl() : (string)$this->metaData->getLinkUrl(),
+            'url' => $mustRef ? $this->clickTag->getAsTracking() : (string)$this->metaData->getLinkUrl(),
             'isActive' => $this->metaData->isActive(),
             'createdOn' => $this->createdOn->format('Y-m-d H:i:s'),
             'iconName' => $this->iconName->getValue(),
@@ -80,6 +86,11 @@ class LinkItem
     public function getLinkId(): ?LinkId
     {
         return $this->linkId;
+    }
+
+    public function getClickTag(): ClickTag
+    {
+        return $this->clickTag;
     }
 
     public function getMetaData(): LinkMetaData

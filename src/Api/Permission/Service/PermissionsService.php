@@ -22,7 +22,7 @@ class PermissionsService
 
         if ($permissions->count() === 0) {
             return ApiResult::from(
-                JsonResult::from('No permissions found'),
+                JsonResult::from('No permissions found', ['permissions' => []]),
                 StatusCodeInterface::STATUS_NOT_FOUND
             );
         }

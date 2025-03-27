@@ -9,6 +9,7 @@ class Click
 {
     private function __construct(
         private readonly ?ClickId $clickId,
+        private readonly ClickTag $tag,
         private readonly LinkUrl $url,
         private readonly ?DateTimeImmutable $clickedAt,
         private readonly ?string $ipAdress,
@@ -19,6 +20,7 @@ class Click
 
     public static function from(
         ?ClickId $clickId,
+        ClickTag $tag,
         LinkUrl $url,
         ?DateTimeImmutable $clickedAt,
         ?string $ipAdress,
@@ -27,6 +29,7 @@ class Click
     ): self {
         return new self(
             $clickId,
+            $tag,
             $url,
             $clickedAt,
             $ipAdress,
@@ -39,6 +42,7 @@ class Click
     {
         return new self(
             ClickId::fromInt($data['click_id']),
+            ClickTag::fromString($data['click_tag']),
             LinkUrl::fromString($data['url']),
             new DateTimeImmutable($data['clicked_at']),
             $data['ip_adress'] ?? null,
@@ -51,6 +55,7 @@ class Click
     {
         return [
             'clickId' => $this->clickId->asInt(),
+            'clickTag' => $this->tag->getValue(),
             'url' => (string)$this->url,
             'clickedAt' => $this->clickedAt->format('Y-m-d H:i:s'),
             'ipAdress' => $this->ipAdress,
@@ -62,6 +67,11 @@ class Click
     public function getClickId(): ?ClickId
     {
         return $this->clickId;
+    }
+
+    public function getTag(): ClickTag
+    {
+        return $this->tag;
     }
 
     public function getUrl(): LinkUrl
