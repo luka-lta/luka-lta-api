@@ -69,4 +69,57 @@ class PreviewTokenRepository
 
         return PreviewTokens::from(...$tokens);
     }
+
+    public function updateToken(PreviewToken $token): void
+    {
+        $sql = <<<SQL
+            UPDATE preview_access_tokens
+            SET uses = :uses, is_active = :is_active, max_uses = :max_uses
+            WHERE token = :token
+        SQL;
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([
+                'uses' => $token->getUsed(),
+                'token' => $token->getToken(),
+                'is_active' => $token->isActive(),
+                'max_uses' => $token->getMaxUse(),
+            ]);
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException(
+                'Failed to update preview token',
+                StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR,
+                $exception
+            );
+        }
+    }
+
+    public function getToken(string $tokenId): ?PreviewToken
+    {
+        $sql = <<<SQL
+            SELECT token, max_uses, uses, is_active, created_by, created_at
+            FROM preview_access_tokens
+            WHERE token = :token
+        SQL;
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute(['token' => $tokenId]);
+
+            $row = $stmt->fetch();
+
+            if ($row === false) {
+                return null;
+            }
+
+            return PreviewToken::fromDatabase($row);
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException(
+                'Failed to get preview token',
+                StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR,
+                $exception
+            );
+        }
+    }
 }

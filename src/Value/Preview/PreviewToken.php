@@ -12,7 +12,7 @@ class PreviewToken
     private function __construct(
         private readonly string             $token,
         private readonly int                $maxUse,
-        private readonly int                $used,
+        private int                         $used,
         private readonly bool               $isActive,
         private readonly UserId             $userId,
         private readonly ?DateTimeImmutable $createdAt,
@@ -68,6 +68,16 @@ class PreviewToken
             'createdBy' => $this->userId->asInt(),
             'createdAt' => $this->createdAt->format('Y-m-d H:i:s'),
         ];
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->used >= $this->maxUse;
+    }
+
+    public function useToken(): void
+    {
+        $this->used++;
     }
 
     public function getCreatedAt(): ?DateTimeImmutable
