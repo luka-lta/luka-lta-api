@@ -40,4 +40,22 @@ class PreviewTokenService
             StatusCodeInterface::STATUS_CREATED,
         );
     }
+
+    public function listTokens(): ApiResult
+    {
+        $tokens = $this->repository->listTokens();
+
+        if ($tokens->count() === 0) {
+            return ApiResult::from(
+                JsonResult::from('No tokens found', [
+                    'tokens' => [],
+                ]),
+                StatusCodeInterface::STATUS_NOT_FOUND,
+            );
+        }
+
+        return ApiResult::from(
+            JsonResult::from('Tokens listed', ['tokens' => $tokens->toArray()])
+        );
+    }
 }

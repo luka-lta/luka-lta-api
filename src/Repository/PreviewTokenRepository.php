@@ -7,6 +7,7 @@ namespace LukaLtaApi\Repository;
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Exception\ApiDatabaseException;
 use LukaLtaApi\Value\Preview\PreviewToken;
+use LukaLtaApi\Value\Preview\PreviewTokens;
 use PDO;
 use PDOException;
 
@@ -40,5 +41,32 @@ class PreviewTokenRepository
                 $exception
             );
         }
+    }
+
+    public function listTokens(): PreviewTokens
+    {
+        $sql = <<<SQL
+            SELECT token, max_uses, uses, is_active, created_by, created_at
+            FROM preview_access_tokens
+        SQL;
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute();
+
+            $tokens = [];
+
+            foreach ($stmt as $row) {
+                $tokens[] = PreviewToken::fromDatabase($row);
+            }
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException(
+                'Failed to list preview tokens',
+                StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR,
+                $exception
+            );
+        }
+
+        return PreviewTokens::from(...$tokens);
     }
 }

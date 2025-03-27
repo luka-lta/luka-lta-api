@@ -15,6 +15,7 @@ use LukaLtaApi\Api\LinkCollection\Action\GetAllLinksAction;
 use LukaLtaApi\Api\LinkCollection\Action\GetDetailLink;
 use LukaLtaApi\Api\Permission\Action\GetPermissionsAction;
 use LukaLtaApi\Api\PreviewToken\Action\CreatePreviewTokenAction;
+use LukaLtaApi\Api\PreviewToken\Action\ListPreviewTokensAction;
 use LukaLtaApi\Api\Todo\Action\CreateTodoAction;
 use LukaLtaApi\Api\Todo\Action\DeleteTodoAction;
 use LukaLtaApi\Api\Todo\Action\GetAllTodoAction;
@@ -195,6 +196,13 @@ class RouteMiddlewareCollector
                     new ApiKeyPermissionMiddleware(
                         $app->getContainer()?->get(PermissionService::class),
                         ['Create preview tokens']
+                    )
+                );
+
+                $previewToken->get('/', ListPreviewTokensAction::class)->add(
+                    new ApiKeyPermissionMiddleware(
+                        $app->getContainer()?->get(PermissionService::class),
+                        ['Read preview tokens']
                     )
                 );
             })->add(AuthMiddleware::class);

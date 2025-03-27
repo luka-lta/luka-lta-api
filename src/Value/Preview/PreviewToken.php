@@ -39,9 +39,9 @@ class PreviewToken
     {
         return new self(
             $row['token'],
-            $row['max_use'],
-            $row['used'],
-            $row['is_active'],
+            $row['max_uses'],
+            $row['uses'],
+            (bool)$row['is_active'],
             UserId::fromInt($row['created_by']),
             new DateTimeImmutable($row['created_at']),
         );
@@ -52,8 +52,22 @@ class PreviewToken
         return substr(
             str_shuffle(
                 str_repeat('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', 6)
-            ), 0, 6
+            ),
+            0,
+            6
         );
+    }
+
+    public function toArray(): array
+    {
+        return [
+            'token' => $this->token,
+            'maxUse' => $this->maxUse,
+            'used' => $this->used,
+            'isActive' => $this->isActive,
+            'createdBy' => $this->userId->asInt(),
+            'createdAt' => $this->createdAt->format('Y-m-d H:i:s'),
+        ];
     }
 
     public function getCreatedAt(): ?DateTimeImmutable
