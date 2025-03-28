@@ -18,6 +18,6 @@ class GetClickSummaryAction extends ApiAction
 
     protected function execute(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        return $this->service->getClickSummary($request)->getResponse($response);
+        return $this->service->getClickSummary()->getResponse($response);
     }
 }
