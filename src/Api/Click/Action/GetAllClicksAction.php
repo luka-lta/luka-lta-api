@@ -16,6 +16,6 @@ class GetAllClicksAction extends ApiAction
 
     protected function execute(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        return $this->service->getAllClicks()->getResponse($response);
+        return $this->service->getAllClicks($request)->getResponse($response);
     }
 }

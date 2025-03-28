@@ -2,9 +2,9 @@
 
 namespace LukaLtaApi\Repository;
 
+use DateTimeImmutable;
 use LukaLtaApi\Exception\ApiDatabaseException;
 use LukaLtaApi\Value\Tracking\Click;
-use LukaLtaApi\Value\Tracking\Clicks;
 use PDO;
 use PDOException;
 
@@ -41,27 +41,33 @@ class ClickRepository
         }
     }
 
-    public function getAll(): Clicks
+    public function listAll(DateTimeImmutable $startDate, DateTimeImmutable $endDate): array
     {
         $sql = <<<SQL
-            SELECT * FROM url_clicks
-        SQL;
+        SELECT 
+            lc.displayname,
+            DATE(uc.clicked_at) as click_date, 
+            COUNT(*) as total_clicks
+        FROM url_clicks uc
+        JOIN link_collection lc ON uc.click_tag = lc.click_tag
+        WHERE uc.clicked_at BETWEEN :startDate AND :endDate
+        GROUP BY lc.displayname, click_date
+        ORDER BY click_date , lc.displayname
+    SQL;
 
         try {
             $statement = $this->pdo->prepare($sql);
-            $statement->execute();
+            $statement->execute([
+                'startDate' => $startDate->format('Y-m-d 00:00:00'),
+                'endDate' => $endDate->format('Y-m-d 23:59:59'),
+            ]);
 
-            $clicks = [];
-            foreach ($statement as $row) {
-                $clicks[] = Click::fromDatabase($row);
-            }
+            return $statement->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $exception) {
             throw new ApiDatabaseException(
                 'Failed to fetch clicks',
                 previous: $exception
             );
         }
-
-        return Clicks::from(...$clicks);
     }
 }
