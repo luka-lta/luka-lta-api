@@ -5,6 +5,7 @@ namespace LukaLtaApi\Repository;
 use DateTimeImmutable;
 use LukaLtaApi\Exception\ApiDatabaseException;
 use LukaLtaApi\Value\Tracking\Click;
+use LukaLtaApi\Value\Tracking\ClickSummary;
 use PDO;
 use PDOException;
 
@@ -39,6 +40,53 @@ class ClickRepository
                 $exception
             );
         }
+    }
+
+    public function getSummary(): ClickSummary
+    {
+        $queryOverTime = "
+        SELECT 
+            DATE(uc.clicked_at) AS date,
+            lc.displayname,
+            COUNT(uc.click_id) AS total_clicks
+        FROM url_clicks uc
+        JOIN link_collection lc ON uc.click_tag = lc.click_tag
+        WHERE uc.clicked_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+        GROUP BY DATE(uc.clicked_at), lc.displayname
+        ORDER BY DATE(uc.clicked_at);
+    ";
+
+        $queryOverview = "
+        SELECT 
+            DATE_FORMAT(uc.clicked_at, '%Y-%m') AS month,
+            lc.displayname,
+            COUNT(uc.click_id) AS total_clicks
+        FROM url_clicks uc
+        JOIN link_collection lc ON uc.click_tag = lc.click_tag
+        WHERE uc.clicked_at >= DATE_SUB(CURDATE(), INTERVAL 5 MONTH)
+        GROUP BY DATE_FORMAT(uc.clicked_at, '%Y-%m'), lc.displayname
+        ORDER BY DATE_FORMAT(uc.clicked_at, '%Y-%m');
+    ";
+
+        $queryTotal = "SELECT COUNT(*) AS totalClicks FROM url_clicks;";
+
+        try {
+            $stmtOverTime = $this->pdo->query($queryOverTime);
+            $clicksOverTime = $stmtOverTime->fetchAll();
+
+            $stmtOverview = $this->pdo->query($queryOverview);
+            $clicksOverview = $stmtOverview->fetchAll();
+
+            $stmtTotal = $this->pdo->query($queryTotal);
+            $totalClicks = $stmtTotal->fetch()['totalClicks'];
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException(
+                'Failed to fetch click summary',
+                previous: $exception
+            );
+        }
+
+        return ClickSummary::from($totalClicks, $clicksOverview, $clicksOverTime);
     }
 
     public function listAll(DateTimeImmutable $startDate, DateTimeImmutable $endDate): array

@@ -75,4 +75,11 @@ class ClickService
 
         return ApiResult::from(JsonResult::from('Clicks found', ['clicks' => $clicks]));
     }
+
+    public function getClickSummary(): ApiResult
+    {
+        $summary = $this->repository->getSummary();
+
+        return ApiResult::from(JsonResult::from('Summary found', ['summary' => $summary->toArray()]));
+    }
 }
