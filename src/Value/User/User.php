@@ -57,8 +57,12 @@ class User
         ];
     }
 
-    public function getAvatarUrl(): ?string
+    public function getAvatarUrl(bool $withFullUrl = false): ?string
     {
+        if ($withFullUrl && $this->avatarUrl !== null) {
+            return 'https://api.luka-lta.dev/api/v1/avatar/' . $this->userId->asInt();
+        }
+
         return $this->avatarUrl;
     }
 

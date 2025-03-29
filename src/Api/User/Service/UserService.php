@@ -8,6 +8,7 @@ use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Api\User\Value\UserExtraFilter;
 use LukaLtaApi\Exception\ApiAvatarUploadException;
 use LukaLtaApi\Repository\UserRepository;
+use LukaLtaApi\Service\AvatarService;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
 use LukaLtaApi\Value\User\User;
@@ -21,6 +22,7 @@ class UserService
 {
     public function __construct(
         private readonly UserRepository $repository,
+        private readonly AvatarService $avatarService,
     ) {
     }
 
@@ -65,39 +67,18 @@ class UserService
             );
         }
 
-        $uploadDir = '/app/uploads/profile-pictures/';
-        if (!is_dir($uploadDir) && !mkdir($uploadDir, 0777, true) && !is_dir($uploadDir)) {
-            throw new RuntimeException(sprintf('Directory "%s" was not created', $uploadDir));
-        }
-
         $avatarUrl = $user->getAvatarUrl();
 
         if (isset($uploadedFiles['avatar'])) {
             $uploadedFile = $uploadedFiles['avatar'];
-
-            if ($uploadedFile->getError() !== UPLOAD_ERR_OK) {
-                throw new ApiAvatarUploadException(
-                    'File upload error',
-                    StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR
-                );
-            }
-
-            $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif'];
-            $mimeType = $uploadedFile->getClientMediaType();
-
-            if (!in_array($mimeType, $allowedMimeTypes, true)) {
+            try {
+                $avatarUrl = $this->avatarService->uploadAvatar($uploadedFile, $userId);
+            } catch (ApiAvatarUploadException $e) {
                 return ApiResult::from(
-                    JsonResult::from('Invalid file type. Only JPG, PNG, and GIF are allowed.'),
-                    StatusCodeInterface::STATUS_BAD_REQUEST
+                    JsonResult::from($e->getMessage()),
+                    $e->getCode()
                 );
             }
-
-            // Sicheren Dateinamen generieren (z. B. UUID statt Originalname)
-            $extension = pathinfo($uploadedFile->getClientFilename(), PATHINFO_EXTENSION);
-            $filename = sprintf('%s/%s.%s', $uploadDir, $userId->asString(), $extension);
-
-            $uploadedFile->moveTo($filename);
-            $avatarUrl = $filename;
         }
 
         $user->setEmail($email);
