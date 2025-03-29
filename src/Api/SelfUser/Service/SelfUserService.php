@@ -11,6 +11,7 @@ use LukaLtaApi\Service\AvatarService;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
 use LukaLtaApi\Value\User\UserEmail;
+use LukaLtaApi\Value\User\UserId;
 use Psr\Http\Message\ServerRequestInterface;
 
 class SelfUserService
@@ -23,12 +24,7 @@ class SelfUserService
 
     public function getUser(ServerRequestInterface $request): ApiResult
     {
-        $userId = $request->getAttribute('selfUser');
-        $requestedUserId = $request->getAttribute('userId');
-
-        if ($userId !== $requestedUserId) {
-            return $this->denieRequest();
-        }
+        $userId = UserId::fromString($request->getAttribute('userId'));
 
         $user = $this->repository->findById($userId);
 
@@ -46,10 +42,10 @@ class SelfUserService
 
     public function updateUser(ServerRequestInterface $request): ApiResult
     {
-        $userId = $request->getAttribute('userId');
-        $requestedUserId = $request->getParsedBody()['userId'];
+        $userId = UserId::fromString($request->getAttribute('userId'));
+        $requestedUserId = UserId::fromInt($request->getParsedBody()['userId']);
 
-        if ($userId !== $requestedUserId) {
+        if ($userId->asInt() !== $requestedUserId->asInt()) {
             return $this->denieRequest();
         }
 

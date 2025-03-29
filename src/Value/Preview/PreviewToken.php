@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace LukaLtaApi\Value\Preview;
 
 use DateTimeImmutable;
+use LukaLtaApi\Value\User\User;
 use LukaLtaApi\Value\User\UserId;
 
 class PreviewToken
@@ -14,7 +15,7 @@ class PreviewToken
         private readonly int                $maxUse,
         private int                         $used,
         private readonly bool               $isActive,
-        private readonly UserId             $userId,
+        private readonly User               $createdBy,
         private readonly ?DateTimeImmutable $createdAt,
     ) {
     }
@@ -23,7 +24,7 @@ class PreviewToken
         string $token,
         int    $maxUse,
         bool   $isActive,
-        UserId $createdBy
+        User  $createdBy
     ): self {
         return new self(
             $token,
@@ -37,12 +38,14 @@ class PreviewToken
 
     public static function fromDatabase(array $row): self
     {
+        $user = json_decode($row['user'], true, 512, JSON_THROW_ON_ERROR);
+
         return new self(
             $row['token'],
             $row['max_uses'],
             $row['uses'],
             (bool)$row['is_active'],
-            UserId::fromInt($row['created_by']),
+            User::fromDatabase($user[0]),
             new DateTimeImmutable($row['created_at']),
         );
     }
@@ -65,7 +68,7 @@ class PreviewToken
             'maxUse' => $this->maxUse,
             'used' => $this->used,
             'isActive' => $this->isActive,
-            'createdBy' => $this->userId->asInt(),
+            'createdBy' => $this->createdBy->toArray(),
             'createdAt' => $this->createdAt->format('Y-m-d H:i:s'),
         ];
     }
@@ -105,8 +108,8 @@ class PreviewToken
         return $this->token;
     }
 
-    public function getUserId(): UserId
+    public function getCreatedBy(): User
     {
-        return $this->userId;
+        return $this->createdBy;
     }
 }

@@ -31,7 +31,7 @@ class PreviewTokenRepository
                 'token' => $token->getToken(),
                 'max_uses' => $token->getMaxUse(),
                 'is_active' => $token->isActive(),
-                'created_by' => $token->getUserId()->asInt(),
+                'created_by' => $token->getCreatedBy()->getUserId()?->asInt(),
                 'created_at' => $token->getCreatedAt()?->format('Y-m-d H:i:s'),
             ]);
         } catch (PDOException $exception) {
@@ -46,8 +46,32 @@ class PreviewTokenRepository
     public function listTokens(): PreviewTokens
     {
         $sql = <<<SQL
-            SELECT token, max_uses, uses, is_active, created_by, created_at
-            FROM preview_access_tokens
+            SELECT 
+                pat.token,
+                pat.max_uses,
+                pat.uses,
+                pat.is_active,
+                pat.created_by,
+                pat.created_at,
+                COALESCE(
+                    NULLIF(
+                        JSON_ARRAYAGG(
+                            JSON_OBJECT(
+                                'user_id', u.user_id,
+                                'email', u.email,
+                                'password', u.password,
+                                'avatar_url', u.avatar_url,
+                                'created_at', u.created_at,
+                                'updated_at', u.updated_at
+                            )
+                        ),
+                    JSON_ARRAY(NULL)
+                    ),
+                    JSON_ARRAY()
+                    ) AS user
+            FROM preview_access_tokens as pat
+            LEFT JOIN users u on u.user_id = pat.created_by
+            GROUP BY pat.token
         SQL;
 
         try {
@@ -98,9 +122,33 @@ class PreviewTokenRepository
     public function getToken(string $tokenId): ?PreviewToken
     {
         $sql = <<<SQL
-            SELECT token, max_uses, uses, is_active, created_by, created_at
-            FROM preview_access_tokens
-            WHERE token = :token
+            SELECT 
+                pat.token,
+                pat.max_uses,
+                pat.uses,
+                pat.is_active,
+                pat.created_by,
+                pat.created_at,
+                COALESCE(
+                    NULLIF(
+                        JSON_ARRAYAGG(
+                            JSON_OBJECT(
+                                'user_id', u.user_id,
+                                'email', u.email,
+                                'password', u.password,
+                                'avatar_url', u.avatar_url,
+                                'created_at', u.created_at,
+                                'updated_at', u.updated_at
+                            )
+                        ),
+                    JSON_ARRAY(NULL)
+                    ),
+                    JSON_ARRAY()
+                    ) AS user
+            FROM preview_access_tokens as pat
+            LEFT JOIN users u on u.user_id = pat.created_by
+            WHERE pat.token = :token
+            GROUP BY pat.token
         SQL;
 
         try {
