@@ -18,6 +18,8 @@ use LukaLtaApi\Api\Permission\Action\GetPermissionsAction;
 use LukaLtaApi\Api\PreviewToken\Action\CreatePreviewTokenAction;
 use LukaLtaApi\Api\PreviewToken\Action\ListPreviewTokensAction;
 use LukaLtaApi\Api\Register\Action\RegisterUserAction;
+use LukaLtaApi\Api\SelfUser\Action\GetSelfUserAction;
+use LukaLtaApi\Api\SelfUser\Action\SelfUserUpdateAction;
 use LukaLtaApi\Api\Todo\Action\CreateTodoAction;
 use LukaLtaApi\Api\Todo\Action\DeleteTodoAction;
 use LukaLtaApi\Api\Todo\Action\GetAllTodoAction;
@@ -215,6 +217,11 @@ class RouteMiddlewareCollector
                         ['Read preview tokens']
                     )
                 );
+            })->add(AuthMiddleware::class);
+
+            $app->group('/self', function (RouteCollectorProxy $selfUser) use ($app) {
+                $selfUser->get('/', GetSelfUserAction::class);
+                $selfUser->put('/', SelfUserUpdateAction::class);
             })->add(AuthMiddleware::class);
         });
     }
