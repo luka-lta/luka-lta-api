@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace LukaLtaApi\Value\User;
 
 use DateTimeImmutable;
+use PermissionsModule\Value\Role;
 
 class User
 {
     private function __construct(
         private readonly ?UserId $userId,
+        private ?Role $role,
         private UserEmail  $email,
         private UserPassword  $password,
         private ?string  $avatarUrl,
@@ -21,9 +23,11 @@ class User
     public static function create(
         string $email,
         string $password,
+        Role $role = null,
     ): self {
         return new self(
             null,
+            $role,
             UserEmail::from($email),
             UserPassword::fromPlain($password),
             null,
@@ -38,6 +42,7 @@ class User
 
         return new self(
             UserId::fromInt($row['user_id']),
+            Role::fromDatabase($row['role']),
             UserEmail::from($row['email']),
             UserPassword::fromHash($row['password']),
             $row['avatar_url'],
@@ -51,6 +56,7 @@ class User
         return  [
             'userId' => $this->userId?->asInt(),
             'email' => $this->email->getEmail(),
+            'role' => $this->role?->toArray(),
             'avatarUrl' => $this->avatarUrl,
             'createdAt' => $this->createdAt->format('Y-m-d H:i:s'),
             'updatedAt' => $this->updatedAt?->format('Y-m-d H:i:s'),
@@ -60,6 +66,11 @@ class User
     public function getAvatarUrl(): ?string
     {
         return $this->avatarUrl;
+    }
+
+    public function getRole(): ?Role
+    {
+        return $this->role;
     }
 
     public function getCreatedAt(): DateTimeImmutable
@@ -85,6 +96,11 @@ class User
     public function getUserId(): ?UserId
     {
         return $this->userId;
+    }
+
+    public function setRole(?Role $role): void
+    {
+        $this->role = $role;
     }
 
     public function setEmail(UserEmail $email): void

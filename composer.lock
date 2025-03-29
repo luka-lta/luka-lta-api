@@ -244,7 +244,7 @@
             "source": {
                 "type": "git",
                 "url": "git@github.com:luka-lta/permissions-module.git",
-                "reference": "597fcb13e5b9215ae3550f2cbdafa1f4a5a979dd"
+                "reference": "f81309f7fc173d6533ff7c57e1721daa0240a234"
             },
             "require": {
                 "ext-pdo": "*",
@@ -276,7 +276,7 @@
                 }
             ],
             "description": "Permissions module to manage permissions",
-            "time": "2025-03-28T16:22:58+00:00"
+            "time": "2025-03-29T12:24:46+00:00"
         },
         {
             "name": "monolog/monolog",

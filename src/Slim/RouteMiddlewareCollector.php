@@ -18,6 +18,7 @@ use LukaLtaApi\Api\Permission\Action\GetPermissionsAction;
 use LukaLtaApi\Api\PreviewToken\Action\CreatePreviewTokenAction;
 use LukaLtaApi\Api\PreviewToken\Action\ListPreviewTokensAction;
 use LukaLtaApi\Api\Register\Action\RegisterUserAction;
+use LukaLtaApi\Api\Roles\Action\ListRolesAction;
 use LukaLtaApi\Api\Todo\Action\CreateTodoAction;
 use LukaLtaApi\Api\Todo\Action\DeleteTodoAction;
 use LukaLtaApi\Api\Todo\Action\GetAllTodoAction;
@@ -215,6 +216,14 @@ class RouteMiddlewareCollector
                         ['Read preview tokens']
                     )
                 );
+            })->add(AuthMiddleware::class);
+
+            $app->group('/roles', function (RouteCollectorProxy $roles) use ($app) {
+                $roles->get('/', ListRolesAction::class)
+                    ->add(new ApiKeyPermissionMiddleware(
+                        $app->getContainer()?->get(PermissionService::class),
+                        ['Read roles']
+                    ));
             })->add(AuthMiddleware::class);
         });
     }

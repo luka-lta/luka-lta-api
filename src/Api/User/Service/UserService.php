@@ -36,6 +36,8 @@ class UserService
             );
         }
 
+        // TODO: Set role if exists in body
+
         $this->repository->create(
             User::create(
                 $email,
