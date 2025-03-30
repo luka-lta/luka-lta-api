@@ -2,6 +2,7 @@
 
 namespace LukaLtaApi\Api\Auth\Service;
 
+use DateTimeImmutable;
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Repository\UserRepository;
 use LukaLtaApi\Value\Result\ApiResult;
@@ -33,6 +34,9 @@ class AuthService
                 StatusCodeInterface::STATUS_UNAUTHORIZED
             );
         }
+
+        $user->setLastActive(new DateTimeImmutable());
+        $this->repository->update($user);
 
         $expiresIn = time() + (int)getenv('JWT_NORMAL_EXPIRATION_TIME');
         $token = Token::builder(getenv('JWT_SECRET'))

@@ -6,8 +6,10 @@ namespace LukaLtaApi\Api\SelfUser\Service;
 
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Exception\ApiAvatarUploadException;
+use LukaLtaApi\Exception\UserAlreadyExistsException;
 use LukaLtaApi\Repository\UserRepository;
 use LukaLtaApi\Service\AvatarService;
+use LukaLtaApi\Service\UserValidationService;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
 use LukaLtaApi\Value\User\UserEmail;
@@ -17,8 +19,9 @@ use Psr\Http\Message\ServerRequestInterface;
 class SelfUserService
 {
     public function __construct(
-        private readonly UserRepository $repository,
-        private readonly AvatarService  $avatarService,
+        private readonly UserRepository        $repository,
+        private readonly UserValidationService $validationService,
+        private readonly AvatarService         $avatarService,
     ) {
     }
 
@@ -52,12 +55,24 @@ class SelfUserService
         $uploadedFiles = $request->getUploadedFiles();
         $body = $request->getParsedBody();
         $email = UserEmail::from($body['email']);
+        $username = $body['username'];
 
         $user = $this->repository->findById($userId);
         if ($user === null) {
             return ApiResult::from(
                 JsonResult::from('User not found'),
                 StatusCodeInterface::STATUS_NOT_FOUND
+            );
+        }
+
+        try {
+            if ($user->getEmail()->getEmail() !== $email->getEmail() || $user->getUsername() !== $username) {
+                $this->validationService->ensureUserDoesNotExists($email, $username);
+            }
+        } catch (UserAlreadyExistsException $e) {
+            return ApiResult::from(
+                JsonResult::from($e->getMessage()),
+                StatusCodeInterface::STATUS_BAD_REQUEST
             );
         }
 
@@ -74,6 +89,7 @@ class SelfUserService
             }
         }
 
+        $user->setUsername($username);
         $user->setEmail($email);
         $user->setAvatarUrl($avatarUrl);
 

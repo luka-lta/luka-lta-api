@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace LukaLtaApi\Api\Register\Service;
 
 use Fig\Http\Message\StatusCodeInterface;
+use LukaLtaApi\Exception\InvalidPreviewTokenException;
+use LukaLtaApi\Exception\UserAlreadyExistsException;
 use LukaLtaApi\Repository\PreviewTokenRepository;
 use LukaLtaApi\Repository\UserRepository;
+use LukaLtaApi\Service\PreviewTokenValidationService;
+use LukaLtaApi\Service\UserValidationService;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
 use LukaLtaApi\Value\User\User;
@@ -17,7 +21,8 @@ class RegisterService
 {
     public function __construct(
         private readonly UserRepository $userRepository,
-        private readonly PreviewTokenRepository $tokenRepository,
+        private readonly UserValidationService $userValidationService,
+        private readonly PreviewTokenValidationService $previewTokenValidationService,
     ) {
     }
 
@@ -25,6 +30,7 @@ class RegisterService
     {
         $body = $request->getParsedBody();
         $email = UserEmail::from($body['email']);
+        $username = $body['username'];
         $password = $body['password'];
         $token = $body['previewToken'] ?? null;
 
@@ -35,29 +41,20 @@ class RegisterService
             );
         }
 
-        $token = $this->tokenRepository->getToken($token);
-
-        if (!$token) {
+        try {
+            $this->previewTokenValidationService->validatePreviewToken($token);
+        } catch (InvalidPreviewTokenException $e) {
             return ApiResult::from(
-                JsonResult::from('Invalid preview token'),
+                JsonResult::from($e->getMessage()),
                 StatusCodeInterface::STATUS_BAD_REQUEST
             );
         }
 
-        if ($token->isExpired()) {
+        try {
+            $this->userValidationService->ensureUserDoesNotExists($email, $username);
+        } catch (UserAlreadyExistsException $e) {
             return ApiResult::from(
-                JsonResult::from('Preview token is expired'),
-                StatusCodeInterface::STATUS_BAD_REQUEST
-            );
-        }
-
-        $token->useToken();
-        $this->tokenRepository->updateToken($token);
-        $user = $this->userRepository->findByEmail($email);
-
-        if ($user) {
-            return ApiResult::from(
-                JsonResult::from('User already exists with this email'),
+                JsonResult::from($e->getMessage()),
                 StatusCodeInterface::STATUS_BAD_REQUEST
             );
         }
@@ -65,6 +62,7 @@ class RegisterService
         $this->userRepository->create(
             User::create(
                 $email->getEmail(),
+                $username,
                 $password
             )
         );

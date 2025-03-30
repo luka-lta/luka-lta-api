@@ -10,9 +10,12 @@ class User
 {
     private function __construct(
         private readonly ?UserId $userId,
+        private string $username,
         private UserEmail  $email,
         private UserPassword  $password,
         private ?string  $avatarUrl,
+        private bool $isActive,
+        private ?DateTimeImmutable $lastActive,
         private readonly DateTimeImmutable  $createdAt,
         private readonly ?DateTimeImmutable  $updatedAt,
     ) {
@@ -20,12 +23,17 @@ class User
 
     public static function create(
         string $email,
+        string $username,
         string $password,
+        bool $isActive = true,
     ): self {
         return new self(
             null,
+            $username,
             UserEmail::from($email),
             UserPassword::fromPlain($password),
+            null,
+            $isActive,
             null,
             new DateTimeImmutable(),
             null,
@@ -34,15 +42,19 @@ class User
 
     public static function fromDatabase(array $row): self
     {
-        $date = $row['updated_at'] === null ? null : new DateTimeImmutable($row['updated_at']);
+        $updatedAt = $row['updated_at'] === null ? null : new DateTimeImmutable($row['updated_at']);
+        $lastActive = $row['last_active'] === null ? null : new DateTimeImmutable($row['last_active']);
 
         return new self(
             UserId::fromInt($row['user_id']),
+            $row['username'],
             UserEmail::from($row['email']),
             UserPassword::fromHash($row['password']),
             $row['avatar_url'],
+            (bool) $row['is_active'],
+            $lastActive,
             new DateTimeImmutable($row['created_at']),
-            $date,
+            $updatedAt,
         );
     }
 
@@ -50,8 +62,11 @@ class User
     {
         return  [
             'userId' => $this->userId?->asInt(),
+            'username' => $this->username,
             'email' => $this->email->getEmail(),
             'avatarUrl' => $this->avatarUrl,
+            'isActive' => $this->isActive,
+            'lastActive' => $this->lastActive?->format('Y-m-d H:i:s'),
             'createdAt' => $this->createdAt->format('Y-m-d H:i:s'),
             'updatedAt' => $this->updatedAt?->format('Y-m-d H:i:s'),
         ];
@@ -71,6 +86,11 @@ class User
         return $this->createdAt;
     }
 
+    public function getUsername(): string
+    {
+        return $this->username;
+    }
+
     public function getEmail(): UserEmail
     {
         return $this->email;
@@ -84,6 +104,16 @@ class User
     public function getUpdatedAt(): DateTimeImmutable
     {
         return $this->updatedAt;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->isActive;
+    }
+
+    public function getLastActive(): ?DateTimeImmutable
+    {
+        return $this->lastActive;
     }
 
     public function getUserId(): ?UserId
@@ -104,5 +134,20 @@ class User
     public function setAvatarUrl(?string $avatarUrl): void
     {
         $this->avatarUrl = $avatarUrl;
+    }
+
+    public function setIsActive(bool $isActive): void
+    {
+        $this->isActive = $isActive;
+    }
+
+    public function setLastActive(?DateTimeImmutable $lastActive): void
+    {
+        $this->lastActive = $lastActive;
+    }
+
+    public function setUsername(string $username): void
+    {
+        $this->username = $username;
     }
 }

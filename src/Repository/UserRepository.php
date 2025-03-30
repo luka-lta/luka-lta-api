@@ -25,14 +25,15 @@ class UserRepository
     public function create(User $user): void
     {
         $sql = <<<SQL
-            INSERT INTO users (email, password, avatar_url)
-            VALUES (:email, :password, :avatar_url)
+            INSERT INTO users (email, username, password, avatar_url)
+            VALUES (:email, :username, :password, :avatar_url)
         SQL;
 
         try {
             $statement = $this->pdo->prepare($sql);
             $statement->execute([
                 'email' => $user->getEmail()->getEmail(),
+                'username' => $user->getUsername(),
                 'password' => $user->getPassword()->getPassword(),
                 'avatar_url' => $user->getAvatarUrl(),
             ]);
@@ -51,17 +52,26 @@ class UserRepository
     {
         $sql = <<<SQL
             UPDATE users
-            SET email = :email, password = :password, avatar_url = :avatar_url
+            SET 
+                username = :username, 
+                email = :email, 
+                password = :password,
+                avatar_url = :avatar_url,
+                is_active = :is_active,
+                last_active = :last_active
             WHERE user_id = :user_id
         SQL;
 
         try {
             $statement = $this->pdo->prepare($sql);
             $statement->execute([
+                'username' => $user->getUsername(),
                 'email' => $user->getEmail()->getEmail(),
                 'password' => $user->getPassword()->getPassword(),
                 'avatar_url' => $user->getAvatarUrl(),
                 'user_id' => $user->getUserId()?->asInt(),
+                'is_active' => $user->isActive(),
+                'last_active' => $user->getLastActive()?->format('Y-m-d H:i:s'),
             ]);
             $this->pdo->commit();
         } catch (PDOException $e) {
@@ -118,6 +128,34 @@ class UserRepository
         } catch (PDOException $e) {
             throw new ApiDatabaseException(
                 'Failed to find user by id',
+                StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR,
+                $e
+            );
+        }
+
+        if ($row === false) {
+            return null;
+        }
+
+        return User::fromDatabase($row);
+    }
+
+    public function findByUsername(string $username): ?User
+    {
+        $sql = <<<SQL
+            SELECT *
+            FROM users
+            WHERE username = :username
+        SQL;
+
+        try {
+            $statement = $this->pdo->prepare($sql);
+            $statement->execute(['username' => $username]);
+
+            $row = $statement->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            throw new ApiDatabaseException(
+                'Failed to find user by username',
                 StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR,
                 $e
             );

@@ -58,9 +58,12 @@ class PreviewTokenRepository
                         JSON_ARRAYAGG(
                             JSON_OBJECT(
                                 'user_id', u.user_id,
+                                'username', u.username,
                                 'email', u.email,
                                 'password', u.password,
                                 'avatar_url', u.avatar_url,
+                                'is_active', u.is_active,
+                                'last_active', u.last_active,
                                 'created_at', u.created_at,
                                 'updated_at', u.updated_at
                             )
@@ -134,9 +137,12 @@ class PreviewTokenRepository
                         JSON_ARRAYAGG(
                             JSON_OBJECT(
                                 'user_id', u.user_id,
+                                'username', u.username,
                                 'email', u.email,
                                 'password', u.password,
                                 'avatar_url', u.avatar_url,
+                                'is_active', u.is_active,
+                                'last_active', u.last_active,
                                 'created_at', u.created_at,
                                 'updated_at', u.updated_at
                             )
