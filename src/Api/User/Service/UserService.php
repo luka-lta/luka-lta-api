@@ -7,8 +7,10 @@ namespace LukaLtaApi\Api\User\Service;
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Api\User\Value\UserExtraFilter;
 use LukaLtaApi\Exception\ApiAvatarUploadException;
+use LukaLtaApi\Exception\UserAlreadyExistsException;
 use LukaLtaApi\Repository\UserRepository;
 use LukaLtaApi\Service\AvatarService;
+use LukaLtaApi\Service\UserValidationService;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
 use LukaLtaApi\Value\User\User;
@@ -22,25 +24,30 @@ class UserService
 {
     public function __construct(
         private readonly UserRepository $repository,
+        private readonly UserValidationService $validationService,
         private readonly AvatarService $avatarService,
     ) {
     }
 
     public function createUser(array $body): ApiResult
     {
-        $email = $body['email'];
+        $username = $body['username'];
+        $email = UserEmail::from($body['email']);
         $password = $body['password'];
 
-        if ($this->repository->findByEmail(UserEmail::from($email)) !== null) {
+        try {
+            $this->validationService->ensureUserDoesNotExists($email, $username);
+        } catch (UserAlreadyExistsException $e) {
             return ApiResult::from(
-                JsonResult::from('User already exists with this email'),
+                JsonResult::from($e->getMessage()),
                 StatusCodeInterface::STATUS_BAD_REQUEST
             );
         }
 
         $this->repository->create(
             User::create(
-                $email,
+                $email->getEmail(),
+                $username,
                 $password
             )
         );
@@ -57,6 +64,8 @@ class UserService
         $body = $request->getParsedBody();
         $userId = UserId::fromString($request->getAttribute('userId'));
         $email = UserEmail::from($body['email']);
+        $username = $body['username'];
+        $isActive = $body['is_active'];
 
         $user = $this->repository->findById($userId);
 
@@ -64,6 +73,15 @@ class UserService
             return ApiResult::from(
                 JsonResult::from('User not found'),
                 StatusCodeInterface::STATUS_NOT_FOUND
+            );
+        }
+
+        try {
+            $this->validationService->ensureUserDoesNotExists($email, $username);
+        } catch (UserAlreadyExistsException $e) {
+            return ApiResult::from(
+                JsonResult::from($e->getMessage()),
+                StatusCodeInterface::STATUS_BAD_REQUEST
             );
         }
 
@@ -81,6 +99,8 @@ class UserService
             }
         }
 
+        $user->setUsername($username);
+        $user->setIsActive($isActive);
         $user->setEmail($email);
         $user->setAvatarUrl($avatarUrl);
 

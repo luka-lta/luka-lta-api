@@ -22,6 +22,7 @@ class RegisterUserAction extends ApiAction
     {
         $rules = [
             'email' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
+            'username' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
             'password' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
             'previewToken' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
         ];
