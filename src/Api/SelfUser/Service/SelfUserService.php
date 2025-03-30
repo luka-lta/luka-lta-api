@@ -19,9 +19,9 @@ use Psr\Http\Message\ServerRequestInterface;
 class SelfUserService
 {
     public function __construct(
-        private readonly UserRepository $repository,
+        private readonly UserRepository        $repository,
         private readonly UserValidationService $validationService,
-        private readonly AvatarService  $avatarService,
+        private readonly AvatarService         $avatarService,
     ) {
     }
 
@@ -66,7 +66,9 @@ class SelfUserService
         }
 
         try {
-            $this->validationService->ensureUserDoesNotExists($email, $username);
+            if ($user->getEmail()->getEmail() !== $email->getEmail() || $user->getUsername() !== $username) {
+                $this->validationService->ensureUserDoesNotExists($email, $username);
+            }
         } catch (UserAlreadyExistsException $e) {
             return ApiResult::from(
                 JsonResult::from($e->getMessage()),

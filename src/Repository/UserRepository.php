@@ -57,7 +57,8 @@ class UserRepository
                 email = :email, 
                 password = :password,
                 avatar_url = :avatar_url,
-                is_active = :is_active
+                is_active = :is_active,
+                last_active = :last_active
             WHERE user_id = :user_id
         SQL;
 
@@ -70,6 +71,7 @@ class UserRepository
                 'avatar_url' => $user->getAvatarUrl(),
                 'user_id' => $user->getUserId()?->asInt(),
                 'is_active' => $user->isActive(),
+                'last_active' => $user->getLastActive()?->format('Y-m-d H:i:s'),
             ]);
             $this->pdo->commit();
         } catch (PDOException $e) {

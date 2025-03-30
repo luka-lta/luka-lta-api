@@ -77,7 +77,9 @@ class UserService
         }
 
         try {
-            $this->validationService->ensureUserDoesNotExists($email, $username);
+            if ($user->getEmail()->getEmail() !== $email->getEmail() || $user->getUsername() !== $username) {
+                $this->validationService->ensureUserDoesNotExists($email, $username);
+            }
         } catch (UserAlreadyExistsException $e) {
             return ApiResult::from(
                 JsonResult::from($e->getMessage()),
