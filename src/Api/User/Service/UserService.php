@@ -122,7 +122,6 @@ class UserService
         if ($users->count() === 0) {
             return ApiResult::from(
                 JsonResult::from('No users found', ['users' => []]),
-                StatusCodeInterface::STATUS_NOT_FOUND
             );
         }
 

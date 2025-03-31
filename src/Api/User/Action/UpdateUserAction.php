@@ -19,8 +19,10 @@ class UpdateUserAction extends ApiAction
     protected function execute(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $rules = [
+            'username' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
             'email' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
             'avatarUrl' => ['required' => false, 'location' => RequestValidator::LOCATION_BODY],
+            'isActive' => ['required' => false, 'location' => RequestValidator::LOCATION_BODY],
         ];
 
         $this->validator->validate($request, $rules);

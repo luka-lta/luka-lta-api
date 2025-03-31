@@ -20,8 +20,7 @@ class ApiKeyService
     public function __construct(
         private readonly ApiKeyRepository     $repository,
         private readonly PermissionRepository $permissionRepository,
-    )
-    {
+    ) {
     }
 
     public function create(ServerRequestInterface $request): ApiResult
