@@ -69,7 +69,6 @@ class ClickService
         if (empty($clicks)) {
             return ApiResult::from(
                 JsonResult::from('No clicks found', ['clicks' => []]),
-                StatusCodeInterface::STATUS_NOT_FOUND
             );
         }
 

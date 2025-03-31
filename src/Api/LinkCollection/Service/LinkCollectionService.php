@@ -45,7 +45,6 @@ class LinkCollectionService
                 JsonResult::from(
                     'Link not found'
                 ),
-                StatusCodeInterface::STATUS_NOT_FOUND
             );
         }
 
@@ -66,7 +65,6 @@ class LinkCollectionService
         if ($links->count() === 0) {
             return ApiResult::from(
                 JsonResult::from('No links found', ['links' => []]),
-                StatusCodeInterface::STATUS_NOT_FOUND
             );
         }
 
@@ -140,8 +138,7 @@ class LinkCollectionService
 
         if (!$linkItem) {
             return ApiResult::from(
-                JsonResult::from('Link not found'),
-                StatusCodeInterface::STATUS_NOT_FOUND
+                JsonResult::from('Link not found')
             );
         }
 

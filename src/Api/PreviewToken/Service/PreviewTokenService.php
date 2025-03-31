@@ -6,6 +6,7 @@ namespace LukaLtaApi\Api\PreviewToken\Service;
 
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Repository\PreviewTokenRepository;
+use LukaLtaApi\Repository\UserRepository;
 use LukaLtaApi\Value\Preview\PreviewToken;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
@@ -16,15 +17,25 @@ class PreviewTokenService
 {
     public function __construct(
         private readonly PreviewTokenRepository $repository,
+        private readonly UserRepository $userRepository,
     ) {
     }
 
     public function createToken(ServerRequestInterface $request): ApiResult
     {
         $body = $request->getParsedBody();
-        $createdBy = UserId::fromString($request->getAttribute('userId'));
+        $userId = UserId::fromString($request->getAttribute('userId'));
         $maxUse = $body['maxUse'] ?? 1;
         $isActive = $body['isActive'] ?? true;
+
+        $createdBy = $this->userRepository->findById($userId);
+
+        if (!$createdBy) {
+            return ApiResult::from(
+                JsonResult::from('User not found'),
+                StatusCodeInterface::STATUS_NOT_FOUND,
+            );
+        }
 
         $token = PreviewToken::create(
             PreviewToken::generateToken(),
