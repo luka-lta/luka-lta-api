@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace LukaLtaApi\Api\Permission\Service;
 
-use Fig\Http\Message\StatusCodeInterface;
-use LukaLtaApi\Repository\PermissionRepository;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
+use PermissionsModule\Repository\PermissionRepository;
 
 class PermissionsService
 {
@@ -25,7 +24,7 @@ class PermissionsService
                 JsonResult::from('No permissions found', ['permissions' => []]),
             );
         }
-
+        // TODO: Fix das alle permissions angezeigt werden anstatt eine, fix das die user endpoints korrekt funktionieren
         return ApiResult::from(
             JsonResult::from('Permissions fetched successfully', [
                 'permissions' => $permissions->toArray()

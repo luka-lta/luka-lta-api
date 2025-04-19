@@ -25,6 +25,7 @@ class RegisterUserAction extends ApiAction
             'username' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
             'password' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
             'previewToken' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
+            'roleId' => ['required' => false, 'location' => RequestValidator::LOCATION_BODY],
         ];
 
         $this->validator->validate($request, $rules);

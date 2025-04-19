@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace LukaLtaApi\Value\User;
 
 use DateTimeImmutable;
+use PermissionsModule\Value\Role;
 
 class User
 {
@@ -13,6 +14,7 @@ class User
         private string $username,
         private UserEmail  $email,
         private UserPassword  $password,
+        private Role $role,
         private ?string  $avatarUrl,
         private bool $isActive,
         private ?DateTimeImmutable $lastActive,
@@ -25,6 +27,7 @@ class User
         string $email,
         string $username,
         string $password,
+        Role $role,
         bool $isActive = true,
     ): self {
         return new self(
@@ -32,6 +35,7 @@ class User
             $username,
             UserEmail::from($email),
             UserPassword::fromPlain($password),
+            $role,
             null,
             $isActive,
             null,
@@ -44,12 +48,14 @@ class User
     {
         $updatedAt = $row['updated_at'] === null ? null : new DateTimeImmutable($row['updated_at']);
         $lastActive = $row['last_active'] === null ? null : new DateTimeImmutable($row['last_active']);
+        $roleData = json_decode($row['role_data'], true, 512, JSON_THROW_ON_ERROR);
 
         return new self(
             UserId::fromInt($row['user_id']),
             $row['username'],
             UserEmail::from($row['email']),
             UserPassword::fromHash($row['password']),
+            Role::fromDatabase($roleData),
             $row['avatar_url'],
             (bool) $row['is_active'],
             $lastActive,
@@ -64,6 +70,7 @@ class User
             'userId' => $this->userId?->asInt(),
             'username' => $this->username,
             'email' => $this->email->getEmail(),
+            'role' => $this->role->toArray(),
             'avatarUrl' => $this->avatarUrl,
             'isActive' => $this->isActive,
             'lastActive' => $this->lastActive?->format('Y-m-d H:i:s'),
@@ -101,6 +108,11 @@ class User
         return $this->password;
     }
 
+    public function getRole(): Role
+    {
+        return $this->role;
+    }
+
     public function getUpdatedAt(): DateTimeImmutable
     {
         return $this->updatedAt;
@@ -129,6 +141,11 @@ class User
     public function setPassword(UserPassword $password): void
     {
         $this->password = $password;
+    }
+
+    public function setRole(Role $role): void
+    {
+        $this->role = $role;
     }
 
     public function setAvatarUrl(?string $avatarUrl): void

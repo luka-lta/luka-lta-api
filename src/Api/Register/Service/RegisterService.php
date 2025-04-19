@@ -15,6 +15,8 @@ use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
 use LukaLtaApi\Value\User\User;
 use LukaLtaApi\Value\User\UserEmail;
+use PermissionsModule\Exception\PermissionDatabaseException;
+use PermissionsModule\Service\RoleService;
 use Psr\Http\Message\ServerRequestInterface;
 
 class RegisterService
@@ -22,6 +24,7 @@ class RegisterService
     public function __construct(
         private readonly UserRepository $userRepository,
         private readonly UserValidationService $userValidationService,
+        private readonly RoleService $roleService,
         private readonly PreviewTokenValidationService $previewTokenValidationService,
     ) {
     }
@@ -32,6 +35,7 @@ class RegisterService
         $email = UserEmail::from($body['email']);
         $username = $body['username'];
         $password = $body['password'];
+        $role = $body['roleId'] ?? null;
         $token = $body['previewToken'] ?? null;
 
         if (!$token) {
@@ -59,11 +63,23 @@ class RegisterService
             );
         }
 
+        try {
+            if ($role) {
+                $role = $this->roleService->getRoleById($role);
+            }
+        } catch (PermissionDatabaseException $e) {
+            return ApiResult::from(
+                JsonResult::from($e->getMessage()),
+                StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }
+
         $this->userRepository->create(
             User::create(
                 $email->getEmail(),
                 $username,
-                $password
+                $password,
+                $role ?? $this->roleService->getDefaultRole(),
             )
         );
 

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "6e5e77f59e4aea02125777795c06307d",
+    "content-hash": "c5db3b94748db356e2deee08acb51845",
     "packages": [
         {
             "name": "fig/http-message-util",
@@ -237,6 +237,46 @@
                 "source": "https://github.com/shadowhand/latitude/tree/4.2.0"
             },
             "time": "2020-06-24T15:01:19+00:00"
+        },
+        {
+            "name": "luka-lta/permissions-module",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:luka-lta/permissions-module.git",
+                "reference": "8882c462bca77f71681d9c6b42303c3507fee9fe"
+            },
+            "require": {
+                "ext-pdo": "*",
+                "ext-redis": "*",
+                "php": "^8.3",
+                "slim/http": "^1.4",
+                "slim/psr7": "^1.7",
+                "slim/slim": "4.*"
+            },
+            "require-dev": {
+                "phpmd/phpmd": "2.*",
+                "roave/security-advisories": "dev-latest",
+                "squizlabs/php_codesniffer": "3.*"
+            },
+            "default-branch": true,
+            "type": "module",
+            "autoload": {
+                "psr-4": {
+                    "PermissionsModule\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "luka-lta",
+                    "email": "luka@luka-lta.dev"
+                }
+            ],
+            "description": "Permissions module to manage permissions",
+            "time": "2025-04-08T17:43:09+00:00"
         },
         {
             "name": "monolog/monolog",
@@ -3209,6 +3249,7 @@
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
+        "luka-lta/permissions-module": 20,
         "roave/security-advisories": 20
     },
     "prefer-stable": false,

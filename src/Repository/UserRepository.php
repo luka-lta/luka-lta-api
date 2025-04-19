@@ -25,8 +25,8 @@ class UserRepository
     public function create(User $user): void
     {
         $sql = <<<SQL
-            INSERT INTO users (email, username, password, avatar_url)
-            VALUES (:email, :username, :password, :avatar_url)
+            INSERT INTO users (email, username, password, role, avatar_url)
+            VALUES (:email, :username, :password, :role, :avatar_url)
         SQL;
 
         try {
@@ -35,6 +35,7 @@ class UserRepository
                 'email' => $user->getEmail()->getEmail(),
                 'username' => $user->getUsername(),
                 'password' => $user->getPassword()->getPassword(),
+                'role' => $user->getRole()->getRoleId(),
                 'avatar_url' => $user->getAvatarUrl(),
             ]);
             $this->pdo->commit();
@@ -56,6 +57,7 @@ class UserRepository
                 username = :username, 
                 email = :email, 
                 password = :password,
+                role = :role,
                 avatar_url = :avatar_url,
                 is_active = :is_active,
                 last_active = :last_active
@@ -69,6 +71,7 @@ class UserRepository
                 'email' => $user->getEmail()->getEmail(),
                 'password' => $user->getPassword()->getPassword(),
                 'avatar_url' => $user->getAvatarUrl(),
+                'role' => $user->getRole()->getRoleId(),
                 'user_id' => $user->getUserId()?->asInt(),
                 'is_active' => $user->isActive(),
                 'last_active' => $user->getLastActive()?->format('Y-m-d H:i:s'),
@@ -87,10 +90,28 @@ class UserRepository
     public function findByEmail(UserEmail $email): ?User
     {
         $sql = <<<SQL
-            SELECT *
-            FROM users
-            WHERE email = :email
-        SQL;
+            SELECT 
+                u.*,
+                JSON_OBJECT(
+                    'role_id', r.role_id,
+                    'role_name', r.role_name,
+                    'permissions', (
+                        SELECT JSON_ARRAYAGG(
+                            JSON_OBJECT(
+                                'permission_id', p.permission_id,
+                                'permission_name', p.permission_name,
+                                'permission_description', p.permission_description
+                            )
+                        )
+                        FROM role_permissions rp
+                        JOIN permissions p ON rp.permission_id = p.permission_id
+                        WHERE rp.role_id = r.role_id
+                    )
+                ) AS role_data
+            FROM users u
+            JOIN user_roles r ON u.role = r.role_id
+            WHERE u.email = :email
+    SQL;
 
         try {
             $statement = $this->pdo->prepare($sql);
@@ -115,10 +136,29 @@ class UserRepository
     public function findById(UserId $userId): ?User
     {
         $sql = <<<SQL
-            SELECT *
-            FROM users
-            WHERE user_id = :user_id
-        SQL;
+        SELECT 
+            u.*,
+            JSON_OBJECT(
+                'role_id', r.role_id,
+                'role_name', r.role_name,
+                'permissions', (
+                    SELECT JSON_ARRAYAGG(
+                        JSON_OBJECT(
+                            'permission_id', p.permission_id,
+                            'permission_name', p.permission_name,
+                            'permission_description', p.permission_description
+                        )
+                    )
+                    FROM role_permissions rp
+                    JOIN permissions p ON rp.permission_id = p.permission_id
+                    WHERE rp.role_id = r.role_id
+                )
+            ) AS role_data
+        FROM users u
+        JOIN user_roles r ON u.role = r.role_id
+        WHERE u.user_id = :user_id
+        GROUP BY u.user_id
+    SQL;
 
         try {
             $statement = $this->pdo->prepare($sql);
@@ -143,10 +183,29 @@ class UserRepository
     public function findByUsername(string $username): ?User
     {
         $sql = <<<SQL
-            SELECT *
-            FROM users
-            WHERE username = :username
-        SQL;
+        SELECT 
+            u.*,
+            JSON_OBJECT(
+                'role_id', r.role_id,
+                'role_name', r.role_name,
+                'permissions', (
+                    SELECT JSON_ARRAYAGG(
+                        JSON_OBJECT(
+                            'permission_id', p.permission_id,
+                            'permission_name', p.permission_name,
+                            'permission_description', p.permission_description
+                        )
+                    )
+                    FROM role_permissions rp
+                    JOIN permissions p ON rp.permission_id = p.permission_id
+                    WHERE rp.role_id = r.role_id
+                )
+            ) AS role_data
+        FROM users u
+        JOIN user_roles r ON u.role = r.role_id
+        WHERE u.username = :username
+        GROUP BY u.user_id
+    SQL;
 
         try {
             $statement = $this->pdo->prepare($sql);
