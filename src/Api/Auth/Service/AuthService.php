@@ -43,7 +43,7 @@ class AuthService
             ->setIssuer('https://api.luka-lta.dev')
             ->setPayloadClaim('email', $user->getEmail()->getEmail())
             ->setPayloadClaim('sub', $user->getUserId()?->asString())
-            ->setIssuedAt(time() + 3600)
+            ->setIssuedAt(time())
             ->setExpiration($expiresIn)
             ->build();
 
