@@ -192,4 +192,21 @@ class UserRepository
 
         return Users::from(...$users);
     }
+
+    public function deleteUser(UserId $userId): void
+    {
+        $sql = <<<SQL
+            DELETE FROM users WHERE user_id = :user_id
+        SQL;
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute(['user_id' => $userId->asInt()]);
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException(
+                'Failed to delete user',
+                previous: $exception
+            );
+        }
+    }
 }

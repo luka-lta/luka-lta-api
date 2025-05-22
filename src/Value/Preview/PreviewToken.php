@@ -12,9 +12,9 @@ class PreviewToken
 {
     private function __construct(
         private readonly string             $token,
-        private readonly int                $maxUse,
+        private int                $maxUse,
         private int                         $used,
-        private readonly bool               $isActive,
+        private bool               $isActive,
         private readonly User               $createdBy,
         private readonly ?DateTimeImmutable $createdAt,
     ) {
@@ -111,5 +111,15 @@ class PreviewToken
     public function getCreatedBy(): User
     {
         return $this->createdBy;
+    }
+
+    public function setIsActive(bool $isActive): void
+    {
+        $this->isActive = $isActive;
+    }
+
+    public function setMaxUse(int $maxUse): void
+    {
+        $this->maxUse = $maxUse;
     }
 }

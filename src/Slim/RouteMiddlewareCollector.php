@@ -16,7 +16,9 @@ use LukaLtaApi\Api\LinkCollection\Action\GetAllLinksAction;
 use LukaLtaApi\Api\LinkCollection\Action\GetDetailLink;
 use LukaLtaApi\Api\Permission\Action\GetPermissionsAction;
 use LukaLtaApi\Api\PreviewToken\Action\CreatePreviewTokenAction;
+use LukaLtaApi\Api\PreviewToken\Action\DeletePreviewTokenAction;
 use LukaLtaApi\Api\PreviewToken\Action\ListPreviewTokensAction;
+use LukaLtaApi\Api\PreviewToken\Action\UpdatePreviewTokenAction;
 use LukaLtaApi\Api\Register\Action\RegisterUserAction;
 use LukaLtaApi\Api\SelfUser\Action\GetSelfUserAction;
 use LukaLtaApi\Api\SelfUser\Action\SelfUserUpdateAction;
@@ -25,9 +27,11 @@ use LukaLtaApi\Api\Todo\Action\DeleteTodoAction;
 use LukaLtaApi\Api\Todo\Action\GetAllTodoAction;
 use LukaLtaApi\Api\Todo\Action\UpdateTodoAction;
 use LukaLtaApi\Api\User\Action\CreateUserAction;
+use LukaLtaApi\Api\User\Action\DeactivateUserAction;
+use LukaLtaApi\Api\User\Action\DeleteUserAction;
 use LukaLtaApi\Api\User\Action\GetAllUsersAction;
 use LukaLtaApi\Api\User\Action\GetAvatarAction;
-use LukaLtaApi\Api\User\Action\UpdateUserAction;
+use LukaLtaApi\Api\User\Action\UpdateProfileAction;
 use LukaLtaApi\Service\PermissionService;
 use LukaLtaApi\Slim\Middleware\ApiKeyPermissionMiddleware;
 use LukaLtaApi\Slim\Middleware\AuthMiddleware;
@@ -191,8 +195,10 @@ class RouteMiddlewareCollector
 
             $app->group('/user', function (RouteCollectorProxy $user) {
                 $user->post('/', CreateUserAction::class);
-                $user->put('/{userId:[0-9]+}', UpdateUserAction::class);
+                $user->put('/{userId:[0-9]+}', UpdateProfileAction::class);
                 $user->get('/', GetAllUsersAction::class);
+                $user->put('/deactivate/{userId:[0-9]+}', DeactivateUserAction::class);
+                $user->delete('/{userId:[0-9]+}', DeleteUserAction::class);
             })->add(AuthMiddleware::class);
 
             $app->group('/permissions', function (RouteCollectorProxy $permissions) use ($app) {
@@ -217,6 +223,19 @@ class RouteMiddlewareCollector
                         ['Read preview tokens']
                     )
                 );
+
+                $previewToken->put('/{previewTokenId:[0-9]+}', UpdatePreviewTokenAction::class)->add(
+                    new ApiKeyPermissionMiddleware(
+                        $app->getContainer()?->get(PermissionService::class),
+                        ['Edit preview tokens']
+                    )
+                );
+
+                $previewToken->delete('/{previewTokenId:[0-9]+}', DeletePreviewTokenAction::class)
+                ->add(new ApiKeyPermissionMiddleware(
+                    $app->getContainer()?->get(PermissionService::class),
+                    ['Delete preview tokens']
+                ));
             })->add(AuthMiddleware::class);
 
             $app->group('/self', function (RouteCollectorProxy $selfUser) use ($app) {

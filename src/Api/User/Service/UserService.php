@@ -150,4 +150,45 @@ class UserService
         return $response
             ->withHeader('Content-Type', $mimeType);
     }
+
+    public function deactivateUser(string $userId, ResponseInterface $response): ResponseInterface
+    {
+        $user = $this->repository->findById(UserId::fromString($userId));
+
+        if ($user === null) {
+            return ApiResult::from(
+                JsonResult::from('User not found'),
+            )->getResponse($response);
+        }
+
+        $user->setIsActive(false);
+        $this->repository->update($user);
+
+        return ApiResult::from(
+            JsonResult::from('User deactivated')
+        )->getResponse($response);
+    }
+
+    public function deleteUser(string $userId, ResponseInterface $response): ResponseInterface
+    {
+        $user = $this->repository->findById(UserId::fromString($userId));
+
+        if ($user === null) {
+            return ApiResult::from(
+                JsonResult::from('User not found'),
+            )->getResponse($response);
+        }
+
+        if ($user->isActive()) {
+            return ApiResult::from(
+                JsonResult::from('User is not deactivated'),
+            )->getResponse($response);
+        }
+
+        $this->repository->deleteUser(UserId::fromString($userId));
+
+        return ApiResult::from(
+            JsonResult::from('User deleted'),
+        )->getResponse($response);
+    }
 }
