@@ -62,7 +62,6 @@ class PreviewTokenService
                 JsonResult::from('No tokens found', [
                     'tokens' => [],
                 ]),
-                StatusCodeInterface::STATUS_NOT_FOUND,
             );
         }
 

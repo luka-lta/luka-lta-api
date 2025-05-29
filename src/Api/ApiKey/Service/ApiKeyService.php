@@ -64,7 +64,6 @@ class ApiKeyService
         if ($apiKeys->count() === 0) {
             return ApiResult::from(
                 JsonResult::from('No API keys found', ['apiKeys' => []]),
-                StatusCodeInterface::STATUS_NOT_FOUND
             );
         }
 
