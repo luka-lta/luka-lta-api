@@ -18,6 +18,9 @@ class DeleteUserAction extends ApiAction
 
     protected function execute(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        // TODO: Implement execute() method.
+        return $this->service->deleteUser(
+            $request->getAttribute('userId'),
+            $response
+        );
     }
 }

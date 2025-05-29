@@ -25,7 +25,7 @@ class SelfUserUpdateAction extends ApiAction
             'email' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
             'avatarUrl' => ['required' => false, 'location' => RequestValidator::LOCATION_BODY],
         ];
-
+        
         $this->validator->validate($request, $rules);
 
         return $this->service->updateUser($request)->getResponse($response);

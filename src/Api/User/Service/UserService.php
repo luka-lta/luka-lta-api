@@ -161,6 +161,12 @@ class UserService
             )->getResponse($response);
         }
 
+        if (!$user->isActive()) {
+            return ApiResult::from(
+                JsonResult::from('User is already deactivated'),
+            )->getResponse($response);
+        }
+
         $user->setIsActive(false);
         $this->repository->update($user);
 

@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace LukaLtaApi\Api\ApiKey\Service;
 
 use Fig\Http\Message\StatusCodeInterface;
-use LukaLtaApi\Api\ApiKey\Value\ApiKeyExtraFilter;
 use LukaLtaApi\Repository\ApiKeyRepository;
-use LukaLtaApi\Repository\PermissionRepository;
 use LukaLtaApi\Value\ApiKey\ApiKeyObject;
 use LukaLtaApi\Value\Permission\Permission;
 use LukaLtaApi\Value\Permission\Permissions;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
+use PermissionsModule\Repository\PermissionRepository;
 use Psr\Http\Message\ServerRequestInterface;
 
 class ApiKeyService

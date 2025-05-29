@@ -70,7 +70,7 @@ class UserRepository
                 'password' => $user->getPassword()->getPassword(),
                 'avatar_url' => $user->getAvatarUrl(),
                 'user_id' => $user->getUserId()?->asInt(),
-                'is_active' => $user->isActive(),
+                'is_active' => (int)$user->isActive(),
                 'last_active' => $user->getLastActive()?->format('Y-m-d H:i:s'),
             ]);
             $this->pdo->commit();
