@@ -202,7 +202,9 @@ class UserRepository
         try {
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute(['user_id' => $userId->asInt()]);
+            $this->pdo->commit();
         } catch (PDOException $exception) {
+            $this->pdo->rollBack();
             throw new ApiDatabaseException(
                 'Failed to delete user',
                 previous: $exception

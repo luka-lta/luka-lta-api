@@ -158,12 +158,14 @@ class UserService
         if ($user === null) {
             return ApiResult::from(
                 JsonResult::from('User not found'),
+                StatusCodeInterface::STATUS_NOT_FOUND
             )->getResponse($response);
         }
 
         if (!$user->isActive()) {
             return ApiResult::from(
                 JsonResult::from('User is already deactivated'),
+                StatusCodeInterface::STATUS_BAD_REQUEST
             )->getResponse($response);
         }
 
