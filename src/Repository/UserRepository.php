@@ -70,7 +70,7 @@ class UserRepository
                 'password' => $user->getPassword()->getPassword(),
                 'avatar_url' => $user->getAvatarUrl(),
                 'user_id' => $user->getUserId()?->asInt(),
-                'is_active' => $user->isActive(),
+                'is_active' => (int)$user->isActive(),
                 'last_active' => $user->getLastActive()?->format('Y-m-d H:i:s'),
             ]);
             $this->pdo->commit();
@@ -191,5 +191,24 @@ class UserRepository
         }
 
         return Users::from(...$users);
+    }
+
+    public function deleteUser(UserId $userId): void
+    {
+        $sql = <<<SQL
+            DELETE FROM users WHERE user_id = :user_id
+        SQL;
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute(['user_id' => $userId->asInt()]);
+            $this->pdo->commit();
+        } catch (PDOException $exception) {
+            $this->pdo->rollBack();
+            throw new ApiDatabaseException(
+                'Failed to delete user',
+                previous: $exception
+            );
+        }
     }
 }

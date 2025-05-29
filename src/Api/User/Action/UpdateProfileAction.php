@@ -8,7 +8,7 @@ use LukaLtaApi\Api\User\Service\UserService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-class UpdateUserAction extends ApiAction
+class UpdateProfileAction extends ApiAction
 {
     public function __construct(
         private readonly UserService $service,

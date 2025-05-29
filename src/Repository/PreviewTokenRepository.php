@@ -176,4 +176,22 @@ class PreviewTokenRepository
             );
         }
     }
+
+    public function deleteToken(string $tokenId): void
+    {
+        $sql = <<<SQL
+            DELETE FROM preview_access_tokens WHERE token = :token
+        SQL;
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute(['token' => $tokenId]);
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException(
+                'Failed to delete preview token',
+                StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR,
+                $exception
+            );
+        }
+    }
 }

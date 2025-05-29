@@ -11,6 +11,7 @@ use LukaLtaApi\Value\Preview\PreviewToken;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
 use LukaLtaApi\Value\User\UserId;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 class PreviewTokenService
@@ -61,12 +62,50 @@ class PreviewTokenService
                 JsonResult::from('No tokens found', [
                     'tokens' => [],
                 ]),
-                StatusCodeInterface::STATUS_NOT_FOUND,
             );
         }
 
         return ApiResult::from(
             JsonResult::from('Tokens listed', ['tokens' => $tokens->toArray()])
         );
+    }
+
+    public function editToken(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $token = $this->repository->getToken($request->getAttribute('tokenId'));
+
+        if (!$token) {
+            return ApiResult::from(
+                JsonResult::from('Token not found'),
+            )->getResponse($response);
+        }
+
+        $body = $request->getParsedBody();
+
+        $token->setIsActive($body['isActive']);
+        $token->setMaxUse($body['maxUse']);
+
+        $this->repository->updateToken($token);
+
+        return ApiResult::from(
+            JsonResult::from('Token edited', ['token' => $token->getToken()]),
+        )->getResponse($response);
+    }
+
+    public function deleteToken(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $token = $this->repository->getToken($request->getAttribute('tokenId'));
+
+        if (!$token) {
+            return ApiResult::from(
+                JsonResult::from('Token not found'),
+            )->getResponse($response);
+        }
+
+        $this->repository->deleteToken($token->getToken());
+
+        return ApiResult::from(
+            JsonResult::from('Token deleted'),
+        )->getResponse($response);
     }
 }
