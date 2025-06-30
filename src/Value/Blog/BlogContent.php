@@ -26,7 +26,12 @@ class BlogContent
 
     public function toHtml(): string
     {
-        return (new CommonMarkConverter())->convert($this->content);
+        $converter = new CommonMarkConverter([
+            'html_input' => 'strip',
+            'allow_unsafe_links' => false,
+        ]);
+
+        return $converter->convert($this->content);
     }
 
     public function getContent(): string

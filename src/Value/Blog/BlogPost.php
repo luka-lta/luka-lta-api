@@ -65,6 +65,18 @@ class BlogPost
         );
     }
 
+    public function toArray(): array
+    {
+        return [
+            'blogId' => $this->blogId,
+            'userId' => $this->userId->asString(),
+            'title' => $this->title,
+            'content' => $this->content->getContent(),
+            'createdAt' => $this->createdAt->format('Y-m-d H:i:s'),
+            'updatedAt' => $this->updatedAt?->format('Y-m-d H:i:s'),
+        ];
+    }
+
     public function getBlogId(): string
     {
         return $this->blogId;

@@ -31,8 +31,6 @@ class BlogService
             new DateTimeImmutable()
         );
 
-        var_dump($blogPost->getContent());
-
         $this->blogRepository->createBlog($blogPost);
 
         return ApiResult::from(JsonResult::from('Blog post created successfully.'));
