@@ -5,6 +5,7 @@ namespace LukaLtaApi\Api\Blog\Repository;
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Exception\ApiDatabaseException;
 use LukaLtaApi\Value\Blog\BlogPost;
+use LukaLtaApi\Value\Blog\BlogPosts;
 use PDO;
 use PDOException;
 
@@ -63,6 +64,34 @@ class BlogRepository
                 $e
             );
         }
+    }
+
+    public function getAll(): BlogPosts
+    {
+        $sql = <<<SQL
+            SELECT blog_id, user_id, title, content, created_at, updated_at
+            FROM blog_posts
+            ORDER BY created_at DESC
+        SQL;
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute();
+            $rows = $stmt->fetchAll();
+
+            $blogPosts = [];
+            foreach ($rows as $row) {
+                $blogPosts[] = BlogPost::fromDatabase($row);
+            }
+        } catch (PDOException $e) {
+            throw new ApiDatabaseException(
+                $e->getMessage(),
+                StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR,
+                $e
+            );
+        }
+
+        return BlogPosts::from(...$blogPosts);
     }
 
     public function getBlogById(string $blogId): ?BlogPost

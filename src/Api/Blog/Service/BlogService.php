@@ -62,4 +62,19 @@ class BlogService
 
         return ApiResult::from(JsonResult::from('Blog post updated successfully.'));
     }
+
+    public function getAllBlogs(): ApiResult
+    {
+        $blogs = $this->blogRepository->getAll();
+
+        if ($blogs->count() === 0) {
+            return ApiResult::from(
+                JsonResult::from('No blogs found.'),
+            );
+        }
+
+        return ApiResult::from(JsonResult::from('Blogs found.', [
+            'blog' => $blogs->toFrontend()
+        ]));
+    }
 }

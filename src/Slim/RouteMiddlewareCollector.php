@@ -7,6 +7,7 @@ use LukaLtaApi\Api\ApiKey\Action\GetAllApiKeysAction;
 use LukaLtaApi\Api\Auth\Action\AuthAction;
 use LukaLtaApi\Api\Blog\Action\BlogCreateAction;
 use LukaLtaApi\Api\Blog\Action\BlogUpdateAction;
+use LukaLtaApi\Api\Blog\Action\GetBlogsAction;
 use LukaLtaApi\Api\Click\Action\ClickTrackAction;
 use LukaLtaApi\Api\Click\Action\GetAllClicksAction;
 use LukaLtaApi\Api\Click\Action\GetClickSummaryAction;
@@ -254,6 +255,12 @@ class RouteMiddlewareCollector
                     $app->getContainer()?->get(PermissionService::class),
                     ['Edit blog posts']
                 ));
+
+                $blog->get('/', GetBlogsAction::class)
+                    ->add(new ApiKeyPermissionMiddleware(
+                        $app->getContainer()?->get(PermissionService::class),
+                        ['Read blog posts']
+                    ));
             })->add(AuthMiddleware::class);
 
             $app->group('/self', function (RouteCollectorProxy $selfUser) use ($app) {
