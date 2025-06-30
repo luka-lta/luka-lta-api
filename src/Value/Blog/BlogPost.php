@@ -26,7 +26,7 @@ class BlogPost
         ?DateTimeImmutable $updatedAt = null
     ): self {
         return new self(
-            Uuid::uuid4(),
+            Uuid::uuid4()->toString(),
             $userId,
             $title,
             BlogContent::fromRaw($content),
