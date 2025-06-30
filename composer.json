@@ -27,7 +27,9 @@
     "slim/http": "^1.4",
     "rbdwllr/reallysimplejwt": "^5.0",
     "ext-fileinfo": "*",
-    "latitude/latitude": "^4.2"
+    "latitude/latitude": "^4.2",
+    "league/commonmark": "^2.7",
+    "ramsey/uuid": "^4.9"
   },
   "require-dev": {
     "roave/security-advisories": "dev-latest",

@@ -5,6 +5,8 @@ namespace LukaLtaApi\Slim;
 use LukaLtaApi\Api\ApiKey\Action\CreateApiKeyAction;
 use LukaLtaApi\Api\ApiKey\Action\GetAllApiKeysAction;
 use LukaLtaApi\Api\Auth\Action\AuthAction;
+use LukaLtaApi\Api\Blog\Action\BlogCreateAction;
+use LukaLtaApi\Api\Blog\Action\BlogUpdateAction;
 use LukaLtaApi\Api\Click\Action\ClickTrackAction;
 use LukaLtaApi\Api\Click\Action\GetAllClicksAction;
 use LukaLtaApi\Api\Click\Action\GetClickSummaryAction;
@@ -232,9 +234,25 @@ class RouteMiddlewareCollector
                 );
 
                 $previewToken->delete('/{previewTokenId:[0-9]+}', DeletePreviewTokenAction::class)
-                ->add(new ApiKeyPermissionMiddleware(
+                    ->add(new ApiKeyPermissionMiddleware(
+                        $app->getContainer()?->get(PermissionService::class),
+                        ['Delete preview tokens']
+                    ));
+            })->add(AuthMiddleware::class);
+
+            $app->group('/blog', function (RouteCollectorProxy $blog) use ($app) {
+                $blog->post('/', BlogCreateAction::class)
+                    ->add(new ApiKeyPermissionMiddleware(
+                        $app->getContainer()?->get(PermissionService::class),
+                        ['Create blog posts']
+                    ));
+
+                $blog->put(
+                    '/{blogId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}}',
+                    BlogUpdateAction::class
+                )->add(new ApiKeyPermissionMiddleware(
                     $app->getContainer()?->get(PermissionService::class),
-                    ['Delete preview tokens']
+                    ['Edit blog posts']
                 ));
             })->add(AuthMiddleware::class);
 
