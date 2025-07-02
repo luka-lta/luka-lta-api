@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace LukaLtaApi\Api\Permission\Service;
 
+use LukaLtaApi\Repository\PermissionRepository;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
-use PermissionsModule\Repository\PermissionRepository;
 
 class PermissionsService
 {
