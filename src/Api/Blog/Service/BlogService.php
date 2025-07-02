@@ -61,6 +61,23 @@ class BlogService
         return ApiResult::from(JsonResult::from('Blog post updated successfully.'));
     }
 
+    public function getBlogById(ServerRequestInterface $request): ApiResult
+    {
+        $blogId = $request->getAttribute('blogId');
+        $blogPost = $this->blogRepository->getBlogById($blogId);
+
+        if ($blogPost === null) {
+            return ApiResult::from(
+                JsonResult::from('Blog post not found.'),
+                StatusCodeInterface::STATUS_NOT_FOUND
+            );
+        }
+
+        return ApiResult::from(JsonResult::from('Blog post found.', [
+            'blog' => $blogPost->toArray()
+        ]));
+    }
+
     public function getAllBlogs(): ApiResult
     {
         $blogs = $this->blogRepository->getAll();

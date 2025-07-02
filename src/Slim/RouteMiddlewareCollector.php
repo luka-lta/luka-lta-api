@@ -7,6 +7,7 @@ use LukaLtaApi\Api\ApiKey\Action\GetAllApiKeysAction;
 use LukaLtaApi\Api\Auth\Action\AuthAction;
 use LukaLtaApi\Api\Blog\Action\BlogCreateAction;
 use LukaLtaApi\Api\Blog\Action\BlogUpdateAction;
+use LukaLtaApi\Api\Blog\Action\GetBlogByIdAction;
 use LukaLtaApi\Api\Blog\Action\GetBlogsAction;
 use LukaLtaApi\Api\Click\Action\ClickTrackAction;
 use LukaLtaApi\Api\Click\Action\GetAllClicksAction;
@@ -254,6 +255,14 @@ class RouteMiddlewareCollector
                 )->add(new ApiKeyPermissionMiddleware(
                     $app->getContainer()?->get(PermissionService::class),
                     ['Edit blog posts']
+                ));
+
+                $blog->get(
+                    '/{blogId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}}',
+                    GetBlogByIdAction::class
+                )->add(new ApiKeyPermissionMiddleware(
+                    $app->getContainer()?->get(PermissionService::class),
+                    ['Read blog post by ID']
                 ));
 
                 $blog->get('/', GetBlogsAction::class)

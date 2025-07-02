@@ -69,7 +69,7 @@ class BlogPost
     {
         return [
             'blogId' => $this->blogId,
-            'userId' => $this->userId->asString(),
+            'userId' => $this->userId->asInt(),
             'title' => $this->title,
             'content' => $this->content->getContent(),
             'createdAt' => $this->createdAt->format('Y-m-d H:i:s'),
