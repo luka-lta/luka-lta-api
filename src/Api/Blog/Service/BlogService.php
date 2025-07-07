@@ -28,6 +28,7 @@ class BlogService
             $userId,
             $data['title'],
             $data['content'],
+            $data['isPublished'] ?? false,
             new DateTimeImmutable()
         );
 
@@ -55,6 +56,7 @@ class BlogService
 
         $blogPost->setTitle($data['title']);
         $blogPost->setContent(BlogContent::fromRaw($data['content']));
+        $blogPost->setIsPublished($data['isPublished']);
 
         $this->blogRepository->updateBlog($blogPost);
 

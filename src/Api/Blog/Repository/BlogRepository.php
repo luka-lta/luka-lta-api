@@ -20,8 +20,8 @@ class BlogRepository
         BlogPost $blogPost,
     ): void {
         $sql = <<<SQL
-            INSERT INTO blog_posts (blog_id, user_id, title, content, created_at)
-            VALUES (:blog_id, :user_id, :title, :content, NOW())
+            INSERT INTO blog_posts (blog_id, user_id, title, content, is_published, created_at)
+            VALUES (:blog_id, :user_id, :title, :content, :is_published, NOW())
         SQL;
 
         try {
@@ -31,6 +31,7 @@ class BlogRepository
                 'user_id' => $blogPost->getUserId()->asInt(),
                 'title' => $blogPost->getTitle(),
                 'content' => $blogPost->getContent()->getContent(),
+                'is_published' => (int)$blogPost->isPublished(),
             ]);
         } catch (PDOException $e) {
             throw new ApiDatabaseException(
@@ -45,7 +46,7 @@ class BlogRepository
     {
         $sql = <<<SQL
             UPDATE blog_posts
-            SET title = :title, content = :content, updated_at = NOW()
+            SET title = :title, content = :content, updated_at = NOW(), is_published = :is_published
             WHERE blog_id = :blog_id AND user_id = :user_id
         SQL;
 
@@ -55,6 +56,7 @@ class BlogRepository
                 'blog_id' => $blogPost->getBlogId(),
                 'user_id' => $blogPost->getUserId()->asInt(),
                 'title' => $blogPost->getTitle(),
+                'is_published' => (int)$blogPost->isPublished(),
                 'content' => $blogPost->getContent()->getContent(),
             ]);
         } catch (PDOException $e) {
@@ -69,7 +71,7 @@ class BlogRepository
     public function getAll(): BlogPosts
     {
         $sql = <<<SQL
-            SELECT blog_id, user_id, title, content, created_at, updated_at
+            SELECT blog_id, user_id, title, content, created_at, updated_at, is_published
             FROM blog_posts
             ORDER BY created_at DESC
         SQL;
@@ -97,7 +99,7 @@ class BlogRepository
     public function getBlogById(string $blogId): ?BlogPost
     {
         $sql = <<<SQL
-            SELECT blog_id, user_id, title, content, created_at, updated_at
+            SELECT blog_id, user_id, title, content, created_at, updated_at, is_published
             FROM blog_posts
             WHERE blog_id = :blog_id
         SQL;

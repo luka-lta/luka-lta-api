@@ -32,6 +32,8 @@ class BlogPosts implements IteratorAggregate, JsonSerializable, Countable
                 'content' => $blogPost->getContent()->toHtml(),
                 'userId' => $blogPost->getUserId()->asInt(),
                 'createdAt' => $blogPost->getCreatedAt()->format('Y-m-d H:i:s'),
+                'updatedAt' => $blogPost->getUpdatedAt()?->format('Y-m-d H:i:s'),
+                'isPublished' => $blogPost->isPublished(),
             ];
         }
 

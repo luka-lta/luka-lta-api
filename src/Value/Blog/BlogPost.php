@@ -13,6 +13,7 @@ class BlogPost
         private readonly UserId            $userId,
         private string                     $title,
         private BlogContent                $content,
+        private bool                       $isPublished,
         private readonly DateTimeImmutable $createdAt,
         private ?DateTimeImmutable         $updatedAt,
     ) {
@@ -22,6 +23,7 @@ class BlogPost
         UserId             $userId,
         string             $title,
         string             $content,
+        bool               $isPublished,
         DateTimeImmutable  $createdAt,
         ?DateTimeImmutable $updatedAt = null
     ): self {
@@ -30,6 +32,7 @@ class BlogPost
             $userId,
             $title,
             BlogContent::fromRaw($content),
+            $isPublished,
             $createdAt,
             $updatedAt
         );
@@ -40,6 +43,7 @@ class BlogPost
         UserId             $userId,
         string             $title,
         string             $content,
+        bool               $isPublished,
         DateTimeImmutable  $createdAt,
         ?DateTimeImmutable $updatedAt = null
     ): self {
@@ -48,6 +52,7 @@ class BlogPost
             $userId,
             $title,
             BlogContent::fromRaw($content),
+            $isPublished,
             $createdAt,
             $updatedAt
         );
@@ -60,6 +65,7 @@ class BlogPost
             UserId::fromString($row['user_id']),
             $row['title'],
             BlogContent::fromRaw($row['content']),
+            $row['is_published'],
             new DateTimeImmutable($row['created_at']),
             isset($row['updated_at']) ? new DateTimeImmutable($row['updated_at']) : null
         );
@@ -72,6 +78,7 @@ class BlogPost
             'userId' => $this->userId->asInt(),
             'title' => $this->title,
             'content' => $this->content->getContent(),
+            'isPublished' => $this->isPublished,
             'createdAt' => $this->createdAt->format('Y-m-d H:i:s'),
             'updatedAt' => $this->updatedAt?->format('Y-m-d H:i:s'),
         ];
@@ -97,6 +104,11 @@ class BlogPost
         return $this->content;
     }
 
+    public function isPublished(): bool
+    {
+        return $this->isPublished;
+    }
+
     public function getCreatedAt(): DateTimeImmutable
     {
         return $this->createdAt;
@@ -115,6 +127,11 @@ class BlogPost
     public function setContent(BlogContent $content): void
     {
         $this->content = $content;
+    }
+
+    public function setIsPublished(bool $isPublished): void
+    {
+        $this->isPublished = $isPublished;
     }
 
     public function setUpdatedAt(?DateTimeImmutable $updatedAt): void
