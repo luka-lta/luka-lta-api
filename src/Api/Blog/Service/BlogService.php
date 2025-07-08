@@ -5,6 +5,7 @@ namespace LukaLtaApi\Api\Blog\Service;
 use DateTimeImmutable;
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Api\Blog\Repository\BlogRepository;
+use LukaLtaApi\Repository\UserRepository;
 use LukaLtaApi\Value\Blog\BlogContent;
 use LukaLtaApi\Value\Blog\BlogPost;
 use LukaLtaApi\Value\Result\ApiResult;
@@ -16,6 +17,7 @@ class BlogService
 {
     public function __construct(
         private readonly BlogRepository $blogRepository,
+        private readonly UserRepository $userRepository,
     ) {
     }
 
@@ -23,10 +25,19 @@ class BlogService
     {
         $data = $request->getParsedBody();
         $userId = UserId::fromString($request->getAttribute('userId'));
+        $user = $this->userRepository->findById($userId);
+
+        if ($user === null) {
+            return ApiResult::from(
+                JsonResult::from('User not found.'),
+                StatusCodeInterface::STATUS_NOT_FOUND
+            );
+        }
 
         $blogPost = BlogPost::create(
-            $userId,
+            $user,
             $data['title'],
+            $data['excerpt'] ?? null,
             $data['content'],
             $data['isPublished'] ?? false,
             new DateTimeImmutable()
@@ -45,7 +56,7 @@ class BlogService
 
         $blogPost = $this->blogRepository->getBlogById($blogId);
 
-        if ($blogPost === null || $blogPost->getUserId()->asInt() !== $userId->asInt()) {
+        if ($blogPost === null || $blogPost->getUser()->getUserId()->asInt() !== $userId->asInt()) {
             return ApiResult::from(
                 JsonResult::from(
                     'Blog post not found or access denied.'
@@ -55,6 +66,7 @@ class BlogService
         }
 
         $blogPost->setTitle($data['title']);
+        $blogPost->setExcerpt($data['excerpt'] ?? null);
         $blogPost->setContent(BlogContent::fromRaw($data['content']));
         $blogPost->setIsPublished($data['isPublished']);
 
@@ -91,7 +103,7 @@ class BlogService
         }
 
         return ApiResult::from(JsonResult::from('Blogs found.', [
-            'blog' => $blogs->toFrontend()
+            'blogs' => $blogs->toFrontend()
         ]));
     }
 }

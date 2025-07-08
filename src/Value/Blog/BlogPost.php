@@ -3,15 +3,16 @@
 namespace LukaLtaApi\Value\Blog;
 
 use DateTimeImmutable;
-use LukaLtaApi\Value\User\UserId;
+use LukaLtaApi\Value\User\User;
 use Ramsey\Uuid\Uuid;
 
 class BlogPost
 {
     private function __construct(
         private readonly string            $blogId,
-        private readonly UserId            $userId,
+        private readonly User              $user,
         private string                     $title,
+        private ?string                    $excerpt,
         private BlogContent                $content,
         private bool                       $isPublished,
         private readonly DateTimeImmutable $createdAt,
@@ -20,8 +21,9 @@ class BlogPost
     }
 
     public static function create(
-        UserId             $userId,
+        User               $user,
         string             $title,
+        ?string            $excerpt,
         string             $content,
         bool               $isPublished,
         DateTimeImmutable  $createdAt,
@@ -29,8 +31,9 @@ class BlogPost
     ): self {
         return new self(
             Uuid::uuid4()->toString(),
-            $userId,
+            $user,
             $title,
+            $excerpt,
             BlogContent::fromRaw($content),
             $isPublished,
             $createdAt,
@@ -40,8 +43,9 @@ class BlogPost
 
     public static function from(
         string             $blogId,
-        UserId             $userId,
+        User               $user,
         string             $title,
+        ?string            $excerpt,
         string             $content,
         bool               $isPublished,
         DateTimeImmutable  $createdAt,
@@ -49,8 +53,9 @@ class BlogPost
     ): self {
         return new self(
             $blogId,
-            $userId,
+            $user,
             $title,
+            $excerpt,
             BlogContent::fromRaw($content),
             $isPublished,
             $createdAt,
@@ -62,8 +67,9 @@ class BlogPost
     {
         return new self(
             $row['blog_id'],
-            UserId::fromString($row['user_id']),
+            User::fromDatabase($row),
             $row['title'],
+            $row['excerpt'],
             BlogContent::fromRaw($row['content']),
             $row['is_published'],
             new DateTimeImmutable($row['created_at']),
@@ -74,9 +80,10 @@ class BlogPost
     public function toArray(): array
     {
         return [
-            'blogId' => $this->blogId,
-            'userId' => $this->userId->asInt(),
-            'title' => $this->title,
+            'blogId' => $this->getBlogId(),
+            'user' => $this->getUser()->toArray(),
+            'title' => $this->getTitle(),
+            'excerpt' => $this->getExcerpt(),
             'content' => $this->content->getContent(),
             'isPublished' => $this->isPublished,
             'createdAt' => $this->createdAt->format('Y-m-d H:i:s'),
@@ -89,14 +96,19 @@ class BlogPost
         return $this->blogId;
     }
 
-    public function getUserId(): UserId
+    public function getUser(): User
     {
-        return $this->userId;
+        return $this->user;
     }
 
     public function getTitle(): string
     {
         return $this->title;
+    }
+
+    public function getExcerpt(): ?string
+    {
+        return $this->excerpt;
     }
 
     public function getContent(): BlogContent
@@ -122,6 +134,11 @@ class BlogPost
     public function setTitle(string $title): void
     {
         $this->title = $title;
+    }
+
+    public function setExcerpt(?string $excerpt): void
+    {
+        $this->excerpt = $excerpt;
     }
 
     public function setContent(BlogContent $content): void

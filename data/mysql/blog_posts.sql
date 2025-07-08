@@ -3,6 +3,7 @@ CREATE TABLE `blog_posts`
     `blog_id`    char(36)     NOT NULL,
     `user_id`    int          NOT NULL,
     `title`      varchar(100) NOT NULL,
+    `excerpt`    varchar(100) NULL,
     `content`    text         NOT NULL,
     `created_at` datetime     NOT NULL,
     `updated_at` datetime DEFAULT NULL

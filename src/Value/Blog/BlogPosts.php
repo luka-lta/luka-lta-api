@@ -29,11 +29,12 @@ class BlogPosts implements IteratorAggregate, JsonSerializable, Countable
             $blogPosts[] = [
                 'blogId' => $blogPost->getBlogId(),
                 'title' => $blogPost->getTitle(),
+                'excerpt' => $blogPost->getExcerpt(),
                 'content' => $blogPost->getContent()->toHtml(),
-                'userId' => $blogPost->getUserId()->asInt(),
                 'createdAt' => $blogPost->getCreatedAt()->format('Y-m-d H:i:s'),
                 'updatedAt' => $blogPost->getUpdatedAt()?->format('Y-m-d H:i:s'),
                 'isPublished' => $blogPost->isPublished(),
+                'user' => $blogPost->getUser()->toArray(),
             ];
         }
 
