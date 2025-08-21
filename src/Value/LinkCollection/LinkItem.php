@@ -83,6 +83,28 @@ class LinkItem
         ];
     }
 
+    public function update(array $data): void
+    {
+        if (isset($data['displayname'])) {
+            $this->metaData->setDisplayName($data['displayname']);
+        }
+        if (isset($data['description'])) {
+            $this->metaData->setDescription($data['description']);
+        }
+        if (isset($data['url'])) {
+            $this->metaData->setLinkUrl($data['url']);
+        }
+        if (isset($data['isActive'])) {
+            $this->metaData->setIsActive((bool)$data['isActive']);
+        }
+        if (isset($data['iconName'])) {
+            $this->iconName = IconName::fromString($data['iconName']);
+        }
+        if (isset($data['displayOrder'])) {
+            $this->displayOrder = (int)$data['displayOrder'];
+        }
+    }
+
     public function getLinkId(): ?LinkId
     {
         return $this->linkId;

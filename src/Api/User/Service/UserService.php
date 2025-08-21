@@ -18,7 +18,6 @@ use LukaLtaApi\Value\User\UserEmail;
 use LukaLtaApi\Value\User\UserId;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use RuntimeException;
 
 class UserService
 {

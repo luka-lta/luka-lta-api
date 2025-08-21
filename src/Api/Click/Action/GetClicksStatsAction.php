@@ -7,7 +7,7 @@ use LukaLtaApi\Api\Click\Service\ClickService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-class GetAllClicksAction extends ApiAction
+class GetClicksStatsAction extends ApiAction
 {
     public function __construct(
         private readonly ClickService $service
@@ -16,6 +16,6 @@ class GetAllClicksAction extends ApiAction
 
     protected function execute(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        return $this->service->getAllClicks($request)->getResponse($response);
+        return $this->service->getClicksStats($request)->getResponse($response);
     }
 }
