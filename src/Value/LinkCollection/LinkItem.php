@@ -85,22 +85,25 @@ class LinkItem
 
     public function update(array $data): void
     {
-        if (isset($data['displayname'])) {
-            $this->metaData->setDisplayName($data['displayname']);
+        if (array_key_exists('displayname', $data)) {
+            $this->metaData->setDisplayName(DisplayName::fromString((string)$data['displayname']));
         }
-        if (isset($data['description'])) {
-            $this->metaData->setDescription($data['description']);
+        if (array_key_exists('description', $data)) {
+            $this->metaData->setDescription(Description::fromString($data['description']));
         }
-        if (isset($data['url'])) {
-            $this->metaData->setLinkUrl($data['url']);
+        if (array_key_exists('url', $data)) {
+            $this->metaData->setLinkUrl(LinkUrl::fromString((string)$data['url']));
         }
-        if (isset($data['isActive'])) {
-            $this->metaData->setIsActive((bool)$data['isActive']);
+        if (array_key_exists('isActive', $data)) {
+            $bool = filter_var($data['isActive'], FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE);
+            if ($bool !== null) {
+                $this->metaData->setIsActive($bool);
+            }
         }
-        if (isset($data['iconName'])) {
+        if (array_key_exists('iconName', $data)) {
             $this->iconName = IconName::fromString($data['iconName']);
         }
-        if (isset($data['displayOrder'])) {
+        if (array_key_exists('displayOrder', $data)) {
             $this->displayOrder = (int)$data['displayOrder'];
         }
     }
