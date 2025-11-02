@@ -5,6 +5,7 @@ namespace LukaLtaApi\Api\Auth\Service;
 use DateTimeImmutable;
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Repository\UserRepository;
+use LukaLtaApi\Service\TokenService;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
 use LukaLtaApi\Value\User\UserEmail;
@@ -14,6 +15,7 @@ class AuthService
 {
     public function __construct(
         private readonly UserRepository $repository,
+        private readonly TokenService $tokenService,
     ) {
     }
 
@@ -38,14 +40,7 @@ class AuthService
         $user->setLastActive(new DateTimeImmutable());
         $this->repository->update($user);
 
-        $expiresIn = time() + (int)getenv('JWT_NORMAL_EXPIRATION_TIME');
-        $token = Token::builder(getenv('JWT_SECRET'))
-            ->setIssuer('https://api.luka-lta.dev')
-            ->setPayloadClaim('email', $user->getEmail()->getEmail())
-            ->setPayloadClaim('sub', $user->getUserId()?->asString())
-            ->setIssuedAt(time())
-            ->setExpiration($expiresIn)
-            ->build();
+        $token = $this->tokenService->generateToken($user);
 
         return ApiResult::from(JsonResult::from('User logged in', [
             'token' => $token->getToken(),

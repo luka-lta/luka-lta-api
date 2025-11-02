@@ -1,23 +1,21 @@
 <?php
 
-declare(strict_types=1);
-
-namespace LukaLtaApi\Api\Todo\Action;
+namespace LukaLtaApi\Api\Click\Action;
 
 use LukaLtaApi\Api\ApiAction;
-use LukaLtaApi\Api\Todo\Service\TaskService;
+use LukaLtaApi\Api\Click\Service\ClickService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-class DeleteTodoAction extends ApiAction
+class GetClicksStatsAction extends ApiAction
 {
     public function __construct(
-        private readonly TaskService $service
+        private readonly ClickService $service
     ) {
     }
 
     protected function execute(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        return $this->service->deleteTask($request)->getResponse($response);
+        return $this->service->getClicksStats($request)->getResponse($response);
     }
 }

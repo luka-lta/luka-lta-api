@@ -8,13 +8,14 @@ use LukaLtaApi\Value\LinkCollection\LinkUrl;
 class Click
 {
     private function __construct(
-        private readonly ?ClickId $clickId,
-        private readonly ClickTag $tag,
-        private readonly LinkUrl $url,
+        private readonly ?ClickId           $clickId,
+        private readonly ClickTag           $tag,
+        private readonly LinkUrl            $url,
         private readonly ?DateTimeImmutable $clickedAt,
-        private readonly ?string $ipAdress,
-        private readonly ?string $userAgent,
-        private readonly ?string $referer,
+        private readonly ?string            $ipAddress,
+        private readonly ?string            $market,
+        private readonly ?string            $userAgent,
+        private readonly ?string            $referer,
     ) {
     }
 
@@ -23,7 +24,8 @@ class Click
         ClickTag $tag,
         LinkUrl $url,
         ?DateTimeImmutable $clickedAt,
-        ?string $ipAdress,
+        ?string $ipAddress,
+        ?string $market,
         ?string $userAgent,
         ?string $referer,
     ): self {
@@ -32,7 +34,8 @@ class Click
             $tag,
             $url,
             $clickedAt,
-            $ipAdress,
+            $ipAddress,
+            $market,
             $userAgent,
             $referer,
         );
@@ -45,7 +48,8 @@ class Click
             ClickTag::fromString($data['click_tag']),
             LinkUrl::fromString($data['url']),
             new DateTimeImmutable($data['clicked_at']),
-            $data['ip_adress'] ?? null,
+            $data['ip_address'] ?? null,
+            $data['market'] ?? null,
             $data['user_agent'] ?? null,
             $data['referer'] ?? null,
         );
@@ -58,7 +62,8 @@ class Click
             'clickTag' => $this->tag->getValue(),
             'url' => (string)$this->url,
             'clickedAt' => $this->clickedAt->format('Y-m-d H:i:s'),
-            'ipAdress' => $this->ipAdress,
+            'ipAddress' => $this->ipAddress,
+            'market' => $this->market,
             'userAgent' => $this->userAgent,
             'referer' => $this->referer,
         ];
@@ -84,9 +89,14 @@ class Click
         return $this->clickedAt;
     }
 
-    public function getIpAdress(): ?string
+    public function getIpAddress(): ?string
     {
-        return $this->ipAdress;
+        return $this->ipAddress;
+    }
+
+    public function getMarket(): ?string
+    {
+        return $this->market;
     }
 
     public function getUserAgent(): ?string

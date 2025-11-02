@@ -5,6 +5,7 @@ namespace LukaLtaApi\Repository;
 use DateTimeImmutable;
 use LukaLtaApi\Exception\ApiDatabaseException;
 use LukaLtaApi\Value\Tracking\Click;
+use LukaLtaApi\Value\Tracking\Clicks;
 use LukaLtaApi\Value\Tracking\ClickSummary;
 use PDO;
 use PDOException;
@@ -19,8 +20,8 @@ class ClickRepository
     public function recordClick(Click $click): void
     {
         $sql = <<<SQL
-            INSERT INTO url_clicks (url, click_tag, clicked_at, ip_address, user_agent, referrer)
-            VALUES (:url, :click_tag, :click_date, :ip_address, :user_agent, :referrer)
+            INSERT INTO url_clicks (url, click_tag, clicked_at, ip_address, market, user_agent, referrer)
+            VALUES (:url, :click_tag, :click_date, :ip_address, :market, :user_agent, :referrer)
         SQL;
 
         try {
@@ -29,7 +30,8 @@ class ClickRepository
                 'url' => (string)$click->getUrl(),
                 'click_tag' => $click->getTag()->getValue(),
                 'click_date' => $click->getClickedAt()?->format('Y-m-d H:i:s'),
-                'ip_address' => $click->getIpAdress(),
+                'ip_address' => $click->getIpAddress(),
+                'market' => $click->getMarket(),
                 'user_agent' => $click->getUserAgent(),
                 'referrer' => $click->getReferer(),
             ]);
@@ -89,7 +91,7 @@ class ClickRepository
         return ClickSummary::from($totalClicks, $clicksOverview, $clicksOverTime);
     }
 
-    public function listAll(DateTimeImmutable $startDate, DateTimeImmutable $endDate): array
+    public function listStats(DateTimeImmutable $startDate, DateTimeImmutable $endDate): array
     {
         $sql = <<<SQL
         SELECT 
@@ -117,5 +119,44 @@ class ClickRepository
                 previous: $exception
             );
         }
+    }
+
+    public function listAll(): Clicks
+    {
+        $sql = <<<SQL
+            SELECT
+                lc.displayname,
+                uc.click_tag,
+                uc.click_id,
+                uc.url,
+                uc.clicked_at,
+                uc.ip_address,
+                uc.user_agent,
+                uc.referrer,
+                uc.market,
+                DATE(uc.clicked_at) AS click_date
+            FROM url_clicks uc
+            JOIN link_collection lc
+                ON uc.click_tag = lc.click_tag
+            ORDER BY
+                click_date, lc.displayname
+    SQL;
+
+        try {
+            $statement = $this->pdo->prepare($sql);
+            $statement->execute();
+
+            $clicks = [];
+            foreach ($statement as $row) {
+                $clicks[] = Click::fromDatabase($row);
+            }
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException(
+                'Failed to fetch clicks',
+                previous: $exception
+            );
+        }
+
+        return Clicks::from(...$clicks);
     }
 }

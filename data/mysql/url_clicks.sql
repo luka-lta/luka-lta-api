@@ -5,6 +5,7 @@ CREATE TABLE `url_clicks`
     `url`        text     NOT NULL,
     `clicked_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `ip_address` varchar(45)       DEFAULT NULL,
+    `market` char(3)       DEFAULT NULL,
     `user_agent` text,
     `referrer`   text
 ) ENGINE = InnoDB

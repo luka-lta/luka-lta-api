@@ -83,6 +83,31 @@ class LinkItem
         ];
     }
 
+    public function update(array $data): void
+    {
+        if (array_key_exists('displayname', $data)) {
+            $this->metaData->setDisplayName(DisplayName::fromString((string)$data['displayname']));
+        }
+        if (array_key_exists('description', $data)) {
+            $this->metaData->setDescription(Description::fromString($data['description']));
+        }
+        if (array_key_exists('url', $data)) {
+            $this->metaData->setLinkUrl(LinkUrl::fromString((string)$data['url']));
+        }
+        if (array_key_exists('isActive', $data)) {
+            $bool = filter_var($data['isActive'], FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE);
+            if ($bool !== null) {
+                $this->metaData->setIsActive($bool);
+            }
+        }
+        if (array_key_exists('iconName', $data)) {
+            $this->iconName = IconName::fromString($data['iconName']);
+        }
+        if (array_key_exists('displayOrder', $data)) {
+            $this->displayOrder = (int)$data['displayOrder'];
+        }
+    }
+
     public function getLinkId(): ?LinkId
     {
         return $this->linkId;

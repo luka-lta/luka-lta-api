@@ -1,23 +1,21 @@
 <?php
 
-declare(strict_types=1);
-
-namespace LukaLtaApi\Api\Todo\Action;
+namespace LukaLtaApi\Api\Blog\Action;
 
 use LukaLtaApi\Api\ApiAction;
-use LukaLtaApi\Api\Todo\Service\TaskService;
+use LukaLtaApi\Api\Blog\Service\BlogService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-class GetAllTodoAction extends ApiAction
+class GetBlogsAction extends ApiAction
 {
     public function __construct(
-        private readonly TaskService $service
+        private readonly BlogService $service,
     ) {
     }
 
     protected function execute(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        return $this->service->getAllTasks($request)->getResponse($response);
+        return $this->service->getAllBlogs()->getResponse($response);
     }
 }

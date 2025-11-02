@@ -5,8 +5,13 @@ namespace LukaLtaApi\Slim;
 use LukaLtaApi\Api\ApiKey\Action\CreateApiKeyAction;
 use LukaLtaApi\Api\ApiKey\Action\GetAllApiKeysAction;
 use LukaLtaApi\Api\Auth\Action\AuthAction;
+use LukaLtaApi\Api\Blog\Action\BlogCreateAction;
+use LukaLtaApi\Api\Blog\Action\BlogUpdateAction;
+use LukaLtaApi\Api\Blog\Action\GetBlogByIdAction;
+use LukaLtaApi\Api\Blog\Action\GetBlogsAction;
 use LukaLtaApi\Api\Click\Action\ClickTrackAction;
-use LukaLtaApi\Api\Click\Action\GetAllClicksAction;
+use LukaLtaApi\Api\Click\Action\GetClicksAction;
+use LukaLtaApi\Api\Click\Action\GetClicksStatsAction;
 use LukaLtaApi\Api\Click\Action\GetClickSummaryAction;
 use LukaLtaApi\Api\Health\Action\GetHealthAction;
 use LukaLtaApi\Api\LinkCollection\Action\CreateLinkAction;
@@ -22,10 +27,6 @@ use LukaLtaApi\Api\PreviewToken\Action\UpdatePreviewTokenAction;
 use LukaLtaApi\Api\Register\Action\RegisterUserAction;
 use LukaLtaApi\Api\SelfUser\Action\GetSelfUserAction;
 use LukaLtaApi\Api\SelfUser\Action\SelfUserUpdateAction;
-use LukaLtaApi\Api\Todo\Action\CreateTodoAction;
-use LukaLtaApi\Api\Todo\Action\DeleteTodoAction;
-use LukaLtaApi\Api\Todo\Action\GetAllTodoAction;
-use LukaLtaApi\Api\Todo\Action\UpdateTodoAction;
 use LukaLtaApi\Api\User\Action\CreateUserAction;
 use LukaLtaApi\Api\User\Action\DeactivateUserAction;
 use LukaLtaApi\Api\User\Action\DeleteUserAction;
@@ -129,29 +130,6 @@ class RouteMiddlewareCollector
                     ));
             })->add(AuthMiddleware::class);
 
-            $app->group('/todo', function (RouteCollectorProxy $todo) use ($app) {
-                $todo->post('/', CreateTodoAction::class)
-                    ->add(new ApiKeyPermissionMiddleware(
-                        $app->getContainer()?->get(PermissionService::class),
-                        ['Create todos']
-                    ));
-                $todo->put('/{todoId:[0-9]+}', UpdateTodoAction::class)
-                    ->add(new ApiKeyPermissionMiddleware(
-                        $app->getContainer()?->get(PermissionService::class),
-                        ['Edit todos']
-                    ));
-                $todo->get('/', GetAllTodoAction::class)
-                    ->add(new ApiKeyPermissionMiddleware(
-                        $app->getContainer()?->get(PermissionService::class),
-                        ['Read todos']
-                    ));
-                $todo->delete('/{todoId:[0-9]+}', DeleteTodoAction::class)
-                    ->add(new ApiKeyPermissionMiddleware(
-                        $app->getContainer()?->get(PermissionService::class),
-                        ['Delete todos']
-                    ));
-            })->add(AuthMiddleware::class);
-
             $app->group('/linkCollection', function (RouteCollectorProxy $linkCollection) use ($app) {
                 $linkCollection->post('/', CreateLinkAction::class)
                     ->add(new ApiKeyPermissionMiddleware(
@@ -178,7 +156,13 @@ class RouteMiddlewareCollector
 
             $app->group('/click', function (RouteCollectorProxy $click) use ($app) {
                 $click->post('/track/{clickTag}', ClickTrackAction::class);
-                $click->get('/', GetAllClicksAction::class)
+                $click->get('/stats', GetClicksStatsAction::class)
+                    ->add(AuthMiddleware::class)
+                    ->add(new ApiKeyPermissionMiddleware(
+                        $app->getContainer()?->get(PermissionService::class),
+                        [Permission::VIEW_CLICKS]
+                    ));
+                $click->get('/', GetClicksAction::class)
                     ->add(AuthMiddleware::class)
                     ->add(new ApiKeyPermissionMiddleware(
                         $app->getContainer()?->get(PermissionService::class),
@@ -232,10 +216,40 @@ class RouteMiddlewareCollector
                 );
 
                 $previewToken->delete('/{previewTokenId:[0-9]+}', DeletePreviewTokenAction::class)
-                ->add(new ApiKeyPermissionMiddleware(
+                    ->add(new ApiKeyPermissionMiddleware(
+                        $app->getContainer()?->get(PermissionService::class),
+                        ['Delete preview tokens']
+                    ));
+            })->add(AuthMiddleware::class);
+
+            $app->group('/blog', function (RouteCollectorProxy $blog) use ($app) {
+                $blog->post('/', BlogCreateAction::class)
+                    ->add(new ApiKeyPermissionMiddleware(
+                        $app->getContainer()?->get(PermissionService::class),
+                        ['Create blog posts']
+                    ));
+
+                $blog->put(
+                    '/{blogId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}}',
+                    BlogUpdateAction::class
+                )->add(new ApiKeyPermissionMiddleware(
                     $app->getContainer()?->get(PermissionService::class),
-                    ['Delete preview tokens']
+                    ['Edit blog posts']
                 ));
+
+                $blog->get(
+                    '/{blogId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}}',
+                    GetBlogByIdAction::class
+                )->add(new ApiKeyPermissionMiddleware(
+                    $app->getContainer()?->get(PermissionService::class),
+                    ['Read blog post by ID']
+                ));
+
+                $blog->get('/', GetBlogsAction::class)
+                    ->add(new ApiKeyPermissionMiddleware(
+                        $app->getContainer()?->get(PermissionService::class),
+                        ['Read blog posts']
+                    ));
             })->add(AuthMiddleware::class);
 
             $app->group('/self', function (RouteCollectorProxy $selfUser) use ($app) {
