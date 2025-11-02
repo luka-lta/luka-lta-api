@@ -3,6 +3,8 @@
 namespace LukaLtaApi\Repository;
 
 use DateTimeImmutable;
+use Latitude\QueryBuilder\QueryFactory;
+use LukaLtaApi\Api\Click\Value\ClickExtraFilter;
 use LukaLtaApi\Exception\ApiDatabaseException;
 use LukaLtaApi\Value\Tracking\Click;
 use LukaLtaApi\Value\Tracking\Clicks;
@@ -10,10 +12,14 @@ use LukaLtaApi\Value\Tracking\ClickSummary;
 use PDO;
 use PDOException;
 
+use function Latitude\QueryBuilder\alias;
+use function Latitude\QueryBuilder\on;
+
 class ClickRepository
 {
     public function __construct(
-        private readonly PDO $pdo
+        private readonly PDO $pdo,
+        private readonly QueryFactory $queryFactory
     ) {
     }
 
@@ -121,30 +127,28 @@ class ClickRepository
         }
     }
 
-    public function listAll(): Clicks
+    public function listAll(ClickExtraFilter $filter): Clicks
     {
-        $sql = <<<SQL
-            SELECT
-                lc.displayname,
-                uc.click_tag,
-                uc.click_id,
-                uc.url,
-                uc.clicked_at,
-                uc.ip_address,
-                uc.user_agent,
-                uc.referrer,
-                uc.market,
-                DATE(uc.clicked_at) AS click_date
-            FROM url_clicks uc
-            JOIN link_collection lc
-                ON uc.click_tag = lc.click_tag
-            ORDER BY
-                click_date, lc.displayname
-    SQL;
+        $select = $this->queryFactory->select(
+            'lc.displayname',
+            'uc.click_tag',
+            'uc.click_id',
+            'uc.url',
+            'uc.clicked_at',
+            'uc.ip_address',
+            'uc.user_agent',
+            'uc.referrer',
+            'uc.market',
+            alias('uc.clicked_at', 'click_date')
+        )->from(alias('url_clicks', 'uc'))
+            ->join(alias('link_collection', 'lc'), on('uc.click_tag', 'lc.click_tag'));
+
+        $query = $filter->createSqlFilter($select);
+        $sql = $query->compile();
 
         try {
-            $statement = $this->pdo->prepare($sql);
-            $statement->execute();
+            $statement = $this->pdo->prepare($sql->sql());
+            $statement->execute($sql->params());
 
             $clicks = [];
             foreach ($statement as $row) {
