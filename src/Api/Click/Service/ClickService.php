@@ -81,13 +81,13 @@ class ClickService
     {
         $clicks = $this->repository->listAll();
 
-        if (empty($clicks)) {
+        if ($clicks->count() === 0) {
             return ApiResult::from(
                 JsonResult::from('No clicks found', ['clicks' => []]),
             );
         }
 
-        return ApiResult::from(JsonResult::from('Clicks found', ['clicks' => $clicks]));
+        return ApiResult::from(JsonResult::from('Clicks found', ['clicks' => $clicks->toFrontend()]));
     }
 
     public function getClickSummary(): ApiResult

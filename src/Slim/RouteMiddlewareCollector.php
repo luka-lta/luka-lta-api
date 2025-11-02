@@ -27,10 +27,6 @@ use LukaLtaApi\Api\PreviewToken\Action\UpdatePreviewTokenAction;
 use LukaLtaApi\Api\Register\Action\RegisterUserAction;
 use LukaLtaApi\Api\SelfUser\Action\GetSelfUserAction;
 use LukaLtaApi\Api\SelfUser\Action\SelfUserUpdateAction;
-use LukaLtaApi\Api\Todo\Action\CreateTodoAction;
-use LukaLtaApi\Api\Todo\Action\DeleteTodoAction;
-use LukaLtaApi\Api\Todo\Action\GetAllTodoAction;
-use LukaLtaApi\Api\Todo\Action\UpdateTodoAction;
 use LukaLtaApi\Api\User\Action\CreateUserAction;
 use LukaLtaApi\Api\User\Action\DeactivateUserAction;
 use LukaLtaApi\Api\User\Action\DeleteUserAction;
@@ -131,29 +127,6 @@ class RouteMiddlewareCollector
                     ->add(new ApiKeyPermissionMiddleware(
                         $app->getContainer()?->get(PermissionService::class),
                         [Permission::READ_API_KEYS]
-                    ));
-            })->add(AuthMiddleware::class);
-
-            $app->group('/todo', function (RouteCollectorProxy $todo) use ($app) {
-                $todo->post('/', CreateTodoAction::class)
-                    ->add(new ApiKeyPermissionMiddleware(
-                        $app->getContainer()?->get(PermissionService::class),
-                        ['Create todos']
-                    ));
-                $todo->put('/{todoId:[0-9]+}', UpdateTodoAction::class)
-                    ->add(new ApiKeyPermissionMiddleware(
-                        $app->getContainer()?->get(PermissionService::class),
-                        ['Edit todos']
-                    ));
-                $todo->get('/', GetAllTodoAction::class)
-                    ->add(new ApiKeyPermissionMiddleware(
-                        $app->getContainer()?->get(PermissionService::class),
-                        ['Read todos']
-                    ));
-                $todo->delete('/{todoId:[0-9]+}', DeleteTodoAction::class)
-                    ->add(new ApiKeyPermissionMiddleware(
-                        $app->getContainer()?->get(PermissionService::class),
-                        ['Delete todos']
                     ));
             })->add(AuthMiddleware::class);
 

@@ -38,6 +38,26 @@ class Clicks implements Countable, IteratorAggregate, JsonSerializable
         return array_map(static fn($click) => $click->toArray(), $this->clicks);
     }
 
+    public function toFrontend(): array
+    {
+        $clicks = [];
+
+        foreach ($this->clicks as $click) {
+            $clicks[] = [
+                'clickId' => $click->getClickId()?->asInt(),
+                'clickTag' => $click->getTag()->getValue(),
+                'url' => (string)$click->getUrl(),
+                'clickedAt' => $click->getClickedAt()?->format('Y-m-d H:i:s'),
+                'ipAddress' => $click->getIpAddress(),
+                'market' => $click->getMarket(),
+                'userAgent' => $click->getUserAgent(),
+                'referer' => $click->getReferer(),
+            ];
+        }
+
+        return $clicks;
+    }
+
     public function jsonSerialize(): array
     {
         return $this->clicks;
