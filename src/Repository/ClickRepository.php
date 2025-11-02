@@ -137,7 +137,7 @@ class ClickRepository
             'uc.clicked_at',
             'uc.ip_address',
             'uc.user_agent',
-            'uc.referrer',
+            alias('uc.referrer', 'referrer'),
             'uc.market',
             alias('uc.clicked_at', 'click_date')
         )->from(alias('url_clicks', 'uc'))
