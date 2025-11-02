@@ -6,6 +6,7 @@ namespace LukaLtaApi\Api\Click\Service;
 
 use DateTimeImmutable;
 use Fig\Http\Message\StatusCodeInterface;
+use LukaLtaApi\Api\Click\Value\ClickExtraFilter;
 use LukaLtaApi\Repository\ClickRepository;
 use LukaLtaApi\Repository\LinkCollectionRepository;
 use LukaLtaApi\Value\Result\ApiResult;
@@ -79,7 +80,8 @@ class ClickService
 
     public function getAllClicks(ServerRequestInterface $request): ApiResult
     {
-        $clicks = $this->repository->listAll();
+        $filter = ClickExtraFilter::parseFromQuery($request->getQueryParams());
+        $clicks = $this->repository->listAll($filter);
 
         if ($clicks->count() === 0) {
             return ApiResult::from(
