@@ -51,7 +51,7 @@ class Click
             $data['ip_address'] ?? null,
             $data['market'] ?? null,
             isset($payload['user_agent']) ?
-                UserAgent::fromUserAgent($payload['user_agent']) :
+                UserAgent::from($payload['user_agent'], $payload['os'],$payload['device']) :
                 null,
             $data['referer'] ?? null,
         );

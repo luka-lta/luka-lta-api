@@ -22,6 +22,15 @@ class UserAgent
         );
     }
 
+    public static function from(string $rawUserAgent, string $os, string $device): self
+    {
+        return new self(
+            $rawUserAgent,
+            $os,
+            $device
+        );
+    }
+
     private static function detectOs(string $userAgent): string
     {
         $patterns = [

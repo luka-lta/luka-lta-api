@@ -7,6 +7,8 @@ CREATE TABLE `url_clicks`
     `ip_address` varchar(45)       DEFAULT NULL,
     `market` char(3)       DEFAULT NULL,
     `user_agent` text,
+    `os` VARCHAR(20),
+    `device` VARCHAR(15),
     `referrer`   text
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4

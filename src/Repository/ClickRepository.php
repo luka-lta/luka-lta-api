@@ -26,8 +26,8 @@ class ClickRepository
     public function recordClick(Click $click): void
     {
         $sql = <<<SQL
-            INSERT INTO url_clicks (url, click_tag, clicked_at, ip_address, market, user_agent, referrer)
-            VALUES (:url, :click_tag, :click_date, :ip_address, :market, :user_agent, :referrer)
+            INSERT INTO url_clicks (url, click_tag, clicked_at, ip_address, market, user_agent, os, device, referrer)
+            VALUES (:url, :click_tag, :click_date, :ip_address, :market, :user_agent, :os, :device, :referrer)
         SQL;
 
         try {
@@ -38,7 +38,9 @@ class ClickRepository
                 'click_date' => $click->getClickedAt()?->format('Y-m-d H:i:s'),
                 'ip_address' => $click->getIpAddress(),
                 'market' => $click->getMarket(),
-                'user_agent' => $click->getUserAgent(),
+                'user_agent' => $click->getUserAgent()?->getRawUserAgent(),
+                'os' => $click->getUserAgent()?->getOs(),
+                'device' => $click->getUserAgent()?->getDevice(),
                 'referrer' => $click->getReferer(),
             ]);
         } catch (PDOException $exception) {
@@ -137,6 +139,8 @@ class ClickRepository
             'uc.clicked_at',
             'uc.ip_address',
             'uc.user_agent',
+            'uc.os',
+            'uc.device',
             alias('uc.referrer', 'referrer'),
             'uc.market',
             alias('uc.clicked_at', 'click_date')
