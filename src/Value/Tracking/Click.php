@@ -50,10 +50,10 @@ class Click
             new DateTimeImmutable($data['clicked_at']),
             $data['ip_address'] ?? null,
             $data['market'] ?? null,
-            isset($payload['user_agent']) ?
-                UserAgent::from($payload['user_agent'], $payload['os'], $payload['device']) :
+            isset($data['user_agent']) ?
+                UserAgent::from($data['user_agent'], $data['os'], $data['device']) :
                 null,
-            $data['referer'] ?? null,
+            $data['referrer'] ?? null,
         );
     }
 
