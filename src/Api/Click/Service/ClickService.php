@@ -13,6 +13,7 @@ use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
 use LukaLtaApi\Value\Tracking\Click;
 use LukaLtaApi\Value\Tracking\ClickTag;
+use LukaLtaApi\Value\Tracking\UserAgent;
 use Psr\Http\Message\ServerRequestInterface;
 
 class ClickService
@@ -48,7 +49,7 @@ class ClickService
             new DateTimeImmutable(),
             $ipAddress,
             $market,
-            $userAgent,
+            UserAgent::fromUserAgent($userAgent),
             $referer
         );
 

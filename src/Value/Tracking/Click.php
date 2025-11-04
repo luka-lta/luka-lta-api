@@ -26,7 +26,7 @@ class Click
         ?DateTimeImmutable $clickedAt,
         ?string $ipAddress,
         ?string $market,
-        ?string $userAgent,
+        ?UserAgent $userAgent,
         ?string $referer,
     ): self {
         return new self(
@@ -51,7 +51,7 @@ class Click
             $data['ip_address'] ?? null,
             $data['market'] ?? null,
             isset($payload['user_agent']) ?
-                UserAgent::from($payload['user_agent'], $payload['os'],$payload['device']) :
+                UserAgent::from($payload['user_agent'], $payload['os'], $payload['device']) :
                 null,
             $data['referer'] ?? null,
         );
