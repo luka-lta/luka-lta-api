@@ -14,7 +14,7 @@ class Click
         private readonly ?DateTimeImmutable $clickedAt,
         private readonly ?string            $ipAddress,
         private readonly ?string            $market,
-        private readonly ?string            $userAgent,
+        private readonly ?UserAgent         $userAgent,
         private readonly ?string            $referer,
     ) {
     }
@@ -50,7 +50,9 @@ class Click
             new DateTimeImmutable($data['clicked_at']),
             $data['ip_address'] ?? null,
             $data['market'] ?? null,
-            $data['user_agent'] ?? null,
+            isset($payload['user_agent']) ?
+                UserAgent::from($payload['user_agent'], $payload['os'],$payload['device']) :
+                null,
             $data['referer'] ?? null,
         );
     }
@@ -64,7 +66,9 @@ class Click
             'clickedAt' => $this->clickedAt->format('Y-m-d H:i:s'),
             'ipAddress' => $this->ipAddress,
             'market' => $this->market,
-            'userAgent' => $this->userAgent,
+            'userAgent' => $this->userAgent?->getRawUserAgent(),
+            'os' => $this->userAgent?->getOs(),
+            'device' => $this->userAgent?->getDevice(),
             'referer' => $this->referer,
         ];
     }
@@ -99,7 +103,7 @@ class Click
         return $this->market;
     }
 
-    public function getUserAgent(): ?string
+    public function getUserAgent(): ?UserAgent
     {
         return $this->userAgent;
     }
