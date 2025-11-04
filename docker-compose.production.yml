@@ -4,12 +4,7 @@ services:
       context: .
       dockerfile: docker/nginx/Dockerfile
     image: ghcr.io/luka-lta/luka-lta-api/api-nginx:production
-    ports:
-      - '80:80'
-    links:
-      - php-fpm
-    networks:
-      - lukaLta-shared
+    platform: linux/amd64
 
   php-fpm:
     build:
@@ -17,20 +12,7 @@ services:
       dockerfile: docker/php/Dockerfile
       target: development
     image: ghcr.io/luka-lta/luka-lta-api/api-php-fpm:production
-    working_dir: /app
-    environment:
-      APP_ENV: 'development'
-      MYSQL_DATABASE: 'luka_lta_api'
-      MYSQL_HOST: 'mysql-luka-lta'
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
-      LOG_LEVEL: 'debug'
-      LOG_FILE_PATH: '/app/logs/error.log'
-    volumes:
-      - ./:/app:rw
-    networks:
-      - lukaLta-shared
+    platform: linux/amd64
 
 networks:
   lukaLta-shared:
