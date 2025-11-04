@@ -8,8 +8,8 @@ class UserAgent
 {
     private function __construct(
         private readonly string $rawUserAgent,
-        private readonly string $os,
-        private readonly string $device,
+        private readonly ?string $os,
+        private readonly ?string $device,
     ) {
     }
 
@@ -22,7 +22,7 @@ class UserAgent
         );
     }
 
-    public static function from(string $rawUserAgent, string $os, string $device): self
+    public static function from(string $rawUserAgent, ?string $os, ?string $device): self
     {
         return new self(
             $rawUserAgent,
@@ -69,12 +69,12 @@ class UserAgent
         return $this->rawUserAgent;
     }
 
-    public function getOs(): string
+    public function getOs(): ?string
     {
         return $this->os;
     }
 
-    public function getDevice(): string
+    public function getDevice(): ?string
     {
         return $this->device;
     }
