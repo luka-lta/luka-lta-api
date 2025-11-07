@@ -17,7 +17,11 @@ class LoggerWrapper implements LoggerInterface
 
     private function shouldAlert(string $level): bool
     {
-        return $level >= LogLevel::CRITICAL;
+        return in_array($level, [
+            LogLevel::CRITICAL,
+            LogLevel::ALERT,
+            LogLevel::EMERGENCY,
+        ], true);
     }
 
     private function logAndAlert(string $level, string $message, array $context = []): void
@@ -36,22 +40,22 @@ class LoggerWrapper implements LoggerInterface
 
     public function alert($message, array $context = []): void
     {
-        $this->logAndAlert(Logger::ALERT, $message, $context);
+        $this->logAndAlert(LogLevel::ALERT, $message, $context);
     }
 
     public function critical($message, array $context = []): void
     {
-        $this->logAndAlert(Logger::CRITICAL, $message, $context);
+        $this->logAndAlert(LogLevel::CRITICAL, $message, $context);
     }
 
     public function error($message, array $context = []): void
     {
-        $this->logAndAlert(Logger::ERROR, $message, $context);
+        $this->logAndAlert(LogLevel::ERROR, $message, $context);
     }
 
     public function warning($message, array $context = []): void
     {
-        $this->logAndAlert(Logger::WARNING, $message, $context);
+        $this->logAndAlert(LogLevel::WARNING, $message, $context);
     }
 
     public function notice($message, array $context = []): void
