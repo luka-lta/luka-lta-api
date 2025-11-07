@@ -29,7 +29,8 @@
     "ext-fileinfo": "*",
     "latitude/latitude": "^4.2",
     "league/commonmark": "^2.7",
-    "ramsey/uuid": "^4.9"
+    "ramsey/uuid": "^4.9",
+    "telegram-bot/api": "^2.5"
   },
   "require-dev": {
     "roave/security-advisories": "dev-latest",
