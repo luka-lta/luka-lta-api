@@ -41,6 +41,7 @@ use LukaLtaApi\Value\Permission\Permission;
 use Monolog\Logger;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Log\LoggerInterface;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 use Throwable;
@@ -71,7 +72,7 @@ class RouteMiddlewareCollector
             $container,
         ): ResponseInterface {
             $errorHandler = new ErrorHandler(
-                $container->get(Logger::class)
+                $container->get(LoggerInterface::class)
             );
 
             $response = $app->getResponseFactory()->createResponse()->withStatus(500);
