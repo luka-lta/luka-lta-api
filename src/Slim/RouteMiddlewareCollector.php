@@ -27,6 +27,7 @@ use LukaLtaApi\Api\PreviewToken\Action\UpdatePreviewTokenAction;
 use LukaLtaApi\Api\Register\Action\RegisterUserAction;
 use LukaLtaApi\Api\SelfUser\Action\GetSelfUserAction;
 use LukaLtaApi\Api\SelfUser\Action\SelfUserUpdateAction;
+use LukaLtaApi\Api\Statistics\Action\GetStatisticsAction;
 use LukaLtaApi\Api\User\Action\CreateUserAction;
 use LukaLtaApi\Api\User\Action\DeactivateUserAction;
 use LukaLtaApi\Api\User\Action\DeleteUserAction;
@@ -256,6 +257,10 @@ class RouteMiddlewareCollector
             $app->group('/self', function (RouteCollectorProxy $selfUser) use ($app) {
                 $selfUser->get('/', GetSelfUserAction::class);
                 $selfUser->put('/', SelfUserUpdateAction::class);
+            })->add(AuthMiddleware::class);
+
+            $app->group('/statistics', function (RouteCollectorProxy $statistics) use ($app) {
+                $statistics->get('/', GetStatisticsAction::class);
             })->add(AuthMiddleware::class);
         });
     }
