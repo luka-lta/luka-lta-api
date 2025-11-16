@@ -18,6 +18,6 @@ class GetAllApiKeysAction extends ApiAction
 
     protected function execute(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        return $this->service->getAllKeys()->getResponse($response);
+        return $this->service->getAllKeys($request)->getResponse($response);
     }
 }

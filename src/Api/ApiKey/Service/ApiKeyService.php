@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace LukaLtaApi\Api\ApiKey\Service;
 
 use Fig\Http\Message\StatusCodeInterface;
+use LukaLtaApi\Api\ApiKey\Value\ApiKeyExtraFilter;
 use LukaLtaApi\Repository\ApiKeyRepository;
 use LukaLtaApi\Repository\PermissionRepository;
 use LukaLtaApi\Value\ApiKey\ApiKeyObject;
@@ -57,9 +58,10 @@ class ApiKeyService
         );
     }
 
-    public function getAllKeys(): ApiResult
+    public function getAllKeys(ServerRequestInterface $request): ApiResult
     {
-        $apiKeys = $this->repository->loadAll();
+        $filter = ApiKeyExtraFilter::parseFromQuery($request->getQueryParams());
+        $apiKeys = $this->repository->loadAll($filter);
 
         if ($apiKeys->count() === 0) {
             return ApiResult::from(
