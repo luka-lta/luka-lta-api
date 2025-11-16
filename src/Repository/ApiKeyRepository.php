@@ -17,6 +17,11 @@ use LukaLtaApi\Value\Permission\Permissions;
 use PDO;
 use PDOException;
 
+use function Latitude\QueryBuilder\alias;
+use function Latitude\QueryBuilder\express;
+use function Latitude\QueryBuilder\identify;
+use function Latitude\QueryBuilder\on;
+
 class ApiKeyRepository
 {
     public function __construct(
@@ -53,37 +58,46 @@ class ApiKeyRepository
         $this->addPermissions($keyId, $keyObject->getPermissions());
     }
 
-    public function loadAll(): ApiKeyObjects
+    public function loadAll(ApiKeyExtraFilter $filter): ApiKeyObjects
     {
-        $sql = <<<SQL
-            SELECT 
-                ak.key_id, 
-                ak.origin, 
-                ak.created_at, 
-                ak.created_by, 
-                ak.expires_at, 
-                ak.api_key,
-                COALESCE(
+        $select = $this->queryFactory
+            ->select(
+                'ak.key_id',
+                'ak.origin',
+                'ak.created_at',
+                'ak.created_by',
+                'ak.expires_at',
+                'ak.api_key',
+                express(
+                    'COALESCE(
                 NULLIF(
                     JSON_ARRAYAGG(
                         JSON_OBJECT(
-                            'permission_id', p.permission_id,
-                            'permission_name', p.permission_name,
-                            'permission_description', p.permission_description
+                            \'permission_id\', %s,
+                            \'permission_name\', %s,
+                            \'permission_description\', %s
                         )
                     ),
-                JSON_ARRAY(NULL)
+                    JSON_ARRAY(NULL)
                 ),
                 JSON_ARRAY()
-                ) AS permissions
-            FROM api_keys ak
-            LEFT JOIN api_key_permissions akp ON ak.key_id = akp.api_key_id
-            LEFT JOIN permissions p ON akp.permission_id = p.permission_id
-            GROUP BY ak.key_id
-        SQL;
+            ) AS permissions',
+                    identify('p.permission_id'),
+                    identify('p.permission_name'),
+                    identify('p.permission_description')
+                )
+            )
+            ->from(alias('api_keys', 'ak'))
+            ->leftJoin(alias('api_key_permissions', 'akp'), on('ak.key_id', 'akp.api_key_id'))
+            ->leftJoin(alias('permissions', 'p'), on('akp.permission_id', 'p.permission_id'))
+            ->groupBy('ak.key_id');
+
+        $query = $filter->createSqlFilter($select);
+        $sql = $query->compile();
 
         try {
-            $stmt = $this->pdo->query($sql);
+            $stmt = $this->pdo->prepare($sql->sql());
+            $stmt->execute($sql->params());
 
             $keyObjects = [];
             foreach ($stmt as $row) {
