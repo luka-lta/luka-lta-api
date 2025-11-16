@@ -11,6 +11,7 @@ use LukaLtaApi\Api\Blog\Action\GetBlogByIdAction;
 use LukaLtaApi\Api\Blog\Action\GetBlogsAction;
 use LukaLtaApi\Api\Click\Action\ClickTrackAction;
 use LukaLtaApi\Api\Click\Action\GetClicksAction;
+use LukaLtaApi\Api\Click\Action\GetClicksFiltersAction;
 use LukaLtaApi\Api\Click\Action\GetClicksStatsAction;
 use LukaLtaApi\Api\Click\Action\GetClickSummaryAction;
 use LukaLtaApi\Api\Health\Action\GetHealthAction;
@@ -159,6 +160,12 @@ class RouteMiddlewareCollector
             $app->group('/click', function (RouteCollectorProxy $click) use ($app) {
                 $click->post('/track/{clickTag}', ClickTrackAction::class);
                 $click->get('/stats', GetClicksStatsAction::class)
+                    ->add(AuthMiddleware::class)
+                    ->add(new ApiKeyPermissionMiddleware(
+                        $app->getContainer()?->get(PermissionService::class),
+                        [Permission::VIEW_CLICKS]
+                    ));
+                $click->get('/filters', GetClicksFiltersAction::class)
                     ->add(AuthMiddleware::class)
                     ->add(new ApiKeyPermissionMiddleware(
                         $app->getContainer()?->get(PermissionService::class),

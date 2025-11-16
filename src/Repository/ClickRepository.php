@@ -3,8 +3,10 @@
 namespace LukaLtaApi\Repository;
 
 use DateTimeImmutable;
+use Fig\Http\Message\StatusCodeInterface;
 use Latitude\QueryBuilder\QueryFactory;
 use LukaLtaApi\Api\Click\Value\ClickExtraFilter;
+use LukaLtaApi\Api\Click\Value\ClicksFilter;
 use LukaLtaApi\Exception\ApiDatabaseException;
 use LukaLtaApi\Value\Tracking\Click;
 use LukaLtaApi\Value\Tracking\Clicks;
@@ -166,5 +168,48 @@ class ClickRepository
         }
 
         return Clicks::from(...$clicks);
+    }
+
+    public function getFilters(): ClicksFilter
+    {
+        $sql = <<<SQL
+            SELECT JSON_OBJECT(
+                'markets', (
+                    SELECT JSON_ARRAYAGG(market)
+                    FROM (
+                        SELECT DISTINCT market
+                        FROM url_clicks WHERE market IS NOT NULL 
+                    ) AS m
+                ),
+                'os', (
+                    SELECT JSON_ARRAYAGG(os)
+                    FROM (
+                        SELECT DISTINCT os
+                        FROM url_clicks WHERE os IS NOT NULL
+                    ) AS o
+                ),
+                'devices', (
+                    SELECT JSON_ARRAYAGG(device)
+                    FROM (
+                        SELECT DISTINCT device
+                        FROM url_clicks WHERE device IS NOT NULL
+                    ) AS d
+                )
+            ) AS result;
+        SQL;
+
+        try {
+            $statement = $this->pdo->prepare($sql);
+            $statement->execute();
+
+            $result = $statement->fetchAll();
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException(
+                'Failed to fetch clicks filters',
+                StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR,
+                $exception
+            );
+        }
+        return ClicksFilter::fromDatabase(json_decode($result[0]['result'], true));
     }
 }

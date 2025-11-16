@@ -99,4 +99,11 @@ class ClickService
 
         return ApiResult::from(JsonResult::from('Summary found', ['summary' => $summary->toArray()]));
     }
+
+    public function getFilters(): ApiResult
+    {
+        $filters = $this->repository->getFilters();
+
+        return ApiResult::from(JsonResult::from('Filters found', ['filters' => $filters->toArray()]));
+    }
 }
