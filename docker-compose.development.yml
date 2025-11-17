@@ -89,9 +89,22 @@ services:
     volumes:
       - redis_data:/data
 
+  minio:
+    container_name: minio
+    image: "quay.io/minio/minio:RELEASE.2025-04-08T15-41-24Z"
+    platform: linux/amd64
+    command: [ "server", "/data", "--console-address", ":19000" ]
+    volumes:
+      - minio-data:/data
+    networks:
+      - lukaLta-shared
+    ports:
+      - "19000:19000"
+
 volumes:
   lukaLtaData:
   redis_data:
+  minio-data:
 
 networks:
   lukaLta-shared:

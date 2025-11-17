@@ -118,7 +118,7 @@ class RouteMiddlewareCollector
             $app->post('/auth', AuthAction::class);
             $app->post('/register', RegisterUserAction::class);
             $app->get('/health', GetHealthAction::class);
-            $app->get('/avatar/{filename}', GetAvatarAction::class);
+            $app->get('/avatar/{userId}', GetAvatarAction::class);
 
             $app->group('/key', function (RouteCollectorProxy $key) use ($app) {
                 $key->post('/', CreateApiKeyAction::class)
