@@ -8,6 +8,8 @@ use Latitude\QueryBuilder\QueryFactory;
 use LukaLtaApi\Api\Click\Value\ClickExtraFilter;
 use LukaLtaApi\Api\Click\Value\ClicksFilter;
 use LukaLtaApi\Exception\ApiDatabaseException;
+use LukaLtaApi\Service\PaginationService;
+use LukaLtaApi\Value\PaginatedData;
 use LukaLtaApi\Value\Tracking\Click;
 use LukaLtaApi\Value\Tracking\Clicks;
 use LukaLtaApi\Value\Tracking\ClickSummary;
@@ -21,7 +23,8 @@ class ClickRepository
 {
     public function __construct(
         private readonly PDO $pdo,
-        private readonly QueryFactory $queryFactory
+        private readonly QueryFactory $queryFactory,
+        private readonly PaginationService $paginationService,
     ) {
     }
 
@@ -131,7 +134,7 @@ class ClickRepository
         }
     }
 
-    public function listAll(ClickExtraFilter $filter): Clicks
+    public function listAll(ClickExtraFilter $filter): PaginatedData
     {
         $select = $this->queryFactory->select(
             'lc.displayname',
@@ -148,6 +151,8 @@ class ClickRepository
             alias('uc.clicked_at', 'click_date')
         )->from(alias('url_clicks', 'uc'))
             ->join(alias('link_collection', 'lc'), on('uc.click_tag', 'lc.click_tag'));
+        $paginationData = $this->paginationService->getPaginationData('users', $filter->getPageSize());
+
 
         $query = $filter->createSqlFilter($select);
         $sql = $query->compile();
@@ -160,6 +165,8 @@ class ClickRepository
             foreach ($statement as $row) {
                 $clicks[] = Click::fromDatabase($row);
             }
+
+            $clicks = Clicks::from(...$clicks);
         } catch (PDOException $exception) {
             throw new ApiDatabaseException(
                 'Failed to fetch clicks',
@@ -167,7 +174,12 @@ class ClickRepository
             );
         }
 
-        return Clicks::from(...$clicks);
+        return PaginatedData::from(
+            $paginationData['dataCount'],
+            $paginationData['totalPages'],
+            $filter->getPageSize(),
+            $clicks,
+        );
     }
 
     public function getFilters(): ClicksFilter
