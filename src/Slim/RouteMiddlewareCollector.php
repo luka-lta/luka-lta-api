@@ -188,7 +188,7 @@ class RouteMiddlewareCollector
 
             $app->group('/user', function (RouteCollectorProxy $user) {
                 $user->post('/', CreateUserAction::class);
-                $user->put('/{userId:[0-9]+}', UpdateProfileAction::class);
+                $user->post('/{userId:[0-9]+}', UpdateProfileAction::class);
                 $user->get('/', GetAllUsersAction::class);
                 $user->put('/deactivate/{userId:[0-9]+}', DeactivateUserAction::class);
                 $user->delete('/{userId:[0-9]+}', DeleteUserAction::class);

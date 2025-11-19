@@ -66,7 +66,7 @@ class UserService
         $userId = UserId::fromString($request->getAttribute('userId'));
         $email = UserEmail::from($body['email']);
         $username = $body['username'];
-        $isActive = $body['is_active'];
+        $isActive = (bool)$body['is_active'];
 
         $user = $this->repository->findById($userId);
 
@@ -136,7 +136,13 @@ class UserService
         $userId = UserId::fromString($request->getAttribute('userId'));
         $fileData = $this->s3Repository->getAvatarImageFromS3($userId);
 
-        $response->getBody()->write(file_get_contents($fileData['body']));
+        if (!$fileData) {
+            return ApiResult::from(
+                JsonResult::from('Avatar not found'),
+            )->getResponse($response);
+        }
+
+        $response->getBody()->write($fileData['body']);
 
         return $response
             ->withHeader('Content-Type', $fileData['contentType']);

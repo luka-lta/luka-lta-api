@@ -8,7 +8,7 @@ use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Exception\ApiAvatarUploadException;
 use LukaLtaApi\Repository\S3Repository;
 use LukaLtaApi\Value\User\UserId;
-use RuntimeException;
+use Slim\Psr7\UploadedFile;
 
 class AvatarService
 {
@@ -17,9 +17,9 @@ class AvatarService
     ) {
     }
 
-    public function uploadAvatar(array $uploadedFiles, UserId $userId): string
+    public function uploadAvatar(UploadedFile $uploadedFiles, UserId $userId): string
     {
-        $uploadedFile = $uploadedFiles['avatar'];
+        $uploadedFile = $uploadedFiles;
 
         if ($uploadedFile->getError() !== UPLOAD_ERR_OK) {
             throw new ApiAvatarUploadException(

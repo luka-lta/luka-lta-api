@@ -38,6 +38,12 @@ services:
       LOG_LEVEL: 'debug'
       LOG_FILE_PATH: '/app/logs'
 
+      AWS_ACCESS_KEY_ID: 'minioadmin'
+      AWS_SECRET_ACCESS_KEY: 'minioadmin'
+      AWS_VERSION: 'latest'
+      AWS_REGION: 'us-east-1'
+      AWS_ENDPOINT: 'http://minio:9000'
+      AWS_BUCKET: 'avatars'
     volumes:
       - ./:/app:rw
     networks:

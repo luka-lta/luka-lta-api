@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace LukaLtaApi\Value;
 
+use Countable;
 use IteratorAggregate;
 
 class PaginatedData
 {
     public function __construct(
-        private readonly int $total,
-        private readonly int $totalPages,
-        private readonly int $perPage,
-        private readonly IteratorAggregate $data,
+        private readonly int                         $total,
+        private readonly int                         $totalPages,
+        private readonly int                         $perPage,
+        private readonly IteratorAggregate|Countable $data,
     ) {
     }
 
@@ -34,9 +35,8 @@ class PaginatedData
         ];
     }
 
-    public function getData(): IteratorAggregate
+    public function getData(): IteratorAggregate|Countable
     {
         return $this->data;
     }
-
 }

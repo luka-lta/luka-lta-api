@@ -12,6 +12,7 @@ use LukaLtaApi\Repository\LinkCollectionRepository;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
 use LukaLtaApi\Value\Tracking\Click;
+use LukaLtaApi\Value\Tracking\Clicks;
 use LukaLtaApi\Value\Tracking\ClickTag;
 use LukaLtaApi\Value\Tracking\UserAgent;
 use Psr\Http\Message\ServerRequestInterface;
@@ -83,14 +84,16 @@ class ClickService
     {
         $filter = ClickExtraFilter::parseFromQuery($request->getQueryParams());
         $clicks = $this->repository->listAll($filter);
+        /** @var Clicks $clicksData */
+        $clicksData = $clicks->getData();
 
-        if ($clicks->count() === 0) {
+        if ($clicksData->count() === 0) {
             return ApiResult::from(
                 JsonResult::from('No clicks found', ['clicks' => []]),
             );
         }
 
-        return ApiResult::from(JsonResult::from('Clicks found', ['clicks' => $clicks->toFrontend()]));
+        return ApiResult::from(JsonResult::from('Clicks found', ['clicks' => $clicksData->toFrontend()]));
     }
 
     public function getClickSummary(): ApiResult

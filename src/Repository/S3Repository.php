@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace LukaLtaApi\Repository;
 
 use Aws\Exception\AwsException;
+use Aws\S3\Exception\S3Exception;
 use Aws\S3\S3Client;
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Exception\ApiDatabaseException;
@@ -43,14 +44,18 @@ class S3Repository
         return $result->get('ObjectURL');
     }
 
-    public function getAvatarImageFromS3(UserId $userId): array
+    public function getAvatarImageFromS3(UserId $userId): ?array
     {
         try {
             $result = $this->s3Client->getObject([
                 'Bucket' => $this->awsBucket,
                 'Key' => 'avatars/' . $userId->asString(),
             ]);
-        } catch (AwsException $exception) {
+        } catch (S3Exception $exception) {
+            if ($exception->getAwsErrorCode() === 'NoSuchKey') {
+                return null;
+            }
+
             throw new ApiDatabaseException(
                 'AWS S3 retrieval error: ' . $exception->getMessage(),
                 StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR,
