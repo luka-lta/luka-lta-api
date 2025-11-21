@@ -8,6 +8,7 @@ use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Api\User\Value\UserExtraFilter;
 use LukaLtaApi\Exception\ApiAvatarUploadException;
 use LukaLtaApi\Exception\UserAlreadyExistsException;
+use LukaLtaApi\Repository\S3Repository;
 use LukaLtaApi\Repository\UserRepository;
 use LukaLtaApi\Service\AvatarService;
 use LukaLtaApi\Service\UserValidationService;
@@ -25,6 +26,7 @@ class UserService
         private readonly UserRepository $repository,
         private readonly UserValidationService $validationService,
         private readonly AvatarService $avatarService,
+        private readonly S3Repository $s3Repository,
     ) {
     }
 
@@ -64,7 +66,7 @@ class UserService
         $userId = UserId::fromString($request->getAttribute('userId'));
         $email = UserEmail::from($body['email']);
         $username = $body['username'];
-        $isActive = $body['is_active'];
+        $isActive = (bool)$body['is_active'];
 
         $user = $this->repository->findById($userId);
 
@@ -131,23 +133,19 @@ class UserService
 
     public function getAvatar(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $uploadDir = '/app/uploads/profile-pictures/';
-        $filename = $request->getAttribute('filename');
+        $userId = UserId::fromString($request->getAttribute('userId'));
+        $fileData = $this->s3Repository->getAvatarImageFromS3($userId);
 
-        $file = $uploadDir . $filename;
-
-        if (!file_exists($file)) {
+        if (!$fileData) {
             return ApiResult::from(
-                JsonResult::from('File not found'),
-                StatusCodeInterface::STATUS_NOT_FOUND
+                JsonResult::from('Avatar not found'),
             )->getResponse($response);
         }
 
-        $mimeType = mime_content_type($file);
-        $response->getBody()->write(file_get_contents($file));
+        $response->getBody()->write($fileData['body']);
 
         return $response
-            ->withHeader('Content-Type', $mimeType);
+            ->withHeader('Content-Type', $fileData['contentType']);
     }
 
     public function deactivateUser(string $userId, ResponseInterface $response): ResponseInterface

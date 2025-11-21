@@ -2,8 +2,10 @@
 
 namespace LukaLtaApi;
 
+use Aws\S3\S3Client;
 use DI\Definition\Source\DefinitionArray;
 use LukaLtaApi\App\Factory\LoggerFactory;
+use LukaLtaApi\App\Factory\MinIOFactory;
 use LukaLtaApi\App\Factory\PdoFactory;
 use LukaLtaApi\App\Factory\RedisFactory;
 use LukaLtaApi\App\Factory\TelegramBotFactory;
@@ -28,6 +30,7 @@ class ApplicationConfig extends DefinitionArray
             PDO::class => factory(PdoFactory::class),
             Redis::class => factory(RedisFactory::class),
             BotApi::class => factory(TelegramBotFactory::class),
+            S3Client::class => factory(MinIOFactory::class),
         ];
     }
 }

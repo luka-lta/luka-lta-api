@@ -6,19 +6,20 @@ namespace LukaLtaApi\Service;
 
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Exception\ApiAvatarUploadException;
+use LukaLtaApi\Repository\S3Repository;
 use LukaLtaApi\Value\User\UserId;
-use RuntimeException;
+use Slim\Psr7\UploadedFile;
 
 class AvatarService
 {
-    public function uploadAvatar(array $uploadedFiles, UserId $userId): string
-    {
-        $uploadDir = '/app/uploads/profile-pictures/';
-        if (!is_dir($uploadDir) && !mkdir($uploadDir, 0777, true) && !is_dir($uploadDir)) {
-            throw new RuntimeException(sprintf('Directory "%s" was not created', $uploadDir));
-        }
+    public function __construct(
+        private readonly S3Repository $s3Repository,
+    ) {
+    }
 
-        $uploadedFile = $uploadedFiles['avatar'];
+    public function uploadAvatar(UploadedFile $uploadedFiles, UserId $userId): string
+    {
+        $uploadedFile = $uploadedFiles;
 
         if ($uploadedFile->getError() !== UPLOAD_ERR_OK) {
             throw new ApiAvatarUploadException(
@@ -37,11 +38,13 @@ class AvatarService
             );
         }
 
-        // Sicheren Dateinamen generieren (z. B. UUID statt Originalname)
-        $extension = pathinfo($uploadedFile->getClientFilename(), PATHINFO_EXTENSION);
-        $filename = sprintf('%s/%s.%s', $uploadDir, $userId->asString(), $extension);
+        if ($uploadedFile->getSize() > 5 * 1024 * 1024) {
+            throw new ApiAvatarUploadException(
+                'File size exceeds the maximum limit of 5MB.',
+                StatusCodeInterface::STATUS_BAD_REQUEST
+            );
+        }
 
-        $uploadedFile->moveTo($filename);
-        return $filename;
+        return $this->s3Repository->uploadFile($uploadedFile, $userId);
     }
 }

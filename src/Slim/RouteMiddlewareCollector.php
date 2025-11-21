@@ -118,7 +118,7 @@ class RouteMiddlewareCollector
             $app->post('/auth', AuthAction::class);
             $app->post('/register', RegisterUserAction::class);
             $app->get('/health', GetHealthAction::class);
-            $app->get('/avatar/{filename}', GetAvatarAction::class);
+            $app->get('/avatar/{userId}', GetAvatarAction::class);
 
             $app->group('/key', function (RouteCollectorProxy $key) use ($app) {
                 $key->post('/', CreateApiKeyAction::class)
@@ -188,7 +188,7 @@ class RouteMiddlewareCollector
 
             $app->group('/user', function (RouteCollectorProxy $user) {
                 $user->post('/', CreateUserAction::class);
-                $user->put('/{userId:[0-9]+}', UpdateProfileAction::class);
+                $user->post('/{userId:[0-9]+}', UpdateProfileAction::class);
                 $user->get('/', GetAllUsersAction::class);
                 $user->put('/deactivate/{userId:[0-9]+}', DeactivateUserAction::class);
                 $user->delete('/{userId:[0-9]+}', DeleteUserAction::class);

@@ -21,7 +21,7 @@ class UpdateProfileAction extends ApiAction
         $rules = [
             'username' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
             'email' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
-            'avatarUrl' => ['required' => false, 'location' => RequestValidator::LOCATION_BODY],
+            'avatar' => ['required' => false, 'location' => RequestValidator::LOCATION_BODY],
             'isActive' => ['required' => false, 'location' => RequestValidator::LOCATION_BODY],
         ];
 

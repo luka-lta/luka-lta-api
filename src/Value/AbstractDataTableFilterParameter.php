@@ -17,7 +17,7 @@ abstract class AbstractDataTableFilterParameter
         private readonly int $pageSize,
         private readonly ?string $sortColumn,
         private readonly ?string $sortDirection,
-        array $queryParameter,
+        private readonly array $queryParameter,
     ) {
         $this->parseCustomFilter($queryParameter);
     }
@@ -56,7 +56,7 @@ abstract class AbstractDataTableFilterParameter
     public function createSqlFilter(SelectQuery $query): SelectQuery
     {
         foreach ($this->extraFilters as $name => $value) {
-            $query->where(search($name)->contains($value));
+            $query->andWhere(search($name)->contains($value));
         }
 
         if ($this->sortDirection && $this->sortColumn) {
@@ -67,5 +67,15 @@ abstract class AbstractDataTableFilterParameter
         $query->limit($this->pageSize)->offset($offset);
 
         return $query;
+    }
+
+    public function getPageSize(): int
+    {
+        return $this->pageSize;
+    }
+
+    public function getQueryParameter(): array
+    {
+        return $this->queryParameter;
     }
 }
