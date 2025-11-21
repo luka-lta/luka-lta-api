@@ -24,12 +24,14 @@ class S3Repository
 
     public function uploadFile(UploadedFileInterface $uploadedFile, UserId $userId): string
     {
+        $key = 'avatars/' . $userId->asString() . pathinfo($uploadedFile->getClientFilename(), PATHINFO_EXTENSION);
+
         try {
             $stream = $uploadedFile->getStream();
 
-            $result = $this->s3Client->putObject([
+            $this->s3Client->putObject([
                 'Bucket' => $this->awsBucket,
-                'Key' => 'avatars/' . $userId->asString(),
+                'Key' => $key,
                 'Body' => $stream->getContents(),
                 'ACL' => 'public-read',
             ]);
@@ -41,21 +43,32 @@ class S3Repository
             );
         }
 
-        return $result->get('ObjectURL');
+        return $key;
     }
 
     public function getAvatarImageFromS3(UserId $userId): ?array
     {
+        $possibleExt = ['jpg','jpeg','png','webp', 'gif'];
+
         try {
+            $key = null;
+            foreach ($possibleExt as $ext) {
+                $checkKey = "avatars/{$userId->asString()}.$ext";
+                if ($this->s3Client->doesObjectExist($this->awsBucket, $checkKey)) {
+                    $key = $checkKey;
+                    break;
+                }
+            }
+
+            if (!$key) {
+                return null;
+            }
+
             $result = $this->s3Client->getObject([
                 'Bucket' => $this->awsBucket,
                 'Key' => 'avatars/' . $userId->asString(),
             ]);
         } catch (S3Exception $exception) {
-            if ($exception->getAwsErrorCode() === 'NoSuchKey') {
-                return null;
-            }
-
             throw new ApiDatabaseException(
                 'AWS S3 retrieval error: ' . $exception->getMessage(),
                 StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR,
