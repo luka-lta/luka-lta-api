@@ -46,7 +46,7 @@ class S3Repository
             );
         }
 
-        return 'https://api.luka-lta.dev/api/v1/avatar/' . $userId->asString();
+        return $userId->asString();
     }
 
     public function getAvatarImageFromS3(UserId $userId): ?array
