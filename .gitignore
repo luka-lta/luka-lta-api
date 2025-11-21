@@ -4,3 +4,4 @@
 /logs/
 /uploads/
 public/script*
+/node_modules/
