@@ -66,7 +66,7 @@ class UserService
         $userId = UserId::fromString($request->getAttribute('userId'));
         $email = UserEmail::from($body['email']);
         $username = $body['username'];
-        $isActive = (bool)$body['is_active'];
+        $isActive = (bool)$body['isActive'];
 
         $user = $this->repository->findById($userId);
 
