@@ -3,3 +3,4 @@
 /.pdepend/
 /logs/
 /uploads/
+public/script*
