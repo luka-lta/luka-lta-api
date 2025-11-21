@@ -24,7 +24,10 @@ class S3Repository
 
     public function uploadFile(UploadedFileInterface $uploadedFile, UserId $userId): string
     {
-        $key = 'avatars/' . $userId->asString() . pathinfo($uploadedFile->getClientFilename(), PATHINFO_EXTENSION);
+        $key = 'avatars/' . $userId->asString() . '.' . pathinfo(
+            $uploadedFile->getClientFilename(),
+            PATHINFO_EXTENSION
+        );
 
         try {
             $stream = $uploadedFile->getStream();
@@ -43,7 +46,7 @@ class S3Repository
             );
         }
 
-        return $key;
+        return 'https://api.luka-lta.dev/api/v1/avatar/' . $userId->asString();
     }
 
     public function getAvatarImageFromS3(UserId $userId): ?array
@@ -66,7 +69,7 @@ class S3Repository
 
             $result = $this->s3Client->getObject([
                 'Bucket' => $this->awsBucket,
-                'Key' => 'avatars/' . $userId->asString(),
+                'Key' => $key,
             ]);
         } catch (S3Exception $exception) {
             throw new ApiDatabaseException(
