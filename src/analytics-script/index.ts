@@ -35,6 +35,7 @@ declare global {
 
     // Parse configuration (now async to fetch from API)
     const config = await parseScriptConfig(scriptTag);
+
     if (!config) {
         return;
     }

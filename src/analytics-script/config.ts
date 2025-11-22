@@ -50,7 +50,7 @@ export async function parseScriptConfig(scriptTag: HTMLScriptElement): Promise<S
 
     try {
         // Fetch configuration from API
-        const configUrl = `${analyticsHost}/site/${siteId}/tracking-config`;
+        const configUrl = `${analyticsHost}/api/v1/site/${siteId}/tracking-config`;
         const response = await fetch(configUrl, {
             method: "GET",
             // Include credentials if needed for authentication
@@ -58,8 +58,8 @@ export async function parseScriptConfig(scriptTag: HTMLScriptElement): Promise<S
         });
 
         if (response.ok) {
-            const apiConfig = await response.json();
-
+            const result = await response.json();
+            const apiConfig = result.data.config;
             // Merge API config with defaults, API config takes precedence
             return {
                 ...defaultConfig,
