@@ -37,8 +37,6 @@ services:
       JWT_EXTENDED_EXPIRATION_TIME: 604800
       LOG_LEVEL: 'debug'
       LOG_FILE_PATH: '/app/logs'
-      TELEGRAM_BOT_TOKEN: '8582953172:AAEbZJiwK6mDXrN05bu_0UDyBgg9oJar4uY'
-      TELEGRAM_CHAT_ID: '-1003108367832'
       AWS_ACCESS_KEY_ID: 'minioadmin'
       AWS_SECRET_ACCESS_KEY: 'minioadmin'
       AWS_VERSION: 'latest'
