@@ -16,6 +16,7 @@ class TrackEventAction extends ApiAction
 
     protected function execute(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
+        // TODO: IP, UserAgent from Payload
         return $this->service->trackEvent($request)->getResponse($response);
     }
 }

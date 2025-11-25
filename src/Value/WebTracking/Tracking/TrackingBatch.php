@@ -6,6 +6,8 @@ use LukaLtaApi\Value\WebTracking\Tracking\Events\PageviewPayload;
 
 class TrackingBatch
 {
+
+    // TODO: Iterator
     private const int BATCH_SIZE = 5000;
 
     public function __construct(
