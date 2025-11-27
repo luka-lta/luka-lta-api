@@ -37,6 +37,23 @@ class Properties
         return new self($decoded, $jsonString);
     }
 
+    public static function fromPayload(array $payload): self
+    {
+        $jsonString = isset($payload['properties']) ? (string)$payload['properties'] : '{}';
+
+        try {
+            $decoded = json_decode($jsonString, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $exception) {
+            throw new ApiInvalidArgumentException(
+                'Properties must be valid JSON: ' . $exception->getMessage(),
+                StatusCodeInterface::STATUS_BAD_REQUEST,
+                $exception
+            );
+        }
+
+        return new self($decoded, $jsonString);
+    }
+
     public function getValue(): array
     {
         return $this->value;

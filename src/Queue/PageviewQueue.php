@@ -4,10 +4,18 @@ namespace LukaLtaApi\Queue;
 
 use ClickHouseDB\Client;
 use ClickHouseDB\Exception\DatabaseException;
+use DateTimeImmutable;
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Exception\ApiDatabaseException;
-use LukaLtaApi\Value\WebTracking\Tracking\AbstractTrackingPayload;
+use LukaLtaApi\Repository\GeoIpRepository;
+use LukaLtaApi\Service\ChannelDetectorService;
+use LukaLtaApi\Value\GeoLocation;
+use LukaLtaApi\Value\WebTracking\Tracking\Events\PageviewPayload;
+use LukaLtaApi\Value\WebTracking\Tracking\PageInfo;
+use LukaLtaApi\Value\WebTracking\Tracking\PageViewData;
+use LukaLtaApi\Value\WebTracking\Tracking\PageViewEvent;
 use LukaLtaApi\Value\WebTracking\Tracking\TrackingBatch;
+use LukaLtaApi\Value\WebTracking\Tracking\UrlParameter;
 
 class PageviewQueue
 {
@@ -17,10 +25,12 @@ class PageviewQueue
 
     public function __construct(
         private readonly Client $clickHouse,
+        private readonly ChannelDetectorService $channelDetector,
+        private readonly GeoIpRepository $geoIpRepo,
     ) {
     }
 
-    public function add(array $pageview): void
+    public function add(PageViewEvent $pageview): void
     {
         $this->queue[] = $pageview;
 
@@ -45,27 +55,36 @@ class PageviewQueue
 
         $ips = [];
 
-        /** @var AbstractTrackingPayload $batch */
+        /** @var PageViewEvent $batch */
         foreach ($batches as $batch) {
             $ips[] = $batch->getIpAddress();
         }
 
         // TODO: Fetch geolocation
-        $geoData = fetchGeoLocation($ips);
+        $geoData = $this->geoIpRepo->getCountryCodeOfIp(...$ips);
 
         $processedPageViews = [];
 
-        /** @var AbstractTrackingPayload $batch */
+        /** @var PageViewEvent $batch */
         foreach ($batches as $batch) {
-            $countryCode = $geoData?->countryIso || "";
-            $regionCode = $geoData?->region || "";
-            $latitude = $geoData?->latitude || 0;
-            $longitude = $geoData?->longitude || 0;
-            $city = $geoData?->city || "";
-            $timezone = $geoData?->timeZone || "";
-
             // TODO: Return trackingData as Object (https://github.com/rybbit-io/rybbit/blob/master/server/src/services/tracker/pageviewQueue.ts)
-            $processedPageViews[] = [];
+            $processedPageViews[] = PageViewData::from(
+                $batch->getSiteId(),
+                new DateTimeImmutable(),
+                pageInfo: PageInfo::from(
+                    $batch->getHostname(),
+                    $batch->getPathname(),
+                    $batch->getQueryString(),
+                    $batch->getPageTitle(),
+                ),
+                language: $batch->getLanguage(),
+                screenDimensions: $batch->getScreenDimensions(),
+                channel: $this->channelDetector->detectChannel($batch->getReferrer(), $batch->getQueryString(), $batch->getHostname()),
+                urlParameters: UrlParameter::fromRawString($batch->getQueryString()),
+                geoLocation: $geoData,
+                eventType: $batch->getEventType(),
+                urlParameters: UrlParameter::fromRawString($batch->getQueryString()),
+            );
         }
 
 
@@ -74,6 +93,7 @@ class PageviewQueue
             $this->clickHouse->insert(
                 'events',
                 $processedPageViews,
+                ['event_type', 'site_id', 'occurred_on', 'session_id', 'user_id', 'page_info', 'referrer', 'channel', 'browser', 'browser_version', 'os', 'os_version', 'language', 'screen_dimensions', 'device_type', 'geo_location', 'event_name', 'props', 'url_parameters', 'performance_metrics', 'ip_address']
             );
         } catch (DatabaseException $exception) {
             throw new ApiDatabaseException(
