@@ -42,19 +42,19 @@ export class Tracker {
         }
 
         const payload: BasePayload = {
-            site_id: this.config.siteId,
+            siteId: this.config.siteId,
             hostname: url.hostname,
             pathname: pathname,
             querystring: this.config.trackQuerystring ? url.search : "",
             screenWidth: screen.width,
             screenHeight: screen.height,
             language: navigator.language,
-            page_title: document.title,
+            pageTitle: document.title,
             referrer: document.referrer,
         };
 
         if (this.customUserId) {
-            payload.user_id = this.customUserId;
+            payload.userId = this.customUserId;
         }
 
         return payload;
@@ -90,7 +90,7 @@ export class Tracker {
         const payload: TrackingPayload = {
             ...basePayload,
             type: eventType,
-            event_name: eventName,
+            eventName: eventName,
             properties:
                 eventType === "custom_event" || eventType === "outbound" || eventType === "error"
                     ? JSON.stringify(properties)
@@ -121,7 +121,7 @@ export class Tracker {
         const payload: TrackingPayload = {
             ...basePayload,
             type: "performance",
-            event_name: "web-vitals",
+            eventName: "web-vitals",
             ...vitals,
         };
 

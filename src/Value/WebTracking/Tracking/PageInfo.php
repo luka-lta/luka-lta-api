@@ -32,8 +32,8 @@ class PageInfo
     {
         return new self(
             isset($payload['hostname']) ? (string)$payload['hostname'] : null,
-            isset($payload['pathName']) ? (string)$payload['pathName'] : null,
-            isset($payload['queryString']) ? (string)$payload['queryString'] : null,
+            isset($payload['pathname']) ? (string)$payload['pathname'] : null,
+            isset($payload['querystring']) ? (string)$payload['querystring'] : null,
             isset($payload['pageTitle']) ? (string)$payload['pageTitle'] : null,
         );
     }

@@ -28,17 +28,17 @@ class PageViewEvent
     {
         return new self(
             EventType::from($payload['type']),
-            $payload['site_id'],
+            $payload['siteId'],
             PageInfo::fromPayload($payload),
             ScreenDimensions::fromPayload($payload),
             Properties::fromPayload($payload),
             PerformanceMetrics::fromPayload($payload),
             isset($payload['language']) ? (string)$payload['language'] : null,
             isset($payload['referrer']) ? (string)$payload['referrer'] : null,
-            isset($payload['event_name']) ? (string)$payload['event_name'] : null,
-            isset($payload['user_id']) ? (string)$payload['user_id'] : null,
-            isset($payload['ip_address']) ? (string)$payload['ip_address'] : null,
-            isset($payload['user_agent']) ? (string)$payload['user_agent'] : null,
+            isset($payload['eventName']) ? (string)$payload['eventName'] : null,
+            isset($payload['userId']) ? (string)$payload['userId'] : null,
+            isset($payload['ipAddress']) ? (string)$payload['ipAddress'] : null,
+            isset($payload['userAgent']) ? (string)$payload['userAgent'] : null,
         );
     }
 

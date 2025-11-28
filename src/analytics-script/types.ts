@@ -13,21 +13,21 @@ export interface ScriptConfig {
 }
 
 export interface BasePayload {
-    site_id: string;
+    siteId: string;
     hostname: string;
     pathname: string;
     querystring: string;
     screenWidth: number;
     screenHeight: number;
     language: string;
-    page_title: string;
+    pageTitle: string;
     referrer: string;
-    user_id?: string;
+    userId?: string;
 }
 
 export interface TrackingPayload extends BasePayload {
     type: "pageview" | "custom_event" | "outbound" | "performance" | "error";
-    event_name?: string;
+    eventName?: string;
     properties?: string;
     // Web vitals metrics
     lcp?: number | null;

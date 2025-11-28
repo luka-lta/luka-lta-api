@@ -19,8 +19,8 @@ class TrackEventService
     {
         $data = $request->getParsedBody();
 
-        $data['user_agent']  = $request->getHeader('User-Agent')[0] ?? null;
-        $data['ip_address']  = $request->getHeader('X-Forwarded-For')[0] ?? $request->getServerParam('REMOTE_ADDR');
+        $data['userAgent']  = $request->getHeader('User-Agent')[0] ?? null;
+        $data['ipAddress']  = $request->getHeader('X-Forwarded-For')[0] ?? $request->getServerParam('REMOTE_ADDR');
 
         $pageViewEvent = PageViewEvent::fromPayload($data);
         $this->pageviewQueue->add($pageViewEvent);
