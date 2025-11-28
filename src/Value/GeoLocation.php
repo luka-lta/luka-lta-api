@@ -7,6 +7,7 @@ namespace LukaLtaApi\Value;
 class GeoLocation
 {
     private function __construct(
+        private readonly ?string $ipAddress,
         private readonly ?string $countryCode,
         private readonly ?string $regionCode,
         private readonly ?float $latitude = 0,
@@ -17,6 +18,7 @@ class GeoLocation
     }
 
     public static function from(
+        ?string $ipAddress,
         ?string $countryCode,
         ?string $regionCode,
         ?float $latitude,
@@ -25,6 +27,7 @@ class GeoLocation
         ?string $timezone,
     ): self {
         return new self(
+            $ipAddress,
             $countryCode,
             $regionCode,
             $latitude,
@@ -37,6 +40,7 @@ class GeoLocation
     public static function fromGeoApi(array $result): self
     {
         return new self(
+            isset($result['ip']) ? $result['ip'] : null,
             isset($result['country_code']) ? $result['country_code'] : null,
             isset($result['region_code']) ? $result['region_code'] : null,
             isset($result['latitude']) ? (float)$result['latitude'] : null,
@@ -49,6 +53,7 @@ class GeoLocation
     public function toArray(): array
     {
         return [
+            'ipAddress' => $this->ipAddress,
             'countryCode' => $this?->countryCode,
             'regionCode' => $this?->regionCode,
             'latitude' => $this?->latitude,
@@ -62,6 +67,11 @@ class GeoLocation
     public function getRegion(): string
     {
         return $this->countryCode . '-' . $this->regionCode;
+    }
+
+    public function getIpAddress(): ?string
+    {
+        return $this->ipAddress;
     }
 
     public function getCountryCode(): string

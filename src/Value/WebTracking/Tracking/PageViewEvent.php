@@ -13,7 +13,7 @@ class PageViewEvent
         private readonly string $siteId,
         private readonly PageInfo $pageInfo,
         private readonly ScreenDimensions $screenDimensions,
-        private readonly TrackingProperties $properties,
+        private readonly Properties $properties,
         private readonly PerformanceMetrics $performanceMetrics,
         private readonly ?string $language,
         private readonly ?string $referrer,
@@ -27,18 +27,18 @@ class PageViewEvent
     public static function fromPayload(array $payload): self
     {
         return new self(
-            EventType::from($payload['eventType']),
-            $payload['siteId'],
+            EventType::from($payload['type']),
+            $payload['site_id'],
             PageInfo::fromPayload($payload),
             ScreenDimensions::fromPayload($payload),
-            TrackingProperties::fromPayload($payload),
+            Properties::fromPayload($payload),
             PerformanceMetrics::fromPayload($payload),
             isset($payload['language']) ? (string)$payload['language'] : null,
             isset($payload['referrer']) ? (string)$payload['referrer'] : null,
-            isset($payload['eventName']) ? (string)$payload['eventName'] : null,
-            isset($payload['userId']) ? (string)$payload['userId'] : null,
-            isset($payload['ipAddress']) ? (string)$payload['ipAddress'] : null,
-            isset($payload['userAgent']) ? (string)$payload['userAgent'] : null,
+            isset($payload['event_name']) ? (string)$payload['event_name'] : null,
+            isset($payload['user_id']) ? (string)$payload['user_id'] : null,
+            isset($payload['ip_address']) ? (string)$payload['ip_address'] : null,
+            isset($payload['user_agent']) ? (string)$payload['user_agent'] : null,
         );
     }
 
@@ -62,7 +62,7 @@ class PageViewEvent
         return $this->screenDimensions;
     }
 
-    public function getProperties(): TrackingProperties
+    public function getProperties(): Properties
     {
         return $this->properties;
     }

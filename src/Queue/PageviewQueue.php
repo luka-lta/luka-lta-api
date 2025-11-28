@@ -11,8 +11,7 @@ use LukaLtaApi\Repository\GeoIpRepository;
 use LukaLtaApi\Service\ChannelDetectorService;
 use LukaLtaApi\Value\Device;
 use LukaLtaApi\Value\GeoLocation;
-use LukaLtaApi\Value\WebTracking\Tracking\Events\PageviewPayload;
-use LukaLtaApi\Value\WebTracking\Tracking\PageInfo;
+use LukaLtaApi\Value\UserAgent;
 use LukaLtaApi\Value\WebTracking\Tracking\PageViewData;
 use LukaLtaApi\Value\WebTracking\Tracking\PageViewEvent;
 use LukaLtaApi\Value\WebTracking\Tracking\TrackingBatch;
@@ -52,7 +51,7 @@ class PageviewQueue
 
         $this->processing = true;
 
-        $batches = TrackingBatch::from($this->queue);
+        $batches = TrackingBatch::from(...$this->queue);
 
         $ips = [];
 
@@ -62,8 +61,8 @@ class PageviewQueue
         }
 
         // TODO: Fetch geolocation
-        $geoData = $this->geoIpRepo->getCountryCodeOfIp(...$ips);
-
+/*        $geoData = $this->geoIpRepo->getCountryCodeOfIp(...$ips);*/
+        $geoData = GeoLocation::from(null, null, null, null, null, null, null);
         $processedPageViews = [];
 
         /** @var PageViewEvent $batch */
@@ -72,7 +71,7 @@ class PageviewQueue
                 $batch->getSiteId(),
                 new DateTimeImmutable(),
                 $batch->getPageInfo(),
-                $batch->getUserAgent(),
+                UserAgent::fromUserAgent($batch->getUserAgent()),
                 $geoData,
                 $batch->getScreenDimensions(),
                 UrlParameter::fromRawString($batch->getPageInfo()->getQueryString()),
@@ -89,11 +88,13 @@ class PageviewQueue
                 ),
                 $batch->getLanguage(),
                 $batch->getEventName(),
-                $batch->getIpAddress(),
+                $geoData->getIpAddress(),
                 $batch->getEventType(),
             );
         }
 
+
+        var_dump($processedPageViews);
 
         try {
             // TODO: Check if this right

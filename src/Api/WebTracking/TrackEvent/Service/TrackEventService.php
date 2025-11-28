@@ -17,8 +17,12 @@ class TrackEventService
 
     public function trackEvent(ServerRequestInterface $request): ApiResult
     {
+        $data = $request->getParsedBody();
 
-        $pageViewEvent = PageViewEvent::fromPayload($request->getParsedBody());
+        $data['user_agent']  = $request->getHeader('User-Agent')[0] ?? null;
+        $data['ip_address']  = $request->getHeader('X-Forwarded-For')[0] ?? $request->getServerParam('REMOTE_ADDR');
+
+        $pageViewEvent = PageViewEvent::fromPayload($data);
         $this->pageviewQueue->add($pageViewEvent);
 
         return ApiResult::from(JsonResult::from('OK'));

@@ -2,46 +2,32 @@
 
 namespace LukaLtaApi\Value\WebTracking\Tracking;
 
-use LukaLtaApi\Value\WebTracking\Tracking\Events\PageviewPayload;
+use Countable;
+use Generator;
+use IteratorAggregate;
 
-class TrackingBatch
+class TrackingBatch implements IteratorAggregate, Countable
 {
-
-    // TODO: Iterator
+    private readonly array $events;
     private const int BATCH_SIZE = 5000;
 
-    public function __construct(
-        private readonly array $events
-    ) {
+    private function __construct(PageViewEvent ...$pageViewEvent)
+    {
+        $this->events = $pageViewEvent;
     }
 
-    public static function from(array $payloads): self
+    public static function from(PageViewEvent ...$pageViewEvent): self
     {
-        $events = [];
-
-        foreach ($payloads as $payload) {
-            $events[] = self::createValueObject($payload);
-        }
-
-        return new self($events);
-    }
-
-    private static function createValueObject(array $payload): AbstractTrackingPayload
-    {
-        $type = $payload['type'];
-
-        return match ($type) {
-            EventType::PAGEVIEW->value => PageviewPayload::fromPayload($payload),
-        };
-    }
-
-    public function getEvents(): array
-    {
-        return $this->events;
+        return new self(...$pageViewEvent);
     }
 
     public function count(): int
     {
         return count($this->events);
+    }
+
+    public function getIterator(): Generator
+    {
+        yield from $this->events;
     }
 }

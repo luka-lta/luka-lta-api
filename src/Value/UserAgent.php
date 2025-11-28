@@ -25,9 +25,9 @@ class UserAgent
         return new self(
             $userAgentString,
             $result->ua->family,
-            $result->ua->major,
+            $result->ua->major ?? 'Unknown',
             $result->os->family,
-            $result->os->major
+            $result->os->major ?? 'Unknown',
         );
     }
 
