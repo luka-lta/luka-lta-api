@@ -32,7 +32,8 @@
     "ramsey/uuid": "^4.9",
     "telegram-bot/api": "^2.5",
     "aws/aws-sdk-php": "^3.359",
-    "smi2/phpclickhouse": "^1.6"
+    "smi2/phpclickhouse": "^1.6",
+    "ua-parser/uap-php": "^3.10"
   },
   "require-dev": {
     "roave/security-advisories": "dev-latest",

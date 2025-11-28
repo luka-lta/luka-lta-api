@@ -9,6 +9,7 @@ use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Exception\ApiDatabaseException;
 use LukaLtaApi\Repository\GeoIpRepository;
 use LukaLtaApi\Service\ChannelDetectorService;
+use LukaLtaApi\Value\Device;
 use LukaLtaApi\Value\GeoLocation;
 use LukaLtaApi\Value\WebTracking\Tracking\Events\PageviewPayload;
 use LukaLtaApi\Value\WebTracking\Tracking\PageInfo;
@@ -67,23 +68,29 @@ class PageviewQueue
 
         /** @var PageViewEvent $batch */
         foreach ($batches as $batch) {
-            // TODO: Return trackingData as Object (https://github.com/rybbit-io/rybbit/blob/master/server/src/services/tracker/pageviewQueue.ts)
             $processedPageViews[] = PageViewData::from(
                 $batch->getSiteId(),
                 new DateTimeImmutable(),
-                pageInfo: PageInfo::from(
-                    $batch->getHostname(),
-                    $batch->getPathname(),
-                    $batch->getQueryString(),
-                    $batch->getPageTitle(),
+                $batch->getPageInfo(),
+                $batch->getUserAgent(),
+                $geoData,
+                $batch->getScreenDimensions(),
+                UrlParameter::fromRawString($batch->getPageInfo()->getQueryString()),
+                Device::fromScreenDimension($batch->getScreenDimensions()),
+                $batch->getProperties(),
+                $batch->getPerformanceMetrics(),
+                '2222', // TODO
+                '23222', // TODO
+                $batch->getReferrer(),
+                $this->channelDetector->detectChannel(
+                    $batch->getReferrer(),
+                    $batch->getPageInfo()->getQueryString(),
+                    $batch->getPageInfo()->getHostname()
                 ),
-                language: $batch->getLanguage(),
-                screenDimensions: $batch->getScreenDimensions(),
-                channel: $this->channelDetector->detectChannel($batch->getReferrer(), $batch->getQueryString(), $batch->getHostname()),
-                urlParameters: UrlParameter::fromRawString($batch->getQueryString()),
-                geoLocation: $geoData,
-                eventType: $batch->getEventType(),
-                urlParameters: UrlParameter::fromRawString($batch->getQueryString()),
+                $batch->getLanguage(),
+                $batch->getEventName(),
+                $batch->getIpAddress(),
+                $batch->getEventType(),
             );
         }
 

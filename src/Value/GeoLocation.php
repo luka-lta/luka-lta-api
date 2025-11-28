@@ -55,6 +55,7 @@ class GeoLocation
             'longitude' => $this?->longitude,
             'city' => $this?->city,
             'timezone' => $this?->timezone,
+            'region' => $this?->getRegion(),
         ];
     }
 
