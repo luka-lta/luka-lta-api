@@ -23,16 +23,9 @@ class AuthService
     {
         $user = $this->repository->findByEmail($email);
 
-        if ($user === null) {
+        if ($user === null || $user->isActive() === false || $user->getPassword()->verify($password) === false) {
             return ApiResult::from(
-                JsonResult::from('User not found'),
-                StatusCodeInterface::STATUS_NOT_FOUND
-            );
-        }
-
-        if (!$user->getPassword()->verify($password)) {
-            return ApiResult::from(
-                JsonResult::from('Invalid password'),
+                JsonResult::from('Authentication failed'),
                 StatusCodeInterface::STATUS_UNAUTHORIZED
             );
         }
