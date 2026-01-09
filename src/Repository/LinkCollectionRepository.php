@@ -88,12 +88,12 @@ class LinkCollectionRepository
 
         $sql = <<<SQL
             SELECT * FROM link_collection
-            WHERE link_id = :linkid
+            WHERE link_id = :linkId
         SQL;
 
         try {
             $stmt = $this->pdo->prepare($sql);
-            $stmt->execute(['linkid' => $linkId->asInt()]);
+            $stmt->execute(['linkId' => $linkId->asInt()]);
             $row = $stmt->fetch();
 
             if ($row === false) {
