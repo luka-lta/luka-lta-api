@@ -41,7 +41,7 @@ class ClickMetadata
             isset($row['ip_address']) ?
                 $row['ip_address'] :
                 null,
-            isset($raw['user_agent'])
+            isset($row['user_agent'])
                 ? UserAgent::fromUserAgent($row['user_agent']) :
                 null,
             isset($row['referrer']) ?
