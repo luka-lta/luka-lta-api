@@ -19,8 +19,11 @@ class AuthService
     ) {
     }
 
-    public function login(UserEmail $email, string $password): ApiResult
+    public function login(array $parsedBody): ApiResult
     {
+        $email = UserEmail::from($parsedBody['email']);
+        $password = $parsedBody['password'];
+
         $user = $this->repository->findByEmail($email);
 
         if ($user === null || $user->isActive() === false || $user->getPassword()->verify($password) === false) {

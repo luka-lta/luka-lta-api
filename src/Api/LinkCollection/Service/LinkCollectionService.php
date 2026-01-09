@@ -78,20 +78,19 @@ class LinkCollectionService
     public function createLink(ServerRequestInterface $request): ApiResult
     {
         $body = $request->getParsedBody();
-
-        $createdLink = $this->repository->create(
-            LinkItem::from(
-                null,
-                ClickTag::generateTag(),
-                $body['displayname'],
-                $body['description'] ?? null,
-                $body['url'],
-                $body['isActive'] ?? false,
-                new DateTimeImmutable(),
-                IconName::fromString($body['iconName']),
-                $body['displayOrder'] ?? 0,
-            )
+        $linkItem = LinkItem::from(
+            null,
+            ClickTag::generateTag(),
+            $body['displayname'],
+            $body['description'] ?? null,
+            $body['url'],
+            $body['isActive'] ?? false,
+            new DateTimeImmutable(),
+            IconName::fromString($body['iconName']),
+            $body['displayOrder'] ?? 0,
         );
+
+        $createdLink = $this->repository->create($linkItem);
 
         return ApiResult::from(
             JsonResult::from('Link created', [

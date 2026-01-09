@@ -34,7 +34,7 @@ class ClickService
 
         $linkItem = $this->linkCollectionRepository->getByClickTag($clickTag);
 
-        if ($linkItem === null) {
+        if ($linkItem === null || $linkItem->isDeactivated()) {
             return ApiResult::from(
                 JsonResult::from('Invalid click tag'),
                 StatusCodeInterface::STATUS_NOT_FOUND
