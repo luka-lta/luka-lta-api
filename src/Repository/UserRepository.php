@@ -32,9 +32,9 @@ class UserRepository
         try {
             $statement = $this->pdo->prepare($sql);
             $statement->execute([
-                'email' => $user->getEmail()->getEmail(),
+                'email' => $user->getEmail()->asString(),
                 'username' => $user->getUsername(),
-                'password' => $user->getPassword()->getPassword(),
+                'password' => $user->getPassword()->asString(),
                 'avatar_url' => $user->getAvatarUrl(),
             ]);
             $this->pdo->commit();
@@ -66,8 +66,8 @@ class UserRepository
             $statement = $this->pdo->prepare($sql);
             $statement->execute([
                 'username' => $user->getUsername(),
-                'email' => $user->getEmail()->getEmail(),
-                'password' => $user->getPassword()->getPassword(),
+                'email' => $user->getEmail()->asString(),
+                'password' => $user->getPassword()->asString(),
                 'avatar_url' => $user->getAvatarUrl(),
                 'user_id' => $user->getUserId()?->asInt(),
                 'is_active' => (int)$user->isActive(),
@@ -94,7 +94,7 @@ class UserRepository
 
         try {
             $statement = $this->pdo->prepare($sql);
-            $statement->execute(['email' => $email->getEmail()]);
+            $statement->execute(['email' => $email->asString()]);
 
             $row = $statement->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {

@@ -66,7 +66,7 @@ class SelfUserService
         }
 
         try {
-            if ($user->getEmail()->getEmail() !== $email->getEmail() || $user->getUsername() !== $username) {
+            if ($user->getEmail()->asString() !== $email->asString() || $user->getUsername() !== $username) {
                 $this->validationService->ensureUserDoesNotExists($email, $username);
             }
         } catch (UserAlreadyExistsException $e) {

@@ -47,12 +47,12 @@ class Click
     {
         return [
             'clickId' => $this->clickId->asInt(),
-            'clickTag' => $this->tag->getValue(),
+            'clickTag' => $this->tag->asString(),
             'url' => (string)$this->url,
             'clickedAt' => $this->clickedAt->format('Y-m-d H:i:s'),
             'ipAddress' => $this->metadata->getIpAddress(),
-            'market' => $this->metadata->getMarket()?->getMarket(),
-            'userAgent' => $this->metadata->getUserAgent()?->getRawUserAgent(),
+            'market' => $this->metadata->getMarket()?->asString(),
+            'userAgent' => $this->metadata->getUserAgent()?->asString(),
             'os' => $this->metadata->getUserAgent()?->getOs(),
             'device' => $this->metadata->getUserAgent()?->getDevice(),
             'referer' => $this->metadata->getReferrer(),

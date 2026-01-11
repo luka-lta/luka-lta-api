@@ -47,7 +47,7 @@ class UserService
 
         $this->repository->create(
             User::create(
-                $email->getEmail(),
+                $email->asString(),
                 $username,
                 $password
             )
@@ -78,7 +78,7 @@ class UserService
         }
 
         try {
-            if ($user->getEmail()->getEmail() !== $email->getEmail() || $user->getUsername() !== $username) {
+            if ($user->getEmail()->asString() !== $email->asString() || $user->getUsername() !== $username) {
                 $this->validationService->ensureUserDoesNotExists($email, $username);
             }
         } catch (UserAlreadyExistsException $e) {

@@ -34,12 +34,12 @@ class LinkCollectionRepository
         try {
             $statement = $this->pdo->prepare($sql);
             $statement->execute([
-                'click_tag' => $link->getClickTag()->getValue(),
+                'click_tag' => $link->getClickTag()->asString(),
                 'displayname' => (string)$link->getMetaData()->getDisplayName(),
-                'description' => $link->getMetaData()->getDescription()?->getValue(),
+                'description' => $link->getMetaData()->getDescription()?->asString(),
                 'url' => (string)$link->getMetaData()->getLinkUrl(),
                 'is_active' => $link->getMetaData()->isActive() ? 1 : 0,
-                'icon_name' => $link->getIconName()?->getValue(),
+                'icon_name' => $link->getIconName()?->asString(),
                 'display_order' => $link->getDisplayOrder(),
             ]);
 
@@ -64,7 +64,7 @@ class LinkCollectionRepository
 
         try {
             $stmt = $this->pdo->prepare($sql);
-            $stmt->execute(['clickTag' => $tag->getValue()]);
+            $stmt->execute(['clickTag' => $tag->asString()]);
             $row = $stmt->fetch();
 
             if ($row === false) {
@@ -126,10 +126,10 @@ class LinkCollectionRepository
             $statement = $this->pdo->prepare($sql);
             $statement->execute([
                 'displayname' => (string)$linkItem->getMetaData()->getDisplayName(),
-                'description' => $linkItem->getMetaData()->getDescription()?->getValue(),
+                'description' => $linkItem->getMetaData()->getDescription()?->asString(),
                 'url' => (string)$linkItem->getMetaData()->getLinkUrl(),
                 'is_active' => $linkItem->getMetaData()->isActive() ? 1 : 0,
-                'icon_name' => $linkItem->getIconName()?->getValue(),
+                'icon_name' => $linkItem->getIconName()?->asString(),
                 'link_id' => $linkItem->getLinkId()?->asInt(),
                 'display_order' => $linkItem->getDisplayOrder(),
             ]);

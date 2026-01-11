@@ -16,7 +16,7 @@ class Market
         return new self($market);
     }
 
-    public function getMarket(): string
+    public function asString(): string
     {
         return $this->market;
     }
