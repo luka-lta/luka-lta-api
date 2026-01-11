@@ -39,14 +39,14 @@ class ClickRepository
             $statement = $this->pdo->prepare($sql);
             $statement->execute([
                 'url' => (string)$click->getUrl(),
-                'click_tag' => $click->getTag()->getValue(),
+                'click_tag' => $click->getTag()->asString(),
                 'click_date' => $click->getClickedAt()?->format('Y-m-d H:i:s'),
-                'ip_address' => $click->getIpAddress(),
-                'market' => $click->getMarket(),
-                'user_agent' => $click->getUserAgent()?->getRawUserAgent(),
-                'os' => $click->getUserAgent()?->getOs(),
-                'device' => $click->getUserAgent()?->getDevice(),
-                'referrer' => $click->getReferer(),
+                'ip_address' => $click->getMetadata()->getIpAddress(),
+                'market' => $click->getMetadata()->getMarket()?->asString(),
+                'user_agent' => $click->getMetadata()->getUserAgent()?->asString(),
+                'os' => $click->getMetadata()->getUserAgent()?->getOs(),
+                'device' => $click->getMetadata()->getUserAgent()?->getDevice(),
+                'referrer' => $click->getMetadata()->getReferrer(),
             ]);
         } catch (PDOException $exception) {
             throw new ApiDatabaseException(

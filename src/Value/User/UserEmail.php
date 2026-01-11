@@ -22,7 +22,7 @@ class UserEmail
         return new self($email);
     }
 
-    public function getEmail(): string
+    public function asString(): string
     {
         return $this->email;
     }

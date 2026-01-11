@@ -61,7 +61,7 @@ class RegisterService
 
         $this->userRepository->create(
             User::create(
-                $email->getEmail(),
+                $email->asString(),
                 $username,
                 $password
             )

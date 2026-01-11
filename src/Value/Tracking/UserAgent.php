@@ -64,7 +64,7 @@ class UserAgent
         return 'Desktop';
     }
 
-    public function getRawUserAgent(): string
+    public function asString(): string
     {
         return $this->rawUserAgent;
     }

@@ -13,7 +13,7 @@ class TokenService
         $expiresIn = time() + (int)getenv('JWT_NORMAL_EXPIRATION_TIME');
         return Token::builder(getenv('JWT_SECRET'))
             ->setIssuer('https://api.luka-lta.dev')
-            ->setPayloadClaim('email', $user->getEmail()->getEmail())
+            ->setPayloadClaim('email', $user->getEmail()->asString())
             ->setPayloadClaim('sub', $user->getUserId()?->asString())
             ->setIssuedAt(time())
             ->setExpiration($expiresIn)
