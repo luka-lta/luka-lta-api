@@ -79,7 +79,30 @@ class PageViewData
     public function toArray(): array
     {
         return [
-
+            'siteId' => $this->siteId,
+            'occurredOn' => $this->occurredOn->format(DATE_ATOM),
+            'pageInfo' => $this->pageInfo->toArray(),
+            'userAgent' => [
+                'userAgentString' => $this->userAgent->getUserAgentString(),
+                'browserName' => $this->userAgent->getBrowserName(),
+                'browserVersion' => $this->userAgent->getBrowserVersion(),
+                'osName' => $this->userAgent->getOsName(),
+                'osVersion' => $this->userAgent->getOsVersion(),
+            ],
+            'geoLocation' => $this->geoLocation->toArray(),
+            'screenDimensions' => $this->screenDimensions->toArray(),
+            'urlParameters' => $this->urlParameters->toArray(),
+            'deviceType' => $this->deviceType->getDeviceType(),
+            'props' => $this->props?->getValue(),
+            'performanceMetrics' => $this->performanceMetrics->toArray(),
+            'sessionId' => $this->sessionId,
+            'userId' => $this->userId,
+            'referrer' => $this->referrer,
+            'channel' => $this->channel,
+            'language' => $this->language,
+            'eventName' => $this->eventName,
+            'ipAddress' => $this->ipAddress,
+            'eventType' => $this->eventType->getValue(),
         ];
     }
 

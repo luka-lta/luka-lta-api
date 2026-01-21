@@ -41,7 +41,7 @@ class UrlParameter
         return new self($parameters);
     }
 
-    public function getParameters(): array
+    public function toArray(): array
     {
         return $this->parameters;
     }

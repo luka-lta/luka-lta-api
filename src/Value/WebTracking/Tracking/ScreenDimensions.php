@@ -44,4 +44,13 @@ class ScreenDimensions
     {
         return $this->width / $this->height;
     }
+
+    public function toArray(): array
+    {
+        return [
+            'screenWidth' => $this->width,
+            'screenHeight' => $this->height,
+            'aspectRatio' => $this->getAspectRatio(),
+        ];
+    }
 }

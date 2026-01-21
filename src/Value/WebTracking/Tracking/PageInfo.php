@@ -38,6 +38,16 @@ class PageInfo
         );
     }
 
+    public function toArray(): array
+    {
+        return [
+            'hostname' => $this->hostname,
+            'pathname' => $this->pathName,
+            'querystring' => $this->queryString,
+            'pageTitle' => $this->pageTitle,
+        ];
+    }
+
     public function getHostname(): ?string
     {
         return $this->hostname;
