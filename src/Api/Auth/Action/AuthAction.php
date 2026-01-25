@@ -29,9 +29,6 @@ class AuthAction extends ApiAction
 
         $this->validator->validate($request, $rules);
 
-        return $this->service->login(
-            UserEmail::from($request->getParsedBody()['email']),
-            $request->getParsedBody()['password']
-        )->getResponse($response);
+        return $this->service->login($request->getParsedBody())->getResponse($response);
     }
 }

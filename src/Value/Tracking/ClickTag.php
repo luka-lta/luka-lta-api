@@ -22,7 +22,7 @@ class ClickTag
         return new self($value);
     }
 
-    public function getValue(): string
+    public function asString(): string
     {
         return $this->value;
     }

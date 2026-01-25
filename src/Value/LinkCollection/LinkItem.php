@@ -70,13 +70,13 @@ class LinkItem
     {
         return [
             'id' => $this->linkId?->asInt(),
-            'clickTag' => $this->clickTag->getValue(),
+            'clickTag' => $this->clickTag->asString(),
             'displayname' => (string)$this->metaData->getDisplayName(),
-            'description' => $this->metaData->getDescription()->getValue(),
+            'description' => $this->metaData->getDescription()->asString(),
             'url' => $mustRef ? $this->clickTag->getAsTracking() : (string)$this->metaData->getLinkUrl(),
             'isActive' => $this->metaData->isActive(),
             'createdOn' => $this->createdOn->format('Y-m-d H:i:s'),
-            'iconName' => $this->iconName->getValue(),
+            'iconName' => $this->iconName->asString(),
             'displayOrder' => $this->displayOrder,
             'deactivated' => $this->deactivated,
             'deactivatedOn' => $this->deactivatedOn?->format('Y-m-d H:i:s'),

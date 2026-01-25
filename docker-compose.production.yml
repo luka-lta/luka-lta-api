@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: docker/nginx/Dockerfile
     image: ghcr.io/luka-lta/luka-lta-api/api-nginx:production
-    platform: linux/amd64
+    platform: linux/arm64
 
   php-fpm:
     build:
@@ -12,7 +12,7 @@ services:
       dockerfile: docker/php/Dockerfile
       target: development
     image: ghcr.io/luka-lta/luka-lta-api/api-php-fpm:production
-    platform: linux/amd64
+    platform: linux/arm64
 
 networks:
   lukaLta-shared:

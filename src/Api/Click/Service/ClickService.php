@@ -12,6 +12,7 @@ use LukaLtaApi\Repository\LinkCollectionRepository;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
 use LukaLtaApi\Value\Tracking\Click;
+use LukaLtaApi\Value\Tracking\ClickMetadata;
 use LukaLtaApi\Value\Tracking\Clicks;
 use LukaLtaApi\Value\Tracking\ClickTag;
 use LukaLtaApi\Value\Tracking\UserAgent;
@@ -27,16 +28,13 @@ class ClickService
 
     public function track(ServerRequestInterface $request): ApiResult
     {
-        $clickTag = ClickTag::fromString($request->getAttribute('clickTag'));
         $body = $request->getParsedBody();
-        $market = $body['market'] ?? null;
-        $ipAddress = $body['ipAddress'] ?? null;
-        $userAgent = $body['userAgent'] ?? null;
-        $referer = $body['referrer'] ?? null;
+        $clickTag = ClickTag::fromString($request->getAttribute('clickTag'));
+        $clickMetaData = ClickMetadata::fromArray($body);
 
         $linkItem = $this->linkCollectionRepository->getByClickTag($clickTag);
 
-        if ($linkItem === null) {
+        if ($linkItem === null || $linkItem->isDeactivated()) {
             return ApiResult::from(
                 JsonResult::from('Invalid click tag'),
                 StatusCodeInterface::STATUS_NOT_FOUND
@@ -48,10 +46,7 @@ class ClickService
             $clickTag,
             $linkItem->getMetaData()->getLinkUrl(),
             new DateTimeImmutable(),
-            $ipAddress,
-            $market,
-            UserAgent::fromUserAgent($userAgent),
-            $referer
+            $clickMetaData,
         );
 
         $this->repository->recordClick($click);

@@ -63,7 +63,7 @@ class User
         return  [
             'userId' => $this->userId?->asInt(),
             'username' => $this->username,
-            'email' => $this->email->getEmail(),
+            'email' => $this->email->asString(),
             'avatarUrl' => $this->avatarUrl,
             'isActive' => $this->isActive,
             'lastActive' => $this->lastActive?->format('Y-m-d H:i:s'),

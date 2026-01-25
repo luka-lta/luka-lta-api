@@ -12,10 +12,7 @@ class Click
         private readonly ClickTag           $tag,
         private readonly LinkUrl            $url,
         private readonly ?DateTimeImmutable $clickedAt,
-        private readonly ?string            $ipAddress,
-        private readonly ?string            $market,
-        private readonly ?UserAgent         $userAgent,
-        private readonly ?string            $referer,
+        private readonly ClickMetadata      $metadata,
     ) {
     }
 
@@ -24,20 +21,14 @@ class Click
         ClickTag $tag,
         LinkUrl $url,
         ?DateTimeImmutable $clickedAt,
-        ?string $ipAddress,
-        ?string $market,
-        ?UserAgent $userAgent,
-        ?string $referer,
+        ClickMetadata $clickMetadata,
     ): self {
         return new self(
             $clickId,
             $tag,
             $url,
             $clickedAt,
-            $ipAddress,
-            $market,
-            $userAgent,
-            $referer,
+            $clickMetadata,
         );
     }
 
@@ -48,12 +39,7 @@ class Click
             ClickTag::fromString($data['click_tag']),
             LinkUrl::fromString($data['url']),
             new DateTimeImmutable($data['clicked_at']),
-            $data['ip_address'] ?? null,
-            $data['market'] ?? null,
-            isset($data['user_agent']) ?
-                UserAgent::from($data['user_agent'], $data['os'], $data['device']) :
-                null,
-            $data['referrer'] ?? null,
+            ClickMetadata::fromDatabase($data)
         );
     }
 
@@ -61,15 +47,15 @@ class Click
     {
         return [
             'clickId' => $this->clickId->asInt(),
-            'clickTag' => $this->tag->getValue(),
+            'clickTag' => $this->tag->asString(),
             'url' => (string)$this->url,
             'clickedAt' => $this->clickedAt->format('Y-m-d H:i:s'),
-            'ipAddress' => $this->ipAddress,
-            'market' => $this->market,
-            'userAgent' => $this->userAgent?->getRawUserAgent(),
-            'os' => $this->userAgent?->getOs(),
-            'device' => $this->userAgent?->getDevice(),
-            'referer' => $this->referer,
+            'ipAddress' => $this->metadata->getIpAddress(),
+            'market' => $this->metadata->getMarket()?->asString(),
+            'userAgent' => $this->metadata->getUserAgent()?->asString(),
+            'os' => $this->metadata->getUserAgent()?->getOs(),
+            'device' => $this->metadata->getUserAgent()?->getDevice(),
+            'referer' => $this->metadata->getReferrer(),
         ];
     }
 
@@ -93,23 +79,8 @@ class Click
         return $this->clickedAt;
     }
 
-    public function getIpAddress(): ?string
+    public function getMetadata(): ClickMetadata
     {
-        return $this->ipAddress;
-    }
-
-    public function getMarket(): ?string
-    {
-        return $this->market;
-    }
-
-    public function getUserAgent(): ?UserAgent
-    {
-        return $this->userAgent;
-    }
-
-    public function getReferer(): ?string
-    {
-        return $this->referer;
+        return $this->metadata;
     }
 }

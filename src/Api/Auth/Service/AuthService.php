@@ -19,20 +19,16 @@ class AuthService
     ) {
     }
 
-    public function login(UserEmail $email, string $password): ApiResult
+    public function login(array $parsedBody): ApiResult
     {
+        $email = UserEmail::from($parsedBody['email']);
+        $password = $parsedBody['password'];
+
         $user = $this->repository->findByEmail($email);
 
-        if ($user === null) {
+        if ($user === null || $user->isActive() === false || $user->getPassword()->verify($password) === false) {
             return ApiResult::from(
-                JsonResult::from('User not found'),
-                StatusCodeInterface::STATUS_NOT_FOUND
-            );
-        }
-
-        if (!$user->getPassword()->verify($password)) {
-            return ApiResult::from(
-                JsonResult::from('Invalid password'),
+                JsonResult::from('Authentication failed'),
                 StatusCodeInterface::STATUS_UNAUTHORIZED
             );
         }
