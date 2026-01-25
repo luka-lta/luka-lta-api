@@ -1,14 +1,13 @@
 <?php
 
-namespace LukaLtaApi\Api\WebTracking\TrackingConfig\Service;
+namespace LukaLtaApi\Api\WebTracking\SiteConfig\Service;
 
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Repository\SiteRepository;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
-use LukaLtaApi\Value\WebTracking\Config\SiteConfig;
 
-class TrackingConfigService
+class SiteConfigService
 {
     public function __construct(
         private readonly SiteRepository $siteRepository,

@@ -74,32 +74,32 @@ class GeoLocation
         return $this->ipAddress;
     }
 
-    public function getCountryCode(): string
+    public function getCountryCode(): ?string
     {
         return $this->countryCode;
     }
 
-    public function getRegionCode(): string
+    public function getRegionCode(): ?string
     {
         return $this->regionCode;
     }
 
-    public function getLatitude(): float
+    public function getLatitude(): ?float
     {
         return $this->latitude;
     }
 
-    public function getLongitude(): float
+    public function getLongitude(): ?float
     {
         return $this->longitude;
     }
 
-    public function getCity(): string
+    public function getCity(): ?string
     {
         return $this->city;
     }
 
-    public function getTimezone(): string
+    public function getTimezone(): ?string
     {
         return $this->timezone;
     }

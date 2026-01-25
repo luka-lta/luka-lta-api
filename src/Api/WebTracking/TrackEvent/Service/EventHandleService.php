@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace LukaLtaApi\Api\WebTracking\TrackEvent\Service;
 
 use DateTimeImmutable;
+use LukaLtaApi\Api\WebTracking\TrackEvent\Repository\TrackEventRepository;
 use LukaLtaApi\Service\ChannelDetectorService;
 use LukaLtaApi\Value\Device;
 use LukaLtaApi\Value\GeoLocation;
@@ -17,6 +18,7 @@ class EventHandleService
 {
     public function __construct(
         private readonly ChannelDetectorService $channelDetector,
+        private readonly TrackEventRepository $trackEventRepository,
     ) {
     }
 
@@ -25,6 +27,8 @@ class EventHandleService
         $geoData = GeoLocation::from(null, null, null, null, null, null, null);
         $pageInfo = $event->getPageInfo();
         $queryString = $pageInfo->getQueryString();
+
+        // TODO: Add WebVital to Database
 
         $pageviewData = PageViewData::from(
             $event->getSiteId(),
@@ -37,8 +41,8 @@ class EventHandleService
             Device::fromScreenDimension($event->getScreenDimensions()),
             $event->getProperties(),
             $event->getPerformanceMetrics(),
-            '2222', // TODO
             '23222', // TODO
+            'ABCDE',
             $event->getReferrer(),
             $this->channelDetector->detectChannel(
                 $event->getReferrer(),
@@ -51,6 +55,6 @@ class EventHandleService
             $event->getEventType(),
         );
 
-        // TODO: Insert to Database
+        $this->trackEventRepository->insertEvent($pageviewData);
     }
 }

@@ -35,8 +35,8 @@ use LukaLtaApi\Api\User\Action\DeleteUserAction;
 use LukaLtaApi\Api\User\Action\GetAllUsersAction;
 use LukaLtaApi\Api\User\Action\GetAvatarAction;
 use LukaLtaApi\Api\User\Action\UpdateProfileAction;
+use LukaLtaApi\Api\WebTracking\SiteConfig\Action\GetSiteConfig;
 use LukaLtaApi\Api\WebTracking\TrackEvent\Action\TrackEventAction;
-use LukaLtaApi\Api\WebTracking\TrackingConfig\Action\GetTrackingConfig;
 use LukaLtaApi\Api\WebTracking\TrackingScript\Action\GetTrackingScriptAction;
 use LukaLtaApi\Service\PermissionService;
 use LukaLtaApi\Slim\Middleware\ApiKeyPermissionMiddleware;
@@ -276,7 +276,7 @@ class RouteMiddlewareCollector
             })->add(AuthMiddleware::class);
 
             $app->group('/site', function (RouteCollectorProxy $site) use ($app) {
-                $site->get('/{siteId:[0-9]+}/tracking-config', GetTrackingConfig::class);
+                $site->get('/{siteId:[0-9]+}/tracking-config', GetSiteConfig::class);
             });
         });
     }

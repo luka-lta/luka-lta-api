@@ -1,16 +1,16 @@
 <?php
 
-namespace LukaLtaApi\Api\WebTracking\TrackingConfig\Action;
+namespace LukaLtaApi\Api\WebTracking\SiteConfig\Action;
 
 use LukaLtaApi\Api\ApiAction;
-use LukaLtaApi\Api\WebTracking\TrackingConfig\Service\TrackingConfigService;
+use LukaLtaApi\Api\WebTracking\SiteConfig\Service\SiteConfigService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-class GetTrackingConfig extends ApiAction
+class GetSiteConfig extends ApiAction
 {
     public function __construct(
-        private readonly TrackingConfigService $service,
+        private readonly SiteConfigService $service,
     ) {
     }
 
