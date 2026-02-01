@@ -35,6 +35,7 @@ use LukaLtaApi\Api\User\Action\DeleteUserAction;
 use LukaLtaApi\Api\User\Action\GetAllUsersAction;
 use LukaLtaApi\Api\User\Action\GetAvatarAction;
 use LukaLtaApi\Api\User\Action\UpdateProfileAction;
+use LukaLtaApi\Api\WebTracking\Identify\Action\IdentifyTrackingUserAction;
 use LukaLtaApi\Api\WebTracking\SiteConfig\Action\GetSiteConfig;
 use LukaLtaApi\Api\WebTracking\TrackEvent\Action\TrackEventAction;
 use LukaLtaApi\Api\WebTracking\TrackingScript\Action\GetTrackingScriptAction;
@@ -118,6 +119,7 @@ class RouteMiddlewareCollector
     {
         $app->get('/script.js', GetTrackingScriptAction::class);
         $app->post('/track', TrackEventAction::class);
+        $app->post('/identify', IdentifyTrackingUserAction::class);
 
         $app->group('/api/v1', function (RouteCollectorProxy $app) {
             $app->post('/auth', AuthAction::class);
