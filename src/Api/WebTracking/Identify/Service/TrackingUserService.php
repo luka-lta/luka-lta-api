@@ -7,9 +7,11 @@ namespace LukaLtaApi\Api\WebTracking\Identify\Service;
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Repository\SiteRepository;
 use LukaLtaApi\Repository\TrackingUserAliasRepository;
+use LukaLtaApi\Repository\TrackingUserRepository;
 use LukaLtaApi\Service\CryptService;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
+use LukaLtaApi\Value\Tracking\User\TrackingUser;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
 
@@ -19,6 +21,7 @@ class TrackingUserService
         private readonly SiteRepository $siteRepository,
         private readonly CryptService $cryptService,
         private readonly TrackingUserAliasRepository $trackingUserAliasRepository,
+        private readonly TrackingUserRepository $trackingUserRepository,
         private readonly LoggerInterface $logger,
     ) {
     }
@@ -37,17 +40,19 @@ class TrackingUserService
 
         $siteId = $siteConfiguration->getSiteId();
 
+        $userId = $body['userId'];
         $ipAddress = $request->getServerParams()['REMOTE_ADDR'];
         $userAgent = $request->getServerParams()['HTTP_USER_AGENT'];
         $anonymousId = $this->cryptService->generateAnonymousId($ipAddress, $userAgent);
+
+        $trackingUser = TrackingUser::from((int)$siteConfiguration->getSiteId(), $anonymousId, $userId);
 
         if ($body['isNewIdentified']) {
             $existingAlias = $this->trackingUserAliasRepository->getUserAlias((int)$siteId, $anonymousId);
 
             if (!$existingAlias) {
                 // TODO: Insert new user to Database
-
-                var_dump($ipAddress, $userAgent, $anonymousId);
+                $this->trackingUserRepository->insertTrackingUser($trackingUser);
 
                 return ApiResult::from(
                     JsonResult::from(

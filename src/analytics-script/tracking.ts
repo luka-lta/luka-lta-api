@@ -202,9 +202,35 @@ export class Tracker {
 
         this.customUserId = userId.trim();
         try {
-            localStorage.setItem("luka-lta-user-id", this.customUserId);
+            localStorage.setItem(`luka-lta-user-id`, this.customUserId);
         } catch (e) {
             console.warn("Could not persist user ID to localStorage");
+        }
+
+        // Send identify event to server (creates alias and stores traits)
+        this.sendIdentifyEvent(this.customUserId, true);
+    }
+
+    private async sendIdentifyEvent(
+        userId: string,
+        isNewIdentify: boolean = true
+    ): Promise<void> {
+        try {
+            await fetch(`${this.config.analyticsHost}/identify`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    siteId: this.config.siteId,
+                    userId: userId,
+                    isNewIdentified: isNewIdentify,
+                }),
+                mode: "cors",
+                keepalive: true,
+            });
+        } catch (error) {
+            console.error("Failed to send identify event:", error);
         }
     }
 
