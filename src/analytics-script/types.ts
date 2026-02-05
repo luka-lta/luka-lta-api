@@ -10,6 +10,7 @@ export interface ScriptConfig {
     trackErrors: boolean;
     skipPatterns: string[];
     maskPatterns: string[];
+    trackButtonClicks: boolean;
 }
 
 export interface BasePayload {
@@ -26,7 +27,7 @@ export interface BasePayload {
 }
 
 export interface TrackingPayload extends BasePayload {
-    type: "pageview" | "custom_event" | "outbound" | "performance" | "error";
+    type: "pageview" | "custom_event" | "outbound" | "performance" | "error" | "button_click" | "copy" | "form_submit" | "input_change";
     eventName?: string;
     properties?: string;
     // Web vitals metrics
@@ -60,4 +61,9 @@ export interface LukaLtaAPI {
     identify: (userId: string) => void;
     clearUserId: () => void;
     getUserId: () => string | null;
+}
+
+export interface ButtonClickProperties {
+    text?: string;
+    [key: string]: string | undefined; // Additional data-rybbit-* attributes
 }

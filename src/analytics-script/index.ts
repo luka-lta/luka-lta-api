@@ -3,6 +3,7 @@ import { Tracker } from "./tracking.js";
 import { WebVitalsCollector } from "./webVitals.js";
 import { debounce, isOutboundLink } from "./utils.js";
 import { LukaLtaAPI, WebVitalsData, ErrorProperties } from "./types.js";
+import {ClickTrackingManager} from "./clickTracking";
 
 declare global {
     interface Window {
@@ -49,6 +50,14 @@ declare global {
             tracker.trackWebVitals(vitals);
         });
         webVitalsCollector.initialize();
+    }
+
+    let clickManager: ClickTrackingManager | null = null;
+
+    // Initialize click tracking if enabled
+    if (config.trackButtonClicks) {
+        clickManager = new ClickTrackingManager(tracker, config);
+        clickManager.initialize();
     }
 
     // Initialize error tracking if enabled

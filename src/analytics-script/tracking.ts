@@ -1,4 +1,4 @@
-import { BasePayload, ScriptConfig, TrackingPayload, WebVitalsData } from "./types.js";
+import {BasePayload, ButtonClickProperties, ScriptConfig, TrackingPayload, WebVitalsData} from "./types.js";
 import { findMatchingPattern } from "./utils.js";
 
 export class Tracker {
@@ -87,14 +87,14 @@ export class Tracker {
             return; // Skip tracking
         }
 
+        const typesWithProperties = ["custom_event", "outbound", "error", "button_click", "copy", "form_submit", "input_change"];
         const payload: TrackingPayload = {
             ...basePayload,
             type: eventType,
             eventName: eventName,
-            properties:
-                eventType === "custom_event" || eventType === "outbound" || eventType === "error"
-                    ? JSON.stringify(properties)
-                    : undefined,
+            properties: typesWithProperties.includes(eventType)
+                ? JSON.stringify(properties)
+                : undefined,
         };
 
         this.sendTrackingData(payload);
@@ -192,6 +192,10 @@ export class Tracker {
         }
 
         this.track("error", error.name || "Error", errorProperties);
+    }
+
+    trackButtonClick(properties: ButtonClickProperties): void {
+        this.track("button_click", "", properties);
     }
 
     identify(userId: string): void {
