@@ -10,8 +10,8 @@ class GeoLocation
         private readonly ?string $ipAddress,
         private readonly ?string $countryCode,
         private readonly ?string $regionCode,
-        private readonly ?float $latitude = 0,
-        private readonly ?float $longitude = 0,
+        private readonly ?float $latitude = null,
+        private readonly ?float $longitude = null,
         private readonly ?string $city = null,
         private readonly ?string $timezone = null,
     ) {
@@ -54,13 +54,13 @@ class GeoLocation
     {
         return [
             'ipAddress' => $this->ipAddress,
-            'countryCode' => $this?->countryCode,
-            'regionCode' => $this?->regionCode,
-            'latitude' => $this?->latitude,
-            'longitude' => $this?->longitude,
-            'city' => $this?->city,
-            'timezone' => $this?->timezone,
-            'region' => $this?->getRegion(),
+            'countryCode' => $this->countryCode,
+            'regionCode' => $this->regionCode,
+            'latitude' => $this->latitude,
+            'longitude' => $this->longitude,
+            'city' => $this->city,
+            'timezone' => $this->timezone,
+            'region' => $this->getRegion(),
         ];
     }
 

@@ -6,6 +6,7 @@ namespace LukaLtaApi\Api\WebTracking\TrackEvent\Service;
 
 use DateTimeImmutable;
 use LukaLtaApi\Api\WebTracking\TrackEvent\Repository\TrackEventRepository;
+use LukaLtaApi\Repository\GeoLocationRepository;
 use LukaLtaApi\Repository\SessionRepository;
 use LukaLtaApi\Service\ChannelDetectorService;
 use LukaLtaApi\Service\CryptService;
@@ -20,15 +21,20 @@ class EventHandleService
 {
     public function __construct(
         private readonly ChannelDetectorService $channelDetector,
-        private readonly TrackEventRepository $trackEventRepository,
-        private readonly CryptService $cryptService,
-        private readonly SessionRepository $sessionRepository,
+        private readonly TrackEventRepository   $trackEventRepository,
+        private readonly CryptService           $cryptService,
+        private readonly SessionRepository      $sessionRepository,
+        private readonly GeoLocationRepository  $geoLocationRepository,
     ) {
     }
 
     public function handleEvent(PageViewEvent $event): void
     {
         $geoData = GeoLocation::from(null, null, null, null, null, null, null);
+        if ($event->getIpAddress()) {
+            $geoData = $this->geoLocationRepository->findByIp($event->getIpAddress());
+        }
+
         $pageInfo = $event->getPageInfo();
         $queryString = $pageInfo->getQueryString();
 
