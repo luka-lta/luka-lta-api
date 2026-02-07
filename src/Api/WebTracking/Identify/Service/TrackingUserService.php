@@ -21,7 +21,6 @@ class TrackingUserService
         private readonly SiteRepository $siteRepository,
         private readonly CryptService $cryptService,
         private readonly TrackingUserAliasRepository $trackingUserAliasRepository,
-        private readonly TrackingUserRepository $trackingUserRepository,
         private readonly LoggerInterface $logger,
     ) {
     }
@@ -51,8 +50,7 @@ class TrackingUserService
             $existingAlias = $this->trackingUserAliasRepository->getUserAlias((int)$siteId, $anonymousId);
 
             if (!$existingAlias) {
-                // TODO: Insert new user to Database
-                $this->trackingUserRepository->insertTrackingUser($trackingUser);
+                $this->trackingUserAliasRepository->insertUserAlias($trackingUser);
 
                 return ApiResult::from(
                     JsonResult::from(
