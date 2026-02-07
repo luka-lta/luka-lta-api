@@ -35,12 +35,15 @@ use LukaLtaApi\Api\User\Action\DeleteUserAction;
 use LukaLtaApi\Api\User\Action\GetAllUsersAction;
 use LukaLtaApi\Api\User\Action\GetAvatarAction;
 use LukaLtaApi\Api\User\Action\UpdateProfileAction;
+use LukaLtaApi\Api\WebTracking\Identify\Action\IdentifyTrackingUserAction;
+use LukaLtaApi\Api\WebTracking\SiteConfig\Action\GetSiteConfig;
+use LukaLtaApi\Api\WebTracking\TrackEvent\Action\TrackEventAction;
+use LukaLtaApi\Api\WebTracking\TrackingScript\Action\GetTrackingScriptAction;
 use LukaLtaApi\Service\PermissionService;
 use LukaLtaApi\Slim\Middleware\ApiKeyPermissionMiddleware;
 use LukaLtaApi\Slim\Middleware\AuthMiddleware;
 use LukaLtaApi\Slim\Middleware\CORSMiddleware;
 use LukaLtaApi\Value\Permission\Permission;
-use Monolog\Logger;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
@@ -114,6 +117,10 @@ class RouteMiddlewareCollector
 
     public function registerApiRoutes(App $app): void
     {
+        $app->get('/script.js', GetTrackingScriptAction::class);
+        $app->post('/track', TrackEventAction::class);
+        $app->post('/identify', IdentifyTrackingUserAction::class);
+
         $app->group('/api/v1', function (RouteCollectorProxy $app) {
             $app->post('/auth', AuthAction::class);
             $app->post('/register', RegisterUserAction::class);
@@ -269,6 +276,10 @@ class RouteMiddlewareCollector
             $app->group('/statistics', function (RouteCollectorProxy $statistics) use ($app) {
                 $statistics->get('/', GetStatisticsAction::class);
             })->add(AuthMiddleware::class);
+
+            $app->group('/site', function (RouteCollectorProxy $site) use ($app) {
+                $site->get('/{siteId:[0-9]+}/tracking-config', GetSiteConfig::class);
+            });
         });
     }
 }
