@@ -32,7 +32,11 @@ class EventHandleService
     {
         $geoData = GeoLocation::from(null, null, null, null, null, null, null);
         if ($event->getIpAddress()) {
-            $geoData = $this->geoLocationRepository->findByIp($event->getIpAddress());
+            try {
+                $geoData = $this->geoLocationRepository->findByIp($event->getIpAddress());
+            } catch (\Throwable) {
+                // Geo lookup failed — proceed with empty geo data
+            }
         }
 
         $pageInfo = $event->getPageInfo();
