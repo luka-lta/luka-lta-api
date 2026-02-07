@@ -64,8 +64,12 @@ class GeoLocation
         ];
     }
 
-    public function getRegion(): string
+    public function getRegion(): ?string
     {
+        if ($this->countryCode === null || $this->regionCode === null) {
+            return null;
+        }
+
         return $this->countryCode . '-' . $this->regionCode;
     }
 

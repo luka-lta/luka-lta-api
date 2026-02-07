@@ -29,4 +29,7 @@ CREATE TABLE `events` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 ALTER TABLE `events`
+    ADD PRIMARY KEY (`event_id`);
+
+ALTER TABLE `events`
     MODIFY `event_id` int NOT NULL AUTO_INCREMENT;

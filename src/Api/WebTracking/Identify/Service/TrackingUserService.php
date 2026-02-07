@@ -7,7 +7,6 @@ namespace LukaLtaApi\Api\WebTracking\Identify\Service;
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Repository\SiteRepository;
 use LukaLtaApi\Repository\TrackingUserAliasRepository;
-use LukaLtaApi\Repository\TrackingUserRepository;
 use LukaLtaApi\Service\CryptService;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
@@ -62,7 +61,6 @@ class TrackingUserService
             $this->logger->warning('Anonymous ID already linked to a different user', [
                 'siteId' => $siteId,
                 'anonymousId' => $anonymousId,
-                'ipAddress' => $ipAddress,
                 'userAgent' => $userAgent,
             ]);
         }

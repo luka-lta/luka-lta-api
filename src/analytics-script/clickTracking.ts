@@ -50,7 +50,7 @@ export class ClickTrackingManager {
         if (!buttonElement) return;
 
         // Skip if button has custom event tracking
-        if (buttonElement.hasAttribute("data-rybbit-event")) return;
+        if (buttonElement.hasAttribute("data-lukalta-event")) return;
 
         const properties: ButtonClickProperties = {
             text: this.getElementText(buttonElement),
@@ -63,8 +63,8 @@ export class ClickTrackingManager {
     private extractDataAttributes(element: HTMLElement): Record<string, string> {
         const attrs: Record<string, string> = {};
         for (const attr of element.attributes) {
-            if (attr.name.startsWith("data-rybbit-prop-")) {
-                const key = attr.name.replace("data-rybbit-prop-", "");
+            if (attr.name.startsWith("data-lukalta-prop-")) {
+                const key = attr.name.replace("data-lukalta-prop-", "");
                 attrs[key] = attr.value;
             }
         }

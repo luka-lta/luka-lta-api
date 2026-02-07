@@ -8,9 +8,9 @@ use LukaLtaApi\Value\PerformanceMetrics;
 
 class PageViewEvent
 {
-    public function __construct(
+    private function __construct(
         private readonly EventType $eventType,
-        private readonly string $siteId,
+        private readonly int $siteId,
         private readonly PageInfo $pageInfo,
         private readonly ScreenDimensions $screenDimensions,
         private readonly Properties $properties,
@@ -28,7 +28,7 @@ class PageViewEvent
     {
         return new self(
             EventType::from($payload['type']),
-            $payload['siteId'],
+            (int)$payload['siteId'],
             PageInfo::fromPayload($payload),
             ScreenDimensions::fromPayload($payload),
             Properties::fromPayload($payload),
@@ -47,7 +47,7 @@ class PageViewEvent
         return $this->eventType;
     }
 
-    public function getSiteId(): string
+    public function getSiteId(): int
     {
         return $this->siteId;
     }

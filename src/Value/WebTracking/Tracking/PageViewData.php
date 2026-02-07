@@ -13,7 +13,7 @@ use LukaLtaApi\Value\PerformanceMetrics;
 class PageViewData
 {
     public function __construct(
-        private readonly string             $siteId,
+        private readonly int             $siteId,
         private readonly DateTimeImmutable  $occurredOn,
         private readonly PageInfo           $pageInfo,
         private readonly UserAgent          $userAgent,
@@ -35,7 +35,7 @@ class PageViewData
     }
 
     public static function from(
-        string $siteId,
+        int $siteId,
         DateTimeImmutable $occurredOn,
         PageInfo $pageInfo,
         UserAgent $userAgent,
@@ -114,7 +114,7 @@ class PageViewData
         ];
     }
 
-    public function getSiteId(): string
+    public function getSiteId(): int
     {
         return $this->siteId;
     }

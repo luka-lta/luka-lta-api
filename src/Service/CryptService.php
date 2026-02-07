@@ -8,6 +8,7 @@ class CryptService
 {
     public function generateAnonymousId(string $ipAddress, string $userAgent): string
     {
-        return hash('sha256', $ipAddress . $userAgent);
+        $dailySalt = date('Y-m-d');
+        return hash('sha256', $ipAddress . $userAgent . $dailySalt);
     }
 }

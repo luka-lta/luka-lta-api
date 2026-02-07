@@ -23,6 +23,7 @@ class IdentifyTrackingUserAction extends ApiAction
         $rules = [
             'isNewIdentified' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
             'siteId' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
+            'userId' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
         ];
 
         $this->validator->validate($request, $rules);
