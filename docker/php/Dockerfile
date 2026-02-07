@@ -22,6 +22,13 @@ WORKDIR /app/
 RUN chown -R app:app /app/ \
     && mkdir -p /app/php-file-cache/
 
+RUN apk add --no-cache curl bash \
+    && curl -fsSL https://bun.sh/install | bash
+
+ENV BUN_INSTALL=/root/.bun
+ENV PATH=$BUN_INSTALL/bin:$PATH
+
+
 #############################################################################
 FROM base as build
 
@@ -44,4 +51,17 @@ USER root
 
 COPY --chown=app:app --from=build /app /app
 COPY --chown=app:app . /app
+
+USER app
+
+FROM build as production
+
+USER root
+
+COPY --chown=app:app --from=build /app /app
+COPY --chown=app:app . /app
+
+RUN bun install \
+    && bun run build:analytics
+
 USER app

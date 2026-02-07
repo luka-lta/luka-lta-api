@@ -9,7 +9,7 @@ services:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
-      target: development
+      target: production
     image: ghcr.io/luka-lta/luka-lta-api/api-php-fpm:production
 
 networks:
