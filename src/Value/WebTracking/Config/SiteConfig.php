@@ -40,6 +40,7 @@ class SiteConfig
             'trackOutbound' => $this->trackOutbound,
             'trackUrlParams' => $this->trackUrlParams,
             'trackInitialPageView' => $this->trackInitialPageView,
+            'trackSpaNavigation' => $this->trackSpaNavigation,
         ];
     }
 

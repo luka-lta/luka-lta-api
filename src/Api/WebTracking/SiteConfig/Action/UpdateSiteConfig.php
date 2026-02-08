@@ -21,19 +21,19 @@ class UpdateSiteConfig extends ApiAction
     protected function execute(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $rules = [
-            'name' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
-            'domain' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
-            'public' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
-            'blockBots' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
-            'webVitals' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
-            'trackErrors' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
-            'trackOutbound' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
-            'trackUrlParams' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
-            'trackInitial' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
-            'trackSpaNavigation' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
-            'trackIp' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
-            'excludedCountries' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
-            'excludedIps' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
+            'name' => ['required' => false, 'location' => RequestValidator::LOCATION_BODY],
+            'domain' => ['required' => false, 'location' => RequestValidator::LOCATION_BODY],
+            'public' => ['required' => false, 'location' => RequestValidator::LOCATION_BODY],
+            'blockBots' => ['required' => false, 'location' => RequestValidator::LOCATION_BODY],
+            'webVitals' => ['required' => false, 'location' => RequestValidator::LOCATION_BODY],
+            'trackErrors' => ['required' => false, 'location' => RequestValidator::LOCATION_BODY],
+            'trackOutbound' => ['required' => false, 'location' => RequestValidator::LOCATION_BODY],
+            'trackUrlParams' => ['required' => false, 'location' => RequestValidator::LOCATION_BODY],
+            'trackInitial' => ['required' => false, 'location' => RequestValidator::LOCATION_BODY],
+            'trackSpaNavigation' => ['required' => false, 'location' => RequestValidator::LOCATION_BODY],
+            'trackIp' => ['required' => false, 'location' => RequestValidator::LOCATION_BODY],
+            'excludedCountries' => ['required' => false, 'location' => RequestValidator::LOCATION_BODY],
+            'excludedIps' => ['required' => false, 'location' => RequestValidator::LOCATION_BODY],
         ];
 
         $this->requestValidator->validate($request, $rules);

@@ -36,6 +36,7 @@ use LukaLtaApi\Api\User\Action\GetAllUsersAction;
 use LukaLtaApi\Api\User\Action\GetAvatarAction;
 use LukaLtaApi\Api\User\Action\UpdateProfileAction;
 use LukaLtaApi\Api\WebTracking\Identify\Action\IdentifyTrackingUserAction;
+use LukaLtaApi\Api\WebTracking\SiteConfig\Action\GetSite;
 use LukaLtaApi\Api\WebTracking\SiteConfig\Action\GetSiteConfig;
 use LukaLtaApi\Api\WebTracking\SiteConfig\Action\UpdateSiteConfig;
 use LukaLtaApi\Api\WebTracking\TrackEvent\Action\TrackEventAction;
@@ -280,7 +281,10 @@ class RouteMiddlewareCollector
 
             $app->group('/site', function (RouteCollectorProxy $site) use ($app) {
                 $site->get('/{siteId:[0-9]+}/tracking-config', GetSiteConfig::class);
-                $site->post('/{siteId:[0-9]+}/tracking-config', UpdateSiteConfig::class);
+                $site->get('/{siteId:[0-9]+}', GetSite::class)
+                    ->add(AuthMiddleware::class);
+                $site->post('/{siteId:[0-9]+}/tracking-config', UpdateSiteConfig::class)
+                    ->add(AuthMiddleware::class);
             });
         });
     }

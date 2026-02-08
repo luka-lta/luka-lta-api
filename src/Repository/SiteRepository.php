@@ -47,54 +47,27 @@ class SiteRepository
 
     public function updateSite(
         int $siteId,
-        string $name,
-        string $domain,
-        bool $isPublic,
-        bool $isBlockBots,
-        array $excludedIps,
-        array $excludedCountries,
-        bool $isTrackIps,
-        SiteConfig $siteConfig,
+        array $updateData,
     ): void {
-        $sql = <<<SQL
-            UPDATE 
-                sites 
-            SET
-                 name = :name,
-                 domain = :domain,
-                 public = :public,
-                 block_bots = :blockBots,
-                 excluded_ips = :excludedIps,
-                 excluded_countries = :excludedCountries,
-                 web_vitals = :webVitals,
-                 track_errors = :trackErrors,
-                 track_outbound  = :trackOutbound,
-                 track_url_params = :trackUrlParams,
-                 track_initial  = :trackInitial,
-                 track_spa_navigation = :trackSpaNavigation,
-                 track_ip = :trackIp
-            WHERE 
-                site_id = :siteId        
-        SQL;
+        $set = [];
+        $params = ['siteId' => $siteId];
+
+        foreach ($updateData as $column => $value) {
+            $param = ':' . $column;
+            $set[] = "$column = $param";
+            $params[$column] = $value;
+        }
+
+        $set[] = 'updated_at = NOW()';
+
+        $sql = sprintf(
+            'UPDATE sites SET %s WHERE site_id = :siteId',
+            implode(', ', $set)
+        );
 
         try {
             $stmt = $this->pdo->prepare($sql);
-            $stmt->execute([
-                'name' => $name,
-                'domain' => $domain,
-                'public' => $isPublic,
-                'blockBots' => $isBlockBots,
-                'excludedIps' => json_encode($excludedIps, JSON_THROW_ON_ERROR),
-                'excludedCountries' => json_encode($excludedCountries, JSON_THROW_ON_ERROR),
-                'webVitals' => $siteConfig->isWebVitals(),
-                'trackErrors' => $siteConfig->isTrackErrors(),
-                'trackOutbound' => $siteConfig->isTrackOutbound(),
-                'trackUrlParams' => $siteConfig->isTrackUrlParams(),
-                'trackInitial' => $siteConfig->isTrackInitialPageView(),
-                'trackSpaNavigation' => $siteConfig->isTrackSpaNavigation(),
-                'trackIp' => $isTrackIps,
-                'siteId' => $siteId,
-            ]);
+            $stmt->execute($params);
         } catch (PDOException $exception) {
             throw new ApiDatabaseException(
                 'Failed to update site',

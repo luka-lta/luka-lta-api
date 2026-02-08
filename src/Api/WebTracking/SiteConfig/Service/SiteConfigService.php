@@ -15,6 +15,26 @@ class SiteConfigService
     ) {
     }
 
+    public function getSite(int $siteId): ApiResult
+    {
+        $site = $this->siteRepository->getSite($siteId);
+
+        if (!$site) {
+            return ApiResult::from(
+                JsonResult::from(
+                    'No Site found for siteId ' . $siteId,
+                ),
+                StatusCodeInterface::STATUS_NOT_FOUND,
+            );
+        }
+
+        return ApiResult::from(
+            JsonResult::from('Site found for siteId ' . $siteId, [
+                'site' => $site->toArray()
+            ]),
+        );
+    }
+
     public function getSiteConfig(int $siteId): ApiResult
     {
         $site = $this->siteRepository->getSite($siteId);
@@ -37,6 +57,7 @@ class SiteConfigService
 
     public function updateSiteConfig(int $siteId, array $parsedBody): ApiResult
     {
+        // TODO: Check if domain changed and already exists
         $site = $this->siteRepository->getSite($siteId);
 
         if (!$site) {
@@ -48,31 +69,53 @@ class SiteConfigService
             );
         }
 
-        $siteConfig = SiteConfig::from(
-            $parsedBody['webVitals'],
-            $parsedBody['trackErrors'],
-            $parsedBody['trackOutbound'],
-            $parsedBody['trackUrlParams'],
-            $parsedBody['trackInitial'],
-            $parsedBody['trackSpaNavigation'],
-        );
+        $updateData = [];
+
+        $map = [
+            'name' => 'name',
+            'domain' => 'domain',
+            'public' => 'public',
+            'blockBots' => 'block_bots',
+            'trackIp' => 'track_ip',
+        ];
+
+        foreach ($map as $requestKey => $dbColumn) {
+            if (array_key_exists($requestKey, $parsedBody)) {
+                $updateData[$dbColumn] = $parsedBody[$requestKey];
+            }
+        }
+
+        if (isset($parsedBody['excludedIps'])) {
+            $updateData['excluded_ips'] = json_encode($parsedBody['excludedIps'], JSON_THROW_ON_ERROR);
+        }
+
+        if (isset($parsedBody['excludedCountries'])) {
+            $updateData['excluded_countries'] = json_encode($parsedBody['excludedCountries'], JSON_THROW_ON_ERROR);
+        }
+
+        // SiteConfig
+        $siteConfigMap = [
+            'webVitals' => 'web_vitals',
+            'trackErrors' => 'track_errors',
+            'trackOutbound' => 'track_outbound',
+            'trackUrlParams' => 'track_url_params',
+            'trackInitial' => 'track_initial',
+            'trackSpaNavigation' => 'track_spa_navigation',
+        ];
+
+        foreach ($siteConfigMap as $requestKey => $dbColumn) {
+            if (array_key_exists($requestKey, $parsedBody)) {
+                $updateData[$dbColumn] = (bool) $parsedBody[$requestKey];
+            }
+        }
 
         $this->siteRepository->updateSite(
             $siteId,
-            $parsedBody['name'],
-            $parsedBody['domain'],
-            $parsedBody['public'],
-            $parsedBody['blockBots'],
-            $parsedBody['excludedIps'],
-            $parsedBody['excludedCountries'],
-            $parsedBody['trackIp'],
-            $siteConfig,
+            $updateData
         );
 
         return ApiResult::from(
-            JsonResult::from('Site Config updated for siteId ' . $siteId, [
-                'config' => $siteConfig->toArray(),
-            ])
+            JsonResult::from('Site Config updated for siteId ' . $siteId)
         );
     }
 }
