@@ -52,6 +52,24 @@ class Site
         );
     }
 
+    public function toArray(): array
+    {
+        return [
+            'siteId' => (int)$this->siteId,
+            'name' => $this->name,
+            'domain' => $this->domain,
+            'createdAt' => $this->createdAt->format(DATE_ATOM),
+            'updatedAt' => $this->updatedAt->format(DATE_ATOM),
+            'createdBy' => $this->createdBy,
+            'public' => $this->public,
+            'blockBots' => $this->blockBots,
+            'excludedIps' => $this->excludedIps,
+            'excludedCountries' => $this->excludedCountries,
+            'siteConfig' => $this->siteConfig->toArray(),
+            'trackIp' => $this->trackIp,
+        ];
+    }
+
     public function getSiteId(): string
     {
         return $this->siteId;
