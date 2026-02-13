@@ -2,7 +2,7 @@ FROM composer:2.7.1 as composer
 
 #############################################################################
 
-FROM php:8.3-fpm-alpine as base
+FROM php:8.4-fpm-alpine as base
 
 WORKDIR /app/
 
@@ -57,6 +57,12 @@ USER app
 FROM build as production
 
 USER root
+
+RUN curl -L https://github.com/aptible/supercronic/releases/download/v0.2.37/supercronic-linux-amd64 \
+    -o /usr/local/bin/supercronic && \
+    chmod +x /usr/local/bin/supercronic
+
+COPY ./crontab /etc/crontab
 
 COPY --chown=app:app --from=build /app /app
 COPY --chown=app:app . /app

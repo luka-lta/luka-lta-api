@@ -14,8 +14,7 @@ class SessionRepository
 {
     public function __construct(
         private readonly PDO $pdo,
-    )
-    {
+    ) {
     }
 
     public function getExistingSession(string $userId, int $siteId): ?TrackingSession
@@ -86,6 +85,23 @@ class SessionRepository
         } catch (PDOException $exception) {
             throw new ApiDatabaseException(
                 'Failed to update Session for userId ' . $userId . ' site ' . $siteId,
+                StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR,
+                $exception
+            );
+        }
+    }
+
+    public function cleanupSessions(): void
+    {
+        $sql = <<<SQL
+            DELETE FROM active_sessions WHERE last_activity < (NOW() - INTERVAL 30 MINUTE)
+        SQL;
+
+        try {
+            $this->pdo->exec($sql);
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException(
+                'Failed to cleanup sessions',
                 StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR,
                 $exception
             );

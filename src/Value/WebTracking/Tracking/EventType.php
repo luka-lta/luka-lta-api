@@ -9,6 +9,10 @@ enum EventType: string
     case PERFORMANCE = 'performance';
     case OUTBOUND = 'outbound';
     case ERROR = 'error';
+    case COPY = 'copy';
+    case BUTTON_CLICK = 'button_click';
+    case FORM_SUBMIT = 'form_submit';
+    case INPUT_CHANGE = 'input_change';
 
     public static function fromName(string $eventType): self
     {
@@ -18,6 +22,9 @@ enum EventType: string
             'performance' => self::PERFORMANCE,
             'outbound' => self::OUTBOUND,
             'error' => self::ERROR,
+            'copy' => self::COPY,
+            'button_click' => self::BUTTON_CLICK,
+            'form_submit' => self::FORM_SUBMIT,
         };
     }
 

@@ -1,4 +1,11 @@
-import {BasePayload, ButtonClickProperties, ScriptConfig, TrackingPayload, WebVitalsData} from "./types.js";
+import {
+    BasePayload,
+    ButtonClickProperties,
+    CopyProperties, FormSubmitProperties, InputChangeProperties,
+    ScriptConfig,
+    TrackingPayload,
+    WebVitalsData
+} from "./types.js";
 import { findMatchingPattern } from "./utils.js";
 
 export class Tracker {
@@ -196,6 +203,18 @@ export class Tracker {
 
     trackButtonClick(properties: ButtonClickProperties): void {
         this.track("button_click", "", properties);
+    }
+
+    trackCopy(properties: CopyProperties): void {
+        this.track("copy", "", properties);
+    }
+
+    trackFormSubmit(properties: FormSubmitProperties): void {
+        this.track("form_submit", "", properties);
+    }
+
+    trackInputChange(properties: InputChangeProperties): void {
+        this.track("input_change", "", properties);
     }
 
     identify(userId: string): void {

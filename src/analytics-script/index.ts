@@ -4,6 +4,8 @@ import { WebVitalsCollector } from "./webVitals.js";
 import { debounce, isOutboundLink } from "./utils.js";
 import { LukaLtaAPI, WebVitalsData, ErrorProperties } from "./types.js";
 import {ClickTrackingManager} from "./clickTracking";
+import {CopyTrackingManager} from "./copyTracking";
+import {FormTrackingManager} from "./formTracking";
 
 declare global {
     interface Window {
@@ -53,12 +55,27 @@ declare global {
     }
 
     let clickManager: ClickTrackingManager | null = null;
+    let copyManager: CopyTrackingManager | null = null;
+    let formManager: FormTrackingManager | null = null;
 
     // Initialize click tracking if enabled
     if (config.trackButtonClicks) {
         clickManager = new ClickTrackingManager(tracker, config);
         clickManager.initialize();
     }
+
+    // Initialize copy tracking if enabled
+    if (config.trackCopy) {
+        copyManager = new CopyTrackingManager(tracker);
+        copyManager.initialize();
+    }
+
+    // Initialize form interaction tracking if enabled
+    if (config.trackFormInteractions) {
+        formManager = new FormTrackingManager(tracker, config);
+        formManager.initialize();
+    }
+
 
     // Initialize error tracking if enabled
     if (config.trackErrors) {
@@ -169,6 +186,12 @@ declare global {
 
     // Initialize
     setupEventListeners();
+
+    // Setup cleanup on page unload
+    window.addEventListener("beforeunload", () => {
+        clickManager?.cleanup();
+        copyManager?.cleanup();
+    });
 
     // Track initial pageview if enabled
     if (config!.autoTrackPageview) {

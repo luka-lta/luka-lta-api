@@ -11,6 +11,9 @@ class SiteConfig
         private readonly bool $trackUrlParams,
         private readonly bool $trackInitialPageView,
         private readonly bool $trackSpaNavigation,
+        private readonly bool $trackButtonClicks,
+        private readonly bool $trackCopy,
+        private readonly bool $trackFormInteractions,
     ) {
     }
 
@@ -21,6 +24,9 @@ class SiteConfig
         bool $trackUrlParams,
         bool $trackInitialPageView,
         bool $trackSpaNavigation,
+        bool $trackButtonClicks,
+        bool $trackCopy,
+        bool $trackFormInteractions,
     ): self {
         return new self(
             $webVitals,
@@ -28,7 +34,10 @@ class SiteConfig
             $trackOutbound,
             $trackUrlParams,
             $trackInitialPageView,
-            $trackSpaNavigation
+            $trackSpaNavigation,
+            $trackButtonClicks,
+            $trackCopy,
+            $trackFormInteractions,
         );
     }
 
@@ -41,6 +50,9 @@ class SiteConfig
             'trackUrlParams' => $this->trackUrlParams,
             'trackInitialPageView' => $this->trackInitialPageView,
             'trackSpaNavigation' => $this->trackSpaNavigation,
+            'trackButtonClicks' => $this->trackButtonClicks,
+            'trackCopy' => $this->trackCopy,
+            'trackFormInteractions' => $this->trackFormInteractions,
         ];
     }
 
@@ -72,5 +84,20 @@ class SiteConfig
     public function isTrackSpaNavigation(): bool
     {
         return $this->trackSpaNavigation;
+    }
+
+    public function isTrackButtonClicks(): bool
+    {
+        return $this->trackButtonClicks;
+    }
+
+    public function isTrackCopy(): bool
+    {
+        return $this->trackCopy;
+    }
+
+    public function isTrackFormInteractions(): bool
+    {
+        return $this->trackFormInteractions;
     }
 }

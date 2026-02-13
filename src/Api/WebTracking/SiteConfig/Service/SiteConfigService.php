@@ -101,6 +101,9 @@ class SiteConfigService
             'trackUrlParams' => 'track_url_params',
             'trackInitial' => 'track_initial',
             'trackSpaNavigation' => 'track_spa_navigation',
+            'trackButtonClicks' => 'track_button_clicks',
+            'trackCopy' => 'track_copy',
+            'trackFormInteractions' => 'track_form_interactions',
         ];
 
         foreach ($siteConfigMap as $requestKey => $dbColumn) {

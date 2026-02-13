@@ -9,6 +9,7 @@ class PerformanceMetrics
     private function __construct(
         private readonly ?float $lcp = null,
         private readonly ?float $cls = null,
+        private readonly ?float $inp = null,
         private readonly ?float $fcp = null,
         private readonly ?int $ttfb = null,
     ) {
@@ -17,12 +18,14 @@ class PerformanceMetrics
     public static function from(
         ?float $lcp,
         ?float $cls,
+        ?float $inp,
         ?float $fcp,
         ?int $ttfb,
     ): self {
         return new self(
             $lcp,
             $cls,
+            $inp,
             $fcp,
             $ttfb,
         );
@@ -33,6 +36,7 @@ class PerformanceMetrics
         return new self(
             isset($payload['lcp']) ? (float)$payload['lcp'] : null,
             isset($payload['cls']) ? (float)$payload['cls'] : null,
+            isset($payload['inp']) ? (float)$payload['inp'] : null,
             isset($payload['fcp']) ? (float)$payload['fcp'] : null,
             isset($payload['ttfb']) ? (int)$payload['ttfb'] : null,
         );
@@ -41,10 +45,11 @@ class PerformanceMetrics
     public function toArray(): array
     {
         return [
-            'lcp' => $this?->lcp,
-            'cls' => $this?->cls,
-            'fcp' => $this?->fcp,
-            'ttfb' => $this?->ttfb,
+            'lcp' => $this->lcp,
+            'cls' => $this->cls,
+            'inp' => $this->inp,
+            'fcp' => $this->fcp,
+            'ttfb' => $this->ttfb,
         ];
     }
 
@@ -56,6 +61,11 @@ class PerformanceMetrics
     public function getCls(): ?float
     {
         return $this->cls;
+    }
+
+    public function getInp(): ?float
+    {
+        return $this->inp;
     }
 
     public function getFcp(): ?float

@@ -11,7 +11,3 @@ services:
       dockerfile: docker/php/Dockerfile
       target: production
     image: ghcr.io/luka-lta/luka-lta-api/api-php-fpm:production
-
-networks:
-  lukaLta-shared:
-    driver: bridge
