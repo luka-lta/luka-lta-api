@@ -47,6 +47,9 @@ class Site
                 $row['track_url_params'],
                 $row['track_initial'],
                 $row['track_spa_navigation'],
+                $row['track_button_clicks'],
+                $row['track_copy'],
+                $row['track_form_interactions'],
             ),
             $row['track_ip'],
         );

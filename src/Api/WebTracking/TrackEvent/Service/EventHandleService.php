@@ -16,6 +16,7 @@ use LukaLtaApi\Value\UserAgent;
 use LukaLtaApi\Value\WebTracking\Tracking\PageViewData;
 use LukaLtaApi\Value\WebTracking\Tracking\PageViewEvent;
 use LukaLtaApi\Value\WebTracking\Tracking\UrlParameter;
+use Throwable;
 
 class EventHandleService
 {
@@ -34,15 +35,13 @@ class EventHandleService
         if ($event->getIpAddress()) {
             try {
                 $geoData = $this->geoLocationRepository->findByIp($event->getIpAddress());
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 // Geo lookup failed — proceed with empty geo data
             }
         }
 
         $pageInfo = $event->getPageInfo();
         $queryString = $pageInfo->getQueryString();
-
-        // TODO: Add WebVital to Database
 
         $anonymousId = $this->cryptService->generateAnonymousId($event->getIpAddress(), $event->getUserAgent());
 

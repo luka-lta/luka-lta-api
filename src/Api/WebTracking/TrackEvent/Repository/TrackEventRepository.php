@@ -46,7 +46,14 @@ class TrackEventRepository
             device_type,
             type,
             event_name,
-            props
+            props,
+            lcp,
+            cls,
+            inp,
+            fcp,
+            ttfb,
+            ip,
+            timezone
         ) VALUES (
             :site_id,
             :occurred_on,
@@ -73,7 +80,14 @@ class TrackEventRepository
             :device_type,
             :type,
             :event_name,
-            :props
+            :props,
+            :lcp,
+            :cls,
+            :inp,
+            :fcp,
+            :ttfb,
+            :ip,
+            :timezone
         )
     SQL;
 
@@ -109,6 +123,13 @@ class TrackEventRepository
                 'props'            => $pageViewData->getProps()
                     ? json_encode($pageViewData->getProps()->getValue(), JSON_THROW_ON_ERROR)
                     : null,
+                'lcp'              => $pageViewData->getPerformanceMetrics()?->getLcp(),
+                'cls'              => $pageViewData->getPerformanceMetrics()?->getCls(),
+                'inp'              => $pageViewData->getPerformanceMetrics()?->getInp(),
+                'fcp'              => $pageViewData->getPerformanceMetrics()?->getFcp(),
+                'ttfb'             => $pageViewData->getPerformanceMetrics()?->getTtfb(),
+                'ip'               => $pageViewData->getIpAddress(),
+                'timezone'         => $pageViewData->getGeoLocation()?->getTimezone(),
             ]);
         } catch (PDOException $exception) {
             throw new ApiDatabaseException(

@@ -46,6 +46,9 @@ export async function parseScriptConfig(scriptTag: HTMLScriptElement): Promise<S
         trackOutbound: true,
         enableWebVitals: false,
         trackErrors: false,
+        trackButtonClicks: false,
+        trackCopy: false,
+        trackFormInteractions: false,
     };
 
     try {
@@ -70,6 +73,9 @@ export async function parseScriptConfig(scriptTag: HTMLScriptElement): Promise<S
                 trackOutbound: apiConfig.trackOutbound ?? defaultConfig.trackOutbound,
                 enableWebVitals: apiConfig.webVitals ?? defaultConfig.enableWebVitals,
                 trackErrors: apiConfig.trackErrors ?? defaultConfig.trackErrors,
+                trackButtonClicks: apiConfig.trackButtonClicks ?? defaultConfig.trackButtonClicks,
+                trackCopy: apiConfig.trackCopy ?? defaultConfig.trackCopy,
+                trackFormInteractions: apiConfig.trackFormInteractions ?? defaultConfig.trackFormInteractions,
             };
         } else {
             // If API call fails, log warning and use defaults

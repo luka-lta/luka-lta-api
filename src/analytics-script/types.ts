@@ -11,6 +11,8 @@ export interface ScriptConfig {
     skipPatterns: string[];
     maskPatterns: string[];
     trackButtonClicks: boolean;
+    trackCopy: boolean;
+    trackFormInteractions: boolean;
 }
 
 export interface BasePayload {
@@ -65,5 +67,28 @@ export interface LukaLtaAPI {
 
 export interface ButtonClickProperties {
     text?: string;
-    [key: string]: string | undefined; // Additional data-rybbit-* attributes
+    [key: string]: string | undefined; // Additional data-lukalta-* attributes
+}
+
+export interface CopyProperties {
+    text: string;
+    textLength?: number; // Only sent if text was truncated
+    sourceElement: string;
+}
+
+export interface FormSubmitProperties {
+    formId: string;
+    formName: string;
+    formAction: string;
+    method: string;
+    fieldCount: number;
+    [key: string]: string | number | undefined;
+}
+
+export interface InputChangeProperties {
+    element: string; // "input" | "select" | "textarea"
+    inputType?: string; // For inputs: "text", "email", "checkbox", etc.
+    inputName: string; // Name or id attribute
+    formId?: string; // Parent form id if within a form
+    [key: string]: string | undefined;
 }
