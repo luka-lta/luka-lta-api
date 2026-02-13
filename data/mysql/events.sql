@@ -29,11 +29,11 @@ CREATE TABLE `events`
     `props`              json                                                                       DEFAULT NULL,
 
     -- Neue Performance & Tracking Columns
-    `lcp`                double                                                                     DEFAULT NULL,
-    `cls`                double                                                                     DEFAULT NULL,
-    `inp`                double                                                                     DEFAULT NULL,
-    `fcp`                double                                                                     DEFAULT NULL,
-    `ttfb`               double                                                                     DEFAULT NULL,
+    `lcp`                float                                                                     DEFAULT NULL,
+    `cls`                float                                                                     DEFAULT NULL,
+    `inp`                float                                                                     DEFAULT NULL,
+    `fcp`                float                                                                     DEFAULT NULL,
+    `ttfb`               int                                                                     DEFAULT NULL,
     `ip`                 varchar(45)                                                                DEFAULT NULL,
     `timezone`           varchar(64)                                                       NOT NULL DEFAULT NULL
 ) ENGINE = InnoDB

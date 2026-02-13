@@ -21,7 +21,13 @@ class CleanupSessionsCommand extends Command
 
     public function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->sessionRepository->cleanupSessions();
+        try {
+            $this->sessionRepository->cleanupSessions();
+        } catch (\Throwable $exception) {
+            $output->writeln('<error>' . $exception->getMessage() . '</error>');
+        }
+
+        $output->writeln('<info>Sessions cleanup successfully.</info>');
 
         return Command::SUCCESS;
     }

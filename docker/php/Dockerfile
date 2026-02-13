@@ -2,7 +2,7 @@ FROM composer:2.7.1 as composer
 
 #############################################################################
 
-FROM php:8.3-fpm-alpine as base
+FROM php:8.4-fpm-alpine as base
 
 WORKDIR /app/
 

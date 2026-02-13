@@ -132,6 +132,7 @@ class TrackEventRepository
                 'timezone'         => $pageViewData->getGeoLocation()?->getTimezone(),
             ]);
         } catch (PDOException $exception) {
+            echo $exception->getMessage();
             throw new ApiDatabaseException(
                 'Failed inserting Web-Tracking Event',
                 StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR,
