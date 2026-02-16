@@ -8,7 +8,8 @@ use LukaLtaApi\Repository\SiteMetricRepository;
 use LukaLtaApi\Service\MetricQueryService;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
-use LukaLtaApi\Value\Tracking\MetricRequestData;
+use LukaLtaApi\Value\WebTracking\Site\SiteMetricRequestData;
+use LukaLtaApi\Value\WebTracking\Site\SiteMetricResult;
 
 class SiteMetricService
 {
@@ -20,11 +21,7 @@ class SiteMetricService
 
     public function getSiteMetric(int $siteId, array $queryParams): ApiResult
     {
-        $page = $queryParams['page'] ?? null;
-
-        $isPaginatedRequest = $page !== null;
-
-        $metricRequestData = MetricRequestData::fromQueryParams($queryParams);
+        $metricRequestData = SiteMetricRequestData::fromQueryParams($queryParams);
 
         $dataQuery = $this->metricQueryService->getQuery($siteId, $metricRequestData);
         $countQuery = $this->metricQueryService->getQuery($siteId, $metricRequestData, true);
@@ -32,9 +29,11 @@ class SiteMetricService
         $dataResult = $this->siteMetricRepository->getSiteMetricData($dataQuery);
         $countResult = $this->siteMetricRepository->getSiteMetricData($countQuery);
 
-        var_dump($dataResult);
-        var_dump($countResult);
+        $metricResult = SiteMetricResult::fromResult($dataResult, $countResult);
 
-        return ApiResult::from(JsonResult::from('Noice'));
+        return ApiResult::from(JsonResult::from('Noice', [
+            'result' => $metricResult->getMetricResult(),
+            'totalCount' => $metricResult->getTotalCount(),
+        ]));
     }
 }

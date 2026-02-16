@@ -18,8 +18,6 @@ class SiteMetricRepository
 
     public function getSiteMetricData(string $query): array
     {
-        var_dump($query);
-
         try {
             $stmt = $this->pdo->query($query);
             if ($stmt === false) {
@@ -27,7 +25,11 @@ class SiteMetricRepository
             }
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $exception) {
-            throw new ApiDatabaseException('Database query failed: ' . $exception->getMessage(), StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR, $exception);
+            throw new ApiDatabaseException(
+                'Database query failed: ' . $exception->getMessage(),
+                StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR,
+                $exception
+            );
         }
     }
 }

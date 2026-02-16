@@ -32,7 +32,6 @@ class GeoLocationRepository
                 ]
             );
         } catch (GuzzleException $exception) {
-            var_dump($exception->getMessage());
             throw new ApiHttpException(
                 'Geo API request failed',
                 StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR,

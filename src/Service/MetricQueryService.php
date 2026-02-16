@@ -6,13 +6,12 @@ namespace LukaLtaApi\Service;
 
 use DateTime;
 use DateTimeZone;
-use InvalidArgumentException;
 use LukaLtaApi\Value\Tracking\MetricParameter;
-use LukaLtaApi\Value\Tracking\MetricRequestData;
+use LukaLtaApi\Value\WebTracking\Site\SiteMetricRequestData;
 
 class MetricQueryService
 {
-    public function getQuery(int $siteId, MetricRequestData $metricRequestData, bool $isCountQuery = false): string
+    public function getQuery(int $siteId, SiteMetricRequestData $metricRequestData, bool $isCountQuery = false): string
     {
         $timeStatement = $this->getTimeStatement($metricRequestData);
         $limit = $metricRequestData->getLimit();
@@ -44,14 +43,14 @@ class MetricQueryService
                     AND event_name IS NOT NULL 
                     AND event_name <> ''
                     $timeStatement
-                    AND type = 'custom_event
+                    AND type = 'custom_event'
                 SQL;
             }
             return <<<SQL
                 SELECT
                   event_name as value,
                   COUNT(*) as count,
-                  ROUND(COUNT(distinct(session_id)) * 100.0 / SUM(COUNT(distinct(session_id))) OVER (), 2) as percentage
+                  ROUND(COUNT(DISTINCT(session_id)) * 100.0 / SUM(COUNT(DISTINCT(session_id))) OVER (), 2) as percentage
                 FROM events
                 WHERE
                   site_id = $siteId
@@ -124,7 +123,7 @@ class MetricQueryService
                   ROUND(
                       countIf(DISTINCT session_id, pageviews_in_session = 1) * 100.0 / nullIf(COUNT(DISTINCT session_id), 0),
                       2
-                  ) as bounce_rate
+                  ) as bounceRate
               FROM TitleStatsWithSessions
               GROUP BY value
               ORDER BY count DESC
@@ -141,7 +140,7 @@ class MetricQueryService
                 SessionPageCounts AS (
                           SELECT
                               session_id,
-                              COUNT() as pageviews_in_session
+                              COUNT(*) as pageviews_in_session
                           FROM events
                           WHERE
                               site_id = $siteId
@@ -166,12 +165,11 @@ class MetricQueryService
                               pathname,
                               occurred_on,
                               pageviews_in_session,
-                              LEAD(e.occurred_on) OVER (
-                                PARTITION BY e.session_id 
-                                ORDER BY e.occurred_on
-                            ) AS next_timestamp
-
-                              row_number() OVER (PARTITION BY session_id ORDER BY occurred_on $orderDirection) as row_num
+                              LEAD(occurred_on) OVER (
+                                PARTITION BY session_id 
+                                ORDER BY occurred_on
+                              ) AS next_timestamp,
+                              ROW_NUMBER() OVER (PARTITION BY session_id ORDER BY occurred_on $orderDirection) as row_num
                           FROM RelevantEvents
                       ),
                       PageDurations AS (
@@ -182,7 +180,7 @@ class MetricQueryService
                               next_timestamp,
                               row_num,
                               pageviews_in_session,
-                              if(isNull(next_timestamp), 0, dateDiff('second', occurred_on, next_timestamp)) as time_diff_seconds
+                              IF(next_timestamp IS NULL, 0, TIMESTAMPDIFF(SECOND, occurred_on, next_timestamp)) as time_diff_seconds
                           FROM EventTimes
                       ),
                       FilteredDurations AS (
@@ -193,10 +191,10 @@ class MetricQueryService
                       PathStats AS (
                           SELECT
                               pathname,
-                              count(DISTINCT session_id) as unique_sessions,
-                              count() as visits,
-                              avg(if(time_diff_seconds < 0, 0, if(time_diff_seconds > 1800, 1800, time_diff_seconds))) as avg_time_on_page_seconds,
-                              countIf(DISTINCT session_id, pageviews_in_session = 1) as bounced_sessions
+                              COUNT(DISTINCT session_id) as unique_sessions,
+                              COUNT(*) as visits,
+                              AVG(IF(time_diff_seconds < 0, 0, IF(time_diff_seconds > 1800, 1800, time_diff_seconds))) as avg_timeOnPageSeconds,
+                              COUNT(DISTINCT CASE WHEN pageviews_in_session = 1 THEN session_id END) as bounced_sessions
                           FROM FilteredDurations
                           WHERE pathname IS NOT NULL AND pathname <> ''
                           GROUP BY pathname
@@ -215,15 +213,15 @@ class MetricQueryService
                 SELECT
                     pathname as value,
                     unique_sessions as count,
-                    round((unique_sessions / sum(unique_sessions) OVER ()) * 100, 2) as percentage,
+                    ROUND((unique_sessions / SUM(unique_sessions) OVER ()) * 100, 2) as percentage,
                     visits as pageviews,
-                    round((visits / sum(visits) OVER ()) * 100, 2) as pageviews_percentage,
-                    avg_time_on_page_seconds as time_on_page_seconds,
-                    round((bounced_sessions / nullIf(unique_sessions, 0)) * 100, 2) as bounce_rate
+                    ROUND((visits / SUM(visits) OVER ()) * 100, 2) as pageviewsPercentage,
+                    avg_timeOnPageSeconds as timeOnPageSeconds,
+                    ROUND((bounced_sessions / NULLIF(unique_sessions, 0)) * 100, 2) as bounceRate
                 FROM PathStats
                 ORDER BY unique_sessions DESC
                 $limitStatement
-                $offsetStatement;
+                $offsetStatement
             SQL;
         }
 
@@ -277,7 +275,7 @@ class MetricQueryService
                               pathname,
                               count() as visits,
                               count(DISTINCT session_id) as unique_sessions,
-                              avg(if(time_diff_seconds < 0, 0, if(time_diff_seconds > 1800, 1800, time_diff_seconds))) as avg_time_on_page_seconds,
+                              avg(if(time_diff_seconds < 0, 0, if(time_diff_seconds > 1800, 1800, time_diff_seconds))) as avg_timeOnPageSeconds,
                               countIf(DISTINCT session_id, pageviews_in_session = 1) as bounced_sessions
                           FROM PageDurations
                           GROUP BY pathname
@@ -298,9 +296,9 @@ class MetricQueryService
                     unique_sessions as count,
                     round((unique_sessions / sum(unique_sessions) OVER ()) * 100, 2) as percentage,
                     visits as pageviews,
-                    round((visits / sum(visits) OVER ()) * 100, 2) as pageviews_percentage,
-                    avg_time_on_page_seconds as time_on_page_seconds,
-                    round((bounced_sessions / nullIf(unique_sessions, 0)) * 100, 2) as bounce_rate
+                    round((visits / sum(visits) OVER ()) * 100, 2) as pageviewsPercantage,
+                    avg_timeOnPageSeconds as timeOnPageSeconds,
+                    round((bounced_sessions / nullIf(unique_sessions, 0)) * 100, 2) as bounceRate
                 FROM PathStats
                 ORDER BY unique_sessions DESC
                 $limitStatement
@@ -363,8 +361,8 @@ class MetricQueryService
                 unique_sessions AS count,
                 ROUND(unique_sessions / SUM(unique_sessions) OVER () * 100, 2) AS percentage,
                 pageviews,
-                ROUND(pageviews / SUM(pageviews) OVER () * 100, 2) AS pageviews_percentage,
-                ROUND(bounced_sessions / NULLIF(unique_sessions, 0) * 100, 2) AS bounce_rate
+                ROUND(pageviews / SUM(pageviews) OVER () * 100, 2) AS pageviewsPercantage,
+                ROUND(bounced_sessions / NULLIF(unique_sessions, 0) * 100, 2) AS bounceRate
             FROM Aggregated
             ORDER BY count DESC
             $limitStatement
@@ -372,7 +370,7 @@ class MetricQueryService
         SQL;
     }
 
-    private function getTimeStatement(MetricRequestData $metricRequestData): string
+    private function getTimeStatement(SiteMetricRequestData $metricRequestData): string
     {
         $pastMinutesStart = $metricRequestData->getPastMinutesStart()?->format('c');
         $pastMinutesEnd = $metricRequestData->getPastMinutesEnd()?->format('c');
@@ -411,7 +409,7 @@ class MetricQueryService
         return '';
     }
 
-    private function getSqlParam(MetricRequestData $metricRequestData): string
+    private function getSqlParam(SiteMetricRequestData $metricRequestData): string
     {
         $paramValue = $metricRequestData->getMetricParameter()->value;
         if (str_starts_with($metricRequestData->getMetricParameter()->value, 'utm_') || str_starts_with($metricRequestData->getMetricParameter()->value, 'url_param:')) {
