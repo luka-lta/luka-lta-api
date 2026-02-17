@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace LukaLtaApi\Api\WebTracking\Metric\Service;
 
+use LukaLtaApi\QueryBuilder\Service\MetricQueryService;
 use LukaLtaApi\Repository\SiteMetricRepository;
-use LukaLtaApi\Service\MetricQueryService;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
 use LukaLtaApi\Value\WebTracking\Site\SiteMetricRequestData;

@@ -2,18 +2,36 @@
 
 declare(strict_types=1);
 
-namespace LukaLtaApi\Service;
+namespace LukaLtaApi\QueryBuilder\Service;
 
-use DateTime;
-use DateTimeZone;
-use LukaLtaApi\Value\Tracking\MetricParameter;
+use LukaLtaApi\QueryBuilder\QueryBuilderFactory;
+use LukaLtaApi\QueryBuilder\QueryComponentBuilder;
+use LukaLtaApi\QueryBuilder\Value\QueryContext;
 use LukaLtaApi\Value\WebTracking\Site\SiteMetricRequestData;
 
 class MetricQueryService
 {
+    public function __construct(
+        private readonly QueryBuilderFactory $queryBuilderFactory,
+        private readonly QueryComponentBuilder $queryComponentBuilder,
+    ) {
+    }
+
+    //TODO: Kann weg
     public function getQuery(int $siteId, SiteMetricRequestData $metricRequestData, bool $isCountQuery = false): string
     {
-        $timeStatement = $this->getTimeStatement($metricRequestData);
+        $builder = $this->queryBuilderFactory->create($metricRequestData->getMetricParameter());
+
+        $context = QueryContext::from(
+            $siteId,
+            $metricRequestData,
+            $isCountQuery,
+            $this->queryComponentBuilder
+        );
+
+        return $builder->build($context);
+
+        /*$timeStatement = $this->getTimeStatement($metricRequestData);
         $limit = $metricRequestData->getLimit();
         $page = $metricRequestData->getPage();
 
@@ -367,10 +385,10 @@ class MetricQueryService
             ORDER BY count DESC
             $limitStatement
             $offsetStatement;
-        SQL;
+        SQL;*/
     }
 
-    private function getTimeStatement(SiteMetricRequestData $metricRequestData): string
+   /* private function getTimeStatement(SiteMetricRequestData $metricRequestData): string
     {
         $pastMinutesStart = $metricRequestData->getPastMinutesStart()?->format('c');
         $pastMinutesEnd = $metricRequestData->getPastMinutesEnd()?->format('c');
@@ -443,5 +461,5 @@ class MetricQueryService
         }
 
         return $paramValue;
-    }
+    }*/
 }
