@@ -4,7 +4,9 @@ namespace LukaLtaApi\Slim\Middleware;
 
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Repository\ApiKeyRepository;
+use LukaLtaApi\Repository\EnvironmentRepository;
 use LukaLtaApi\Value\ApiKey\KeyOrigin;
+use LukaLtaApi\Value\Misc\AppEnv;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
 use Psr\Http\Message\ResponseInterface;
@@ -17,7 +19,8 @@ use Slim\Psr7\Factory\ResponseFactory;
 class AuthMiddleware implements MiddlewareInterface
 {
     public function __construct(
-        private readonly ApiKeyRepository $apiKeyRepository
+        private readonly ApiKeyRepository $apiKeyRepository,
+        private readonly EnvironmentRepository $envRepository,
     ) {
     }
 
@@ -47,7 +50,7 @@ class AuthMiddleware implements MiddlewareInterface
             return $this->denieRequest('Authorization header is empty');
         }
 
-        if (!Token::validate($jwt, getenv('JWT_SECRET'))) {
+        if (!Token::validate($jwt, $this->envRepository->get('JWT_SECRET'))) {
             return $this->denieRequest('The JWT is not valid');
         }
 

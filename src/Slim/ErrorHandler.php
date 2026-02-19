@@ -2,6 +2,8 @@
 
 namespace LukaLtaApi\Slim;
 
+use LukaLtaApi\Exception\ApiException;
+use LukaLtaApi\Value\Misc\AppEnv;
 use Monolog\Logger;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -14,6 +16,7 @@ class ErrorHandler
 {
     public function __construct(
         private readonly LoggerInterface $logger,
+        private readonly AppEnv $env,
     ) {
     }
 
@@ -24,8 +27,10 @@ class ErrorHandler
         bool                   $displayErrorDetails,
     ): ResponseInterface {
         $this->logError($exception, $request);
+
         $statusCode = 500;
         $errorMessage = 'Internal server error';
+
         switch ($exception::class) {
             case HttpMethodNotAllowedException::class:
                 $statusCode = 405;
@@ -42,7 +47,7 @@ class ErrorHandler
             'error' => 'App env is neither production nor development, no errors logged',
         ];
 
-        if (getenv('APP_ENV') === 'development') {
+        if ($this->env->matches(AppEnv::ENV_DEVELOPMENT)) {
             $payload = [
                 'status' => $statusCode,
                 'class' => $exception::class,
@@ -54,7 +59,7 @@ class ErrorHandler
             ];
         }
 
-        if (getenv('APP_ENV') === 'production') {
+        if ($this->env->matches(AppEnv::ENV_PRODUCTION)) {
             $payload = [
                 'status' => $statusCode,
             ];
@@ -70,7 +75,7 @@ class ErrorHandler
             $this->logger->error($e->getMessage(), ['error' => $e]);
         }
 
-        return $response->withHeader('Content-Type', 'application/json')->withStatus($statusCode);
+        return $response->withHeader('Content-Type', 'application/json');
     }
 
     public function logError(Throwable $exception, ServerRequestInterface $request): void
@@ -83,6 +88,10 @@ class ErrorHandler
             'uri' => $uri->getPath(),
             'query' => $uri->getQuery(),
         ];
+
+        if ($exception instanceof ApiException && $exception->hasContext()) {
+            $context = array_merge($context, $exception->getContext());
+        }
 
         switch ($exception::class) {
             case HttpMethodNotAllowedException::class:

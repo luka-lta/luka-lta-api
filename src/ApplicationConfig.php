@@ -5,12 +5,14 @@ namespace LukaLtaApi;
 use Aws\S3\S3Client;
 use ClickHouseDB\Client;
 use DI\Definition\Source\DefinitionArray;
+use LukaLtaApi\App\Factory\AppEnvFactory;
 use LukaLtaApi\App\Factory\ClickHouseFactory;
 use LukaLtaApi\App\Factory\LoggerFactory;
 use LukaLtaApi\App\Factory\MinIOFactory;
 use LukaLtaApi\App\Factory\PdoFactory;
 use LukaLtaApi\App\Factory\RedisFactory;
 use LukaLtaApi\App\Factory\TelegramBotFactory;
+use LukaLtaApi\Value\Misc\AppEnv;
 use PDO;
 use Psr\Log\LoggerInterface;
 use Redis;
@@ -34,6 +36,7 @@ class ApplicationConfig extends DefinitionArray
             BotApi::class => factory(TelegramBotFactory::class),
             S3Client::class => factory(MinIOFactory::class),
             Client::class => factory(ClickHouseFactory::class),
+            AppEnv::class => factory(AppEnvFactory::class),
         ];
     }
 }

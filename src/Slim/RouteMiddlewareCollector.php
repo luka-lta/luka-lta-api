@@ -46,6 +46,7 @@ use LukaLtaApi\Service\PermissionService;
 use LukaLtaApi\Slim\Middleware\ApiKeyPermissionMiddleware;
 use LukaLtaApi\Slim\Middleware\AuthMiddleware;
 use LukaLtaApi\Slim\Middleware\CORSMiddleware;
+use LukaLtaApi\Value\Misc\AppEnv;
 use LukaLtaApi\Value\Permission\Permission;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -80,7 +81,8 @@ class RouteMiddlewareCollector
             $container,
         ): ResponseInterface {
             $errorHandler = new ErrorHandler(
-                $container->get(LoggerInterface::class)
+                $container->get(LoggerInterface::class),
+                $container->get(AppEnv::class),
             );
 
             $response = $app->getResponseFactory()->createResponse()->withStatus(500);
