@@ -32,7 +32,7 @@ class SiteMetricService
         $metricResult = SiteMetricResult::fromResult($dataResult, $countResult);
 
         return ApiResult::from(JsonResult::from('Noice', [
-            'result' => $metricResult->getMetricResult(),
+            'data' => $metricResult->getMetricResult(),
             'totalCount' => $metricResult->getTotalCount(),
         ]));
     }

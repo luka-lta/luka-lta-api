@@ -40,11 +40,12 @@ class PathNameQueryBuilder implements MetricQueryBuilderInterface
             PathStats AS (
                 SELECT
                     pathname,
-                    count() as visits,
+                    count(*) as visits,
                     count(DISTINCT session_id) as unique_sessions,
                     avg(if(time_diff_seconds < 0, 0, if(time_diff_seconds > 1800, 1800, time_diff_seconds))) as avg_timeOnPageSeconds,
-                    countIf(DISTINCT session_id, pageviews_in_session = 1) as bounced_sessions
-                FROM PageDurations
+                    COUNT(DISTINCT CASE 
+                        WHEN pageviews_in_session = 1 THEN session_id 
+                    END) as bounced_sessions                FROM PageDurations
                 GROUP BY pathname
             )
         SQL;

@@ -284,7 +284,7 @@ class RouteMiddlewareCollector
 
             $app->group('/site', function (RouteCollectorProxy $site) use ($app) {
                 $site->get('/{siteId:[0-9]+}/metric', GetMetricAction::class)
-                    /*->add(AuthMiddleware::class)*/;
+                    ->add(AuthMiddleware::class);
                 $site->get('/{siteId:[0-9]+}/tracking-config', GetSiteConfig::class);
                 $site->get('/{siteId:[0-9]+}', GetSite::class)
                     ->add(AuthMiddleware::class);

@@ -59,7 +59,7 @@ enum MetricParameter: string
             'referrer' => self::REFERRER,
             'hostname' => self::HOSTNAME,
             'pathname' => self::PATHNAME,
-            'pageTitle' => self::PAGE_TITLE,
+            'page_title' => self::PAGE_TITLE,
             'url_parameters' => self::QUERYSTRING,
             'event_name' => self::EVENT_NAME,
             'channel' => self::CHANNEL,
