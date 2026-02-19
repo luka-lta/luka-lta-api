@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace LukaLtaApi\QueryBuilder\Builder;
 
+use LukaLtaApi\QueryBuilder\MetricQueryBuilderInterface;
 use LukaLtaApi\QueryBuilder\SqlParameterMapper;
 use LukaLtaApi\QueryBuilder\Value\QueryContext;
 use LukaLtaApi\Value\Tracking\MetricParameter;
 
-class DefaultQueryBuilder
+class DefaultQueryBuilder implements MetricQueryBuilderInterface
 {
     public function __construct(
         private readonly CommonCteBuilder $cteBuilder,
