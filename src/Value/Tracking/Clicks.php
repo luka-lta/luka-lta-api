@@ -49,7 +49,7 @@ class Clicks implements Countable, IteratorAggregate, JsonSerializable
                 'url' => (string)$click->getUrl(),
                 'clickedAt' => $click->getClickedAt()?->format('Y-m-d H:i:s'),
                 'ipAddress' => $click->getMetadata()->getIpAddress(),
-                'market' => $click->getMetadata()->getMarket(),
+                'market' => $click->getMetadata()->getMarket()?->asString(),
                 'userAgent' => $click->getMetadata()->getUserAgent()?->asString(),
                 'os' => $click->getMetadata()->getUserAgent()?->getOs(),
                 'device' => $click->getMetadata()->getUserAgent()?->getDevice(),
