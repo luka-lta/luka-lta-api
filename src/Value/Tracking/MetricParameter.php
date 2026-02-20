@@ -24,7 +24,7 @@ enum MetricParameter: string
     case CHANNEL = 'channel';
     case UTM_SOURCE = 'utm_source';
     case UTM_MEDIUM = 'utm_medium';
-    case UTM_CAMPAIGN = 'utmCampaign';
+    case UTM_CAMPAIGN = 'utm_campaign';
     case UTM_TERM = 'utm_term';
     case UTM_CONTENT = 'utm_content';
     case ENTRY_PAGE = 'entry_page';
