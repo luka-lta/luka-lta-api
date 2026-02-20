@@ -68,6 +68,8 @@ COPY --chown=app:app --from=build /app /app
 COPY --chown=app:app . /app
 
 RUN bun install \
-    && bun run build:analytics
+    && bun run build:analytics  \
+    && mkdir /app/logs \
+    && chmod 777 /app/logs
 
 USER app
