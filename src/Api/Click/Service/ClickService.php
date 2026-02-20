@@ -29,7 +29,7 @@ class ClickService
     public function track(ServerRequestInterface $request): ApiResult
     {
         $body = $request->getParsedBody();
-        $clickTag = ClickTag::fromString($request->getAttribute('clickTag'));
+        $clickTag = ClickTag::from($request->getAttribute('clickTag'));
         $clickMetaData = ClickMetadata::fromArray($body);
 
         $linkItem = $this->linkCollectionRepository->getByClickTag($clickTag);

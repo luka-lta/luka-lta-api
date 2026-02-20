@@ -5,6 +5,7 @@ namespace LukaLtaApi\App\Factory;
 use DI\Container;
 use DI\ContainerBuilder;
 use LukaLtaApi\ApplicationConfig;
+use LukaLtaApi\CommonDependencyConfig;
 
 class ContainerFactory
 {
@@ -12,7 +13,10 @@ class ContainerFactory
     {
         $container = new ContainerBuilder();
         $container->useAutowiring(true);
-        $container->addDefinitions(new ApplicationConfig());
+        $container->addDefinitions(
+            new CommonDependencyConfig(),
+            new ApplicationConfig(),
+        );
         return  $container->build();
     }
 }

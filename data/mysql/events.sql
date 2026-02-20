@@ -35,7 +35,7 @@ CREATE TABLE `events`
     `fcp`                float                                                                     DEFAULT NULL,
     `ttfb`               int                                                                     DEFAULT NULL,
     `ip`                 varchar(45)                                                                DEFAULT NULL,
-    `timezone`           varchar(64)                                                       NOT NULL DEFAULT NULL
+    `timezone`           varchar(64)                                                       DEFAULT NULL
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;

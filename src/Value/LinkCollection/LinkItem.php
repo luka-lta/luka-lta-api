@@ -51,7 +51,7 @@ class LinkItem
     {
         return new self(
             LinkId::fromInt($data['link_id']),
-            ClickTag::fromString($data['click_tag']),
+            ClickTag::from($data['click_tag']),
             LinkMetaData::from(
                 $data['displayname'],
                 $data['description'],

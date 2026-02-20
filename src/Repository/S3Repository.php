@@ -18,8 +18,9 @@ class S3Repository
 
     public function __construct(
         private readonly S3Client $s3Client,
+        private readonly EnvironmentRepository $environmentRepository,
     ) {
-        $this->awsBucket = getenv('AWS_BUCKET');
+        $this->awsBucket = $this->environmentRepository->get('AWS_BUCKET');
     }
 
     public function uploadFile(UploadedFileInterface $uploadedFile, UserId $userId): string

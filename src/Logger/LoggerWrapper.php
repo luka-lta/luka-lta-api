@@ -2,6 +2,7 @@
 
 namespace LukaLtaApi\Logger;
 
+use LukaLtaApi\Repository\EnvironmentRepository;
 use Monolog\Logger;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
@@ -12,6 +13,7 @@ class LoggerWrapper implements LoggerInterface
     public function __construct(
         private readonly Logger $logger,
         private readonly BotApi $botApi,
+        private readonly EnvironmentRepository $environmentRepository,
     ) {
     }
 
@@ -29,7 +31,7 @@ class LoggerWrapper implements LoggerInterface
         $this->logger->log($level, $message, $context);
 
         if ($this->shouldAlert($level)) {
-            $this->botApi->sendMessage(getenv('TELEGRAM_CHAT_ID'), $message);
+            $this->botApi->sendMessage($this->environmentRepository->get('TELEGRAM_CHAT_ID'), $message);
         }
     }
 

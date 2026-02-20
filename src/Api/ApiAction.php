@@ -3,17 +3,18 @@
 namespace LukaLtaApi\Api;
 
 use LukaLtaApi\Exception\ApiException;
+use LukaLtaApi\Slim\RequestHandlerInterface;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\ErrorResult;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Throwable;
 
-abstract class ApiAction
+abstract class ApiAction implements RequestHandlerInterface
 {
     public function __invoke(
         ServerRequestInterface $request,
-        ResponseInterface $response,
+        ResponseInterface      $response,
     ): ResponseInterface {
         try {
             $response = $this->execute($request, $response);
@@ -38,6 +39,6 @@ abstract class ApiAction
 
     abstract protected function execute(
         ServerRequestInterface $request,
-        ResponseInterface $response
+        ResponseInterface      $response
     ): ResponseInterface;
 }

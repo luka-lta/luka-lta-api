@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace LukaLtaApi\Value\User;
 
 use DateTimeImmutable;
+use LukaLtaApi\Value\Time\UtcDate;
 
 class User
 {
@@ -35,7 +36,7 @@ class User
             null,
             $isActive,
             null,
-            new DateTimeImmutable(),
+            UtcDate::now(),
             null,
         );
     }

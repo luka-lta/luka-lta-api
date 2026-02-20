@@ -3,9 +3,11 @@
 namespace LukaLtaApi\App\Factory;
 
 use LukaLtaApi\Logger\LoggerWrapper;
+use LukaLtaApi\Repository\EnvironmentRepository;
 use Monolog\Formatter\JsonFormatter;
 use Monolog\Handler\RotatingFileHandler;
 use Monolog\Logger;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use TelegramBot\Api\BotApi;
@@ -17,10 +19,13 @@ class LoggerFactory
     ) {
     }
 
-    public function __invoke(): LoggerInterface
+    public function __invoke(ContainerInterface $container): LoggerInterface
     {
-        $logFilePath = getenv('LOG_FILE_PATH') ?: '/app/logs';
-        $logLevel = getenv('LOG_LEVEL') ?: LogLevel::DEBUG;
+        /** @var EnvironmentRepository $envRepository */
+        $envRepository = $container->get(EnvironmentRepository::class);
+
+        $logFilePath = $envRepository->get('LOG_FILE_PATH', '/app/logs');
+        $logLevel = $envRepository->get('LOG_LEVEL', LogLevel::DEBUG);
 
         $logger = new Logger('ApiLogger');
 
@@ -29,6 +34,6 @@ class LoggerFactory
 
         $logger->pushHandler($rotatingHandler);
 
-        return new LoggerWrapper($logger, $this->botApi);
+        return new LoggerWrapper($logger, $this->botApi, $envRepository);
     }
 }
