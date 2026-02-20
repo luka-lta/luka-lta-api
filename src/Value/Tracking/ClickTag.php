@@ -4,31 +4,14 @@ declare(strict_types=1);
 
 namespace LukaLtaApi\Value\Tracking;
 
-class ClickTag
+use LukaLtaApi\Value\Identifier\AbstractId;
+
+class ClickTag extends AbstractId
 {
-    public function __construct(
-        private readonly string $value
-    ) {
-    }
-
-    public static function generateTag(): self
-    {
-        $uniqueCode = strtoupper(bin2hex(random_bytes(8)));
-        return new self($uniqueCode);
-    }
-
-    public static function fromString(string $value): self
-    {
-        return new self($value);
-    }
-
-    public function asString(): string
-    {
-        return $this->value;
-    }
+    protected const int LENGTH = 8;
 
     public function getAsTracking(): string
     {
-        return 'https://luka-lta.dev/redirect/' . $this->value;
+        return 'https://luka-lta.dev/redirect/' . $this->asString();
     }
 }

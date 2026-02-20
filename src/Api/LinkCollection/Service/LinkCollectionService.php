@@ -80,7 +80,7 @@ class LinkCollectionService
         $body = $request->getParsedBody();
         $linkItem = LinkItem::from(
             null,
-            ClickTag::generateTag(),
+            ClickTag::fromRandom(),
             $body['displayname'],
             $body['description'] ?? null,
             $body['url'],

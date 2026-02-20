@@ -30,13 +30,11 @@ class ApplicationConfig extends DefinitionArray
     private function getConfig(): array
     {
         return [
-            LoggerInterface::class => factory(LoggerFactory::class),
             PDO::class => factory(PdoFactory::class),
             Redis::class => factory(RedisFactory::class),
             BotApi::class => factory(TelegramBotFactory::class),
             S3Client::class => factory(MinIOFactory::class),
             Client::class => factory(ClickHouseFactory::class),
-            AppEnv::class => factory(AppEnvFactory::class),
         ];
     }
 }

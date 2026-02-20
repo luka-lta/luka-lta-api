@@ -36,7 +36,7 @@ class Click
     {
         return new self(
             ClickId::fromInt($data['click_id']),
-            ClickTag::fromString($data['click_tag']),
+            ClickTag::from($data['click_tag']),
             LinkUrl::fromString($data['url']),
             new DateTimeImmutable($data['clicked_at']),
             ClickMetadata::fromDatabase($data)
