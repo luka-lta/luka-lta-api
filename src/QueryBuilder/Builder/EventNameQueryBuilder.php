@@ -17,7 +17,7 @@ class EventNameQueryBuilder implements MetricQueryBuilderInterface
 
     public function build(QueryContext $context): string
     {
-        $siteId = $context->siteId;
+        $siteId        = $context->siteId;
         $timeStatement = $context->getTimeStatement();
 
         if ($context->isCountQuery) {
@@ -26,15 +26,18 @@ class EventNameQueryBuilder implements MetricQueryBuilderInterface
                 FROM events
                 WHERE
                     site_id = {$siteId}
-                    AND event_name IS NOT NULL 
+                    AND event_name IS NOT NULL
                     AND event_name <> ''
                     $timeStatement
                     AND type = 'custom_event'
             SQL;
         }
 
-        $limitStatement = $context->getLimitStatement();
+        $limitStatement  = $context->getLimitStatement();
         $offsetStatement = $context->getOffsetStatement();
+        $filterFragment  = $context->hasFilters()
+            ? 'AND ' . $context->getFilterFragment()
+            : '';
 
         return <<<SQL
             SELECT
@@ -44,11 +47,12 @@ class EventNameQueryBuilder implements MetricQueryBuilderInterface
             FROM events
             WHERE
                 site_id = $siteId
-                AND event_name IS NOT NULL 
+                AND event_name IS NOT NULL
                 AND event_name <> ''
                 $timeStatement
                 AND type = 'custom_event'
-            GROUP BY event_name 
+                $filterFragment
+            GROUP BY event_name
             ORDER BY count DESC
             $limitStatement
             $offsetStatement

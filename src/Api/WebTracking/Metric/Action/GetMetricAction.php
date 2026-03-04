@@ -6,6 +6,7 @@ namespace LukaLtaApi\Api\WebTracking\Metric\Action;
 
 use LukaLtaApi\Api\ApiAction;
 use LukaLtaApi\Api\WebTracking\Metric\Service\SiteMetricService;
+use LukaLtaApi\Value\Filter\RequestFilter;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 

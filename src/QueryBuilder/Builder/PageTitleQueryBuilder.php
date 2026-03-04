@@ -21,17 +21,19 @@ class PageTitleQueryBuilder implements MetricQueryBuilderInterface
 
     public function build(QueryContext $context): string
     {
-        $siteId = $context->siteId;
+        $siteId        = $context->siteId;
         $timeStatement = $context->getTimeStatement();
+        $filterFragment       = $context->hasFilters()
+            ? 'AND ' . $context->getFilterFragment()
+            : '';
 
         $coreLogic = <<<SQL
             SELECT
                 e.page_title AS value,
-                e.pathname AS pathname, -- der "letzte" Pfad pro page_title
+                e.pathname AS pathname,
                 COUNT(DISTINCT e.session_id) AS unique_sessions
             FROM events e
             INNER JOIN (
-                -- Finde das zuletzt aufgetretene Ereignis pro page_title
                 SELECT
                     page_title,
                     MAX(occurred_on) AS last_occurred
@@ -47,6 +49,7 @@ class PageTitleQueryBuilder implements MetricQueryBuilderInterface
             WHERE e.site_id = $siteId
                 AND e.page_title IS NOT NULL
                 AND e.page_title <> ''
+                $filterFragment
                 $timeStatement
             GROUP BY e.page_title, e.pathname
         SQL;
@@ -56,8 +59,8 @@ class PageTitleQueryBuilder implements MetricQueryBuilderInterface
         }
 
         $sessionPageCountsCte = $this->cteBuilder->buildSessionPageCounts($context);
-        $limitStatement = $context->getLimitStatement();
-        $offsetStatement = $context->getOffsetStatement();
+        $limitStatement       = $context->getLimitStatement();
+        $offsetStatement      = $context->getOffsetStatement();
 
         return <<<SQL
             WITH $sessionPageCountsCte,
@@ -73,6 +76,7 @@ class PageTitleQueryBuilder implements MetricQueryBuilderInterface
                     e.site_id = $siteId
                     AND e.page_title IS NOT NULL
                     AND e.page_title <> ''
+                    $filterFragment
                     $timeStatement
             )
             SELECT
@@ -81,9 +85,9 @@ class PageTitleQueryBuilder implements MetricQueryBuilderInterface
                 COUNT(DISTINCT session_id) as count,
                 ROUND(COUNT(DISTINCT session_id) * 100.0 / SUM(COUNT(DISTINCT session_id)) OVER (), 2) as percentage,
                 ROUND(
-                    COUNT(DISTINCT CASE 
-                        WHEN pageviews_in_session = 1 THEN session_id 
-                    END) * 100.0 
+                    COUNT(DISTINCT CASE
+                        WHEN pageviews_in_session = 1 THEN session_id
+                    END) * 100.0
                     / NULLIF(COUNT(DISTINCT session_id), 0),
                     2
                 ) as bounceRate

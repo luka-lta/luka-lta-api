@@ -7,7 +7,8 @@ namespace LukaLtaApi\QueryBuilder\Service;
 use LukaLtaApi\QueryBuilder\QueryBuilderFactory;
 use LukaLtaApi\QueryBuilder\QueryComponentBuilder;
 use LukaLtaApi\QueryBuilder\Value\QueryContext;
-use LukaLtaApi\Value\WebTracking\Site\SiteMetricRequestData;
+use LukaLtaApi\Value\Filter\ColumnFilterCollection;
+use LukaLtaApi\Value\Request\RequestQueryParams;
 
 class MetricQueryService
 {
@@ -17,17 +18,25 @@ class MetricQueryService
     ) {
     }
 
-    public function getQuery(int $siteId, SiteMetricRequestData $metricRequestData, bool $isCountQuery = false): string
-    {
-        $builder = $this->queryBuilderFactory->create($metricRequestData->getMetricParameter());
+    public function getQuery(
+        int $siteId,
+        RequestQueryParams $requestQueryParams,
+        bool $isCountQuery = false,
+        ?ColumnFilterCollection $filters = null,
+    ): array {
+        $builder = $this->queryBuilderFactory->create($requestQueryParams->getParameter());
 
         $context = QueryContext::from(
             $siteId,
-            $metricRequestData,
+            $requestQueryParams,
             $isCountQuery,
-            $this->queryComponentBuilder
+            $this->queryComponentBuilder,
+            $filters ?? ColumnFilterCollection::from(),
         );
 
-        return $builder->build($context);
+        return [
+            'sql'    => $builder->build($context),
+            'params' => $context->getFilterParams(),
+        ];
     }
 }

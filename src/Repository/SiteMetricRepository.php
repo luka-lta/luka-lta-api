@@ -6,6 +6,7 @@ namespace LukaLtaApi\Repository;
 
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Exception\ApiDatabaseException;
+use LukaLtaApi\Value\Filter\FilterQueryBuilder;
 use PDO;
 use PDOException;
 
@@ -16,13 +17,16 @@ class SiteMetricRepository
     ) {
     }
 
-    public function getSiteMetricData(string $query): array
+    public function getSiteMetricData(string $sql, array $params = []): array
     {
         try {
-            $stmt = $this->pdo->query($query);
-            if ($stmt === false) {
-                throw new ApiDatabaseException('Failed to execute query: ' . $query);
-            }
+            $placeholderCount = substr_count($sql, '?');
+            $paramCount       = count($params);
+            $repeatTimes      = $paramCount > 0 ? intdiv($placeholderCount, $paramCount) : 1;
+            $repeatedParams   = array_merge(...array_fill(0, $repeatTimes, $params));
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($repeatedParams);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $exception) {
             throw new ApiDatabaseException(
