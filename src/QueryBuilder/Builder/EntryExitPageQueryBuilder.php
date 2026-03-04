@@ -16,7 +16,8 @@ class EntryExitPageQueryBuilder implements MetricQueryBuilderInterface
 
     public function supports(MetricParameter $parameter): bool
     {
-        return $parameter === MetricParameter::PATHNAME;
+        return $parameter === MetricParameter::ENTRY_PAGE
+            || $parameter === MetricParameter::EXIT_PAGE;
     }
 
     public function build(QueryContext $context): string
