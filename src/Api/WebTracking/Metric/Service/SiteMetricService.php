@@ -6,9 +6,11 @@ namespace LukaLtaApi\Api\WebTracking\Metric\Service;
 
 use LukaLtaApi\QueryBuilder\Service\MetricQueryService;
 use LukaLtaApi\Repository\SiteMetricRepository;
+use LukaLtaApi\Value\Filter\ColumnFilterCollection;
+use LukaLtaApi\Value\Filter\RequestFilter;
+use LukaLtaApi\Value\Request\RequestQueryParams;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
-use LukaLtaApi\Value\WebTracking\Site\SiteMetricRequestData;
 use LukaLtaApi\Value\WebTracking\Site\SiteMetricResult;
 
 class SiteMetricService
@@ -21,18 +23,33 @@ class SiteMetricService
 
     public function getSiteMetric(int $siteId, array $queryParams): ApiResult
     {
-        $metricRequestData = SiteMetricRequestData::fromQueryParams($queryParams);
+        $filters = isset($queryParams['filters'])
+            ? RequestFilter::fromQueryParams($siteId, $queryParams['filters'])->getFilterCollection()
+            : ColumnFilterCollection::from();
 
-        $dataQuery = $this->metricQueryService->getQuery($siteId, $metricRequestData);
-        $countQuery = $this->metricQueryService->getQuery($siteId, $metricRequestData, true);
+        $metricRequestData = RequestQueryParams::fromQueryParams($queryParams);
 
-        $dataResult = $this->siteMetricRepository->getSiteMetricData($dataQuery);
-        $countResult = $this->siteMetricRepository->getSiteMetricData($countQuery);
+        ['sql' => $dataSQL, 'params' => $dataParams] = $this->metricQueryService->getQuery(
+            $siteId,
+            $metricRequestData,
+            false,
+            $filters
+        );
+
+        ['sql' => $countSQL, 'params' => $countParams] = $this->metricQueryService->getQuery(
+            $siteId,
+            $metricRequestData,
+            true,
+            $filters
+        );
+
+        $dataResult  = $this->siteMetricRepository->getSiteMetricData($dataSQL, $dataParams);
+        $countResult = $this->siteMetricRepository->getSiteMetricData($countSQL, $countParams);
 
         $metricResult = SiteMetricResult::fromResult($dataResult, $countResult);
 
-        return ApiResult::from(JsonResult::from('Noice', [
-            'data' => $metricResult->getMetricResult(),
+        return ApiResult::from(JsonResult::from('Metrics found', [
+            'data'       => $metricResult->getMetricResult(),
             'totalCount' => $metricResult->getTotalCount(),
         ]));
     }

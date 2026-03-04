@@ -23,9 +23,12 @@ class DefaultQueryBuilder implements MetricQueryBuilderInterface
 
     public function build(QueryContext $context): string
     {
-        $siteId = $context->siteId;
+        $siteId        = $context->siteId;
         $timeStatement = $context->getTimeStatement();
-        $sqlParam = $this->parameterMapper->map($context->metricRequestData->getMetricParameter());
+        $sqlParam      = $this->parameterMapper->map($context->getRequestQueryParams()->getParameter());
+        $filterFragment       = $context->hasFilters()
+            ? 'AND ' . $context->getFilterFragment()
+            : '';
 
         if ($context->isCountQuery) {
             return <<<SQL
@@ -35,13 +38,15 @@ class DefaultQueryBuilder implements MetricQueryBuilderInterface
                     site_id = $siteId
                     AND $sqlParam IS NOT NULL
                     AND $sqlParam <> ''
+                    $filterFragment
                     $timeStatement
             SQL;
         }
 
         $sessionPageCountsCte = $this->cteBuilder->buildSessionPageCounts($context);
-        $limitStatement = $context->getLimitStatement();
-        $offsetStatement = $context->getOffsetStatement();
+        $limitStatement       = $context->getLimitStatement();
+        $offsetStatement      = $context->getOffsetStatement();
+
 
         return <<<SQL
             WITH $sessionPageCountsCte,
@@ -56,6 +61,7 @@ class DefaultQueryBuilder implements MetricQueryBuilderInterface
                     e.site_id = $siteId
                     AND $sqlParam IS NOT NULL
                     AND $sqlParam <> ''
+                    $filterFragment
                     $timeStatement
             ),
             Aggregated AS (

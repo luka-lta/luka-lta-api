@@ -5,10 +5,6 @@ namespace LukaLtaApi\Slim;
 use LukaLtaApi\Api\ApiKey\Action\CreateApiKeyAction;
 use LukaLtaApi\Api\ApiKey\Action\GetAllApiKeysAction;
 use LukaLtaApi\Api\Auth\Action\AuthAction;
-use LukaLtaApi\Api\Blog\Action\BlogCreateAction;
-use LukaLtaApi\Api\Blog\Action\BlogUpdateAction;
-use LukaLtaApi\Api\Blog\Action\GetBlogByIdAction;
-use LukaLtaApi\Api\Blog\Action\GetBlogsAction;
 use LukaLtaApi\Api\Click\Action\ClickTrackAction;
 use LukaLtaApi\Api\Click\Action\GetClicksAction;
 use LukaLtaApi\Api\Click\Action\GetClicksFiltersAction;
@@ -42,6 +38,10 @@ use LukaLtaApi\Api\WebTracking\SiteConfig\Action\GetSiteConfig;
 use LukaLtaApi\Api\WebTracking\SiteConfig\Action\UpdateSiteConfig;
 use LukaLtaApi\Api\WebTracking\TrackEvent\Action\TrackEventAction;
 use LukaLtaApi\Api\WebTracking\TrackingScript\Action\GetTrackingScriptAction;
+use LukaLtaApi\Api\WebTracking\TrackingUser\Action\GetSessionAction;
+use LukaLtaApi\Api\WebTracking\TrackingUser\Action\GetTrackingUserAction;
+use LukaLtaApi\Api\WebTracking\TrackingUser\Action\GetTrackingUsersAction;
+use LukaLtaApi\Api\WebTracking\TrackingUser\Action\GetTrackingUserSessions;
 use LukaLtaApi\Service\PermissionService;
 use LukaLtaApi\Slim\Middleware\ApiKeyPermissionMiddleware;
 use LukaLtaApi\Slim\Middleware\AuthMiddleware;
@@ -243,36 +243,6 @@ class RouteMiddlewareCollector
                     ));
             })->add(AuthMiddleware::class);
 
-            $app->group('/blog', function (RouteCollectorProxy $blog) use ($app) {
-                $blog->post('/', BlogCreateAction::class)
-                    ->add(new ApiKeyPermissionMiddleware(
-                        $app->getContainer()?->get(PermissionService::class),
-                        ['Create blog posts']
-                    ));
-
-                $blog->put(
-                    '/{blogId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}}',
-                    BlogUpdateAction::class
-                )->add(new ApiKeyPermissionMiddleware(
-                    $app->getContainer()?->get(PermissionService::class),
-                    ['Edit blog posts']
-                ));
-
-                $blog->get(
-                    '/{blogId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}}',
-                    GetBlogByIdAction::class
-                )->add(new ApiKeyPermissionMiddleware(
-                    $app->getContainer()?->get(PermissionService::class),
-                    ['Read blog post by ID']
-                ));
-
-                $blog->get('/', GetBlogsAction::class)
-                    ->add(new ApiKeyPermissionMiddleware(
-                        $app->getContainer()?->get(PermissionService::class),
-                        ['Read blog posts']
-                    ));
-            })->add(AuthMiddleware::class);
-
             $app->group('/self', function (RouteCollectorProxy $selfUser) use ($app) {
                 $selfUser->get('/', GetSelfUserAction::class);
                 $selfUser->put('/', SelfUserUpdateAction::class);
@@ -283,13 +253,24 @@ class RouteMiddlewareCollector
             })->add(AuthMiddleware::class);
 
             $app->group('/site', function (RouteCollectorProxy $site) use ($app) {
+                $site->get('/{siteId:[0-9]+}/tracking-config', GetSiteConfig::class);
                 $site->get('/{siteId:[0-9]+}/metric', GetMetricAction::class)
                     ->add(AuthMiddleware::class);
-                $site->get('/{siteId:[0-9]+}/tracking-config', GetSiteConfig::class);
                 $site->get('/{siteId:[0-9]+}', GetSite::class)
                     ->add(AuthMiddleware::class);
                 $site->post('/{siteId:[0-9]+}/tracking-config', UpdateSiteConfig::class)
                     ->add(AuthMiddleware::class);
+                $site->get('/{siteId:[0-9]+}/sessions', GetTrackingUserSessions::class)
+                    ->add(AuthMiddleware::class);
+                $site->get('/{siteId:[0-9]+}/sessions/{sessionId:[0-9A-Z-a-z]+}', GetSessionAction::class)
+                    ->add(AuthMiddleware::class);
+
+                $site->group('/{siteId:[0-9]+}/users', function (RouteCollectorProxy $users) use ($app) {
+                    $users->get('/', GetTrackingUsersAction::class)
+                        ->add(AuthMiddleware::class);
+                    $users->get('/{trackingUserId:[0-9A-Z-a-z]+}', GetTrackingUserAction::class)
+                        ->add(AuthMiddleware::class);
+                });
             });
         });
     }

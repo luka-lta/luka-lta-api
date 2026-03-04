@@ -22,58 +22,30 @@ class EntryExitPageQueryBuilder implements MetricQueryBuilderInterface
 
     public function build(QueryContext $context): string
     {
-        $isEntry = $context->metricRequestData->getMetricParameter() === MetricParameter::ENTRY_PAGE;
-        $orderDirection = $isEntry ? 'ASC' : 'DESC';
-        $siteId = $context->siteId;
-        $timeStatement = $context->getTimeStatement();
-
         $sessionPageCountsCte = $this->cteBuilder->buildSessionPageCounts($context);
+        $eventTimesCte        = $this->cteBuilder->buildEventTimes($context);
 
         $baseCte = <<<SQL
             $sessionPageCountsCte,
-            RelevantEvents AS (
-                SELECT
-                    e.*,
-                    spc.pageviews_in_session
-                FROM events e
-                LEFT JOIN SessionPageCounts spc ON e.session_id = spc.session_id
-                WHERE
-                    e.site_id = $siteId
-                    $timeStatement
-            ),
-            EventTimes AS (
-                SELECT
-                    session_id,
-                    pathname,
-                    occurred_on,
-                    pageviews_in_session,
-                    LEAD(occurred_on) OVER (PARTITION BY session_id ORDER BY occurred_on) AS next_timestamp,
-                    ROW_NUMBER() OVER (PARTITION BY session_id ORDER BY occurred_on $orderDirection) as row_num
-                FROM RelevantEvents
-            ),
+            $eventTimesCte,
             PageDurations AS (
                 SELECT
                     session_id,
                     pathname,
                     occurred_on,
                     next_timestamp,
-                    row_num,
                     pageviews_in_session,
-                    IF(next_timestamp IS NULL, 0, TIMESTAMPDIFF(SECOND, occurred_on, next_timestamp)) as time_diff_seconds
+                    if(isNull(next_timestamp), 0, TIMESTAMPDIFF(SECOND, occurred_on, next_timestamp)) AS time_diff_seconds
                 FROM EventTimes
-            ),
-            FilteredDurations AS (
-                SELECT * FROM PageDurations WHERE row_num = 1
             ),
             PathStats AS (
                 SELECT
                     pathname,
-                    COUNT(DISTINCT session_id) as unique_sessions,
-                    COUNT(*) as visits,
-                    AVG(IF(time_diff_seconds < 0, 0, IF(time_diff_seconds > 1800, 1800, time_diff_seconds))) as avg_timeOnPageSeconds,
+                    count(*) as visits,
+                    count(DISTINCT session_id) as unique_sessions,
+                    avg(if(time_diff_seconds < 0, 0, if(time_diff_seconds > 1800, 1800, time_diff_seconds))) as avg_timeOnPageSeconds,
                     COUNT(DISTINCT CASE WHEN pageviews_in_session = 1 THEN session_id END) as bounced_sessions
-                FROM FilteredDurations
-                WHERE pathname IS NOT NULL AND pathname <> ''
+                FROM PageDurations
                 GROUP BY pathname
             )
         SQL;
@@ -93,11 +65,11 @@ class EntryExitPageQueryBuilder implements MetricQueryBuilderInterface
             SELECT
                 pathname as value,
                 unique_sessions as count,
-                ROUND((unique_sessions / SUM(unique_sessions) OVER ()) * 100, 2) as percentage,
+                round((unique_sessions / sum(unique_sessions) OVER ()) * 100, 2) as percentage,
                 visits as pageviews,
-                ROUND((visits / SUM(visits) OVER ()) * 100, 2) as pageviewsPercentage,
+                round((visits / sum(visits) OVER ()) * 100, 2) as pageviewsPercantage,
                 avg_timeOnPageSeconds as timeOnPageSeconds,
-                ROUND((bounced_sessions / NULLIF(unique_sessions, 0)) * 100, 2) as bounceRate
+                round((bounced_sessions / nullIf(unique_sessions, 0)) * 100, 2) as bounceRate
             FROM PathStats
             ORDER BY unique_sessions DESC
             $limitStatement

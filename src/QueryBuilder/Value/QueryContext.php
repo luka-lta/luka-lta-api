@@ -5,40 +5,49 @@ declare(strict_types=1);
 namespace LukaLtaApi\QueryBuilder\Value;
 
 use LukaLtaApi\QueryBuilder\QueryComponentBuilder;
-use LukaLtaApi\Value\WebTracking\Site\SiteMetricRequestData;
+use LukaLtaApi\Value\Filter\ColumnFilterCollection;
+use LukaLtaApi\Value\Filter\FilterQueryBuilder;
+use LukaLtaApi\Value\Request\RequestQueryParams;
 
 class QueryContext
 {
+    private readonly FilterQueryBuilder $filterBuilder;
+
     private function __construct(
         public readonly int $siteId,
-        public readonly SiteMetricRequestData $metricRequestData,
+        private readonly RequestQueryParams $requestQueryParams,
         public readonly bool $isCountQuery,
-        public readonly QueryComponentBuilder $componentBuilder
-    ) {}
+        public readonly QueryComponentBuilder $componentBuilder,
+        ColumnFilterCollection $filters,
+    ) {
+        $this->filterBuilder = FilterQueryBuilder::new()->applyFilters($filters);
+    }
 
     public static function from(
         int $siteId,
-        SiteMetricRequestData $metricRequestData,
+        RequestQueryParams $requestQueryParams,
         bool $isCountQuery,
-        QueryComponentBuilder $componentBuilder
+        QueryComponentBuilder $componentBuilder,
+        ColumnFilterCollection $filters,
     ): self {
         return new self(
             $siteId,
-            $metricRequestData,
+            $requestQueryParams,
             $isCountQuery,
-            $componentBuilder
+            $componentBuilder,
+            $filters,
         );
     }
 
     public function getTimeStatement(): string
     {
-        return $this->componentBuilder->buildTimeStatement($this->metricRequestData);
+        return $this->componentBuilder->buildTimeStatement($this->requestQueryParams);
     }
 
     public function getLimitStatement(): string
     {
         return $this->componentBuilder->buildLimitStatement(
-            $this->metricRequestData,
+            $this->requestQueryParams,
             $this->isCountQuery
         );
     }
@@ -46,8 +55,29 @@ class QueryContext
     public function getOffsetStatement(): string
     {
         return $this->componentBuilder->buildOffsetStatement(
-            $this->metricRequestData,
+            $this->requestQueryParams,
             $this->isCountQuery
         );
+    }
+
+    public function getFilterFragment(): string
+    {
+        return $this->filterBuilder->getFragment();
+    }
+
+    /** @return array<int, mixed> */
+    public function getFilterParams(): array
+    {
+        return $this->filterBuilder->getParams();
+    }
+
+    public function hasFilters(): bool
+    {
+        return !$this->filterBuilder->isEmpty();
+    }
+
+    public function getRequestQueryParams(): RequestQueryParams
+    {
+        return $this->requestQueryParams;
     }
 }

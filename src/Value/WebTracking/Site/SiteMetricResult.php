@@ -16,7 +16,7 @@ class SiteMetricResult
     {
         return new self(
             $dataResult,
-            count($countResult) > 0 ? (int)$countResult[0] : 0,
+            count($countResult) > 0 ? $countResult[0]['totalCount'] : 0,
         );
     }
 

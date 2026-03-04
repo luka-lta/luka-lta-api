@@ -12,6 +12,9 @@ class CommonCteBuilder
     {
         $siteId = $context->siteId;
         $timeStatement = $context->getTimeStatement();
+        $filterFragment  = $context->hasFilters()
+            ? 'AND ' . $context->getFilterFragment()
+            : '';
 
         return <<<SQL
             SessionPageCounts AS (
@@ -22,6 +25,7 @@ class CommonCteBuilder
                 WHERE
                     site_id = $siteId
                     AND type = 'pageview'
+                    $filterFragment
                     $timeStatement
                 GROUP BY session_id
             )
@@ -32,6 +36,9 @@ class CommonCteBuilder
     {
         $siteId = $context->siteId;
         $timeStatement = $context->getTimeStatement();
+        $filterFragment  = $context->hasFilters()
+            ? 'AND ' . $context->getFilterFragment()
+            : '';
 
         return <<<SQL
             EventTimes AS (
@@ -45,6 +52,7 @@ class CommonCteBuilder
                 LEFT JOIN SessionPageCounts spc ON e.session_id = spc.session_id
                 WHERE
                     e.site_id = $siteId
+                    $filterFragment
                     $timeStatement
             )
         SQL;

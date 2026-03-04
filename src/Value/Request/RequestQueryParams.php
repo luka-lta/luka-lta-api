@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace LukaLtaApi\Value\WebTracking\Site;
+namespace LukaLtaApi\Value\Request;
 
 use DateTime;
 use DateTimeZone;
 use LukaLtaApi\Value\Tracking\MetricParameter;
 
-class SiteMetricRequestData
+class RequestQueryParams
 {
     private function __construct(
         private ?DateTime $startDate,
@@ -18,7 +18,7 @@ class SiteMetricRequestData
         private ?DateTime $pastMinutesEnd,
         private readonly ?int $page,
         private readonly ?int $limit,
-        private readonly MetricParameter $metricParameter,
+        private readonly ?MetricParameter $parameter,
     ) {
     }
 
@@ -32,6 +32,7 @@ class SiteMetricRequestData
         $timeZone = isset($queryParams['timeZone']) ? new DateTimeZone($queryParams['timeZone']) : new DateTimeZone('UTC');
         $page = isset($queryParams['page']) ? (int)$queryParams['page'] : null;
         $limit = isset($queryParams['limit']) ? (int)$queryParams['limit'] : null;
+        $parameter = isset($queryParams['parameter']) ? MetricParameter::fromName($queryParams['parameter']) : null;
 
         return new self(
             $startDate,
@@ -41,7 +42,7 @@ class SiteMetricRequestData
             $pastMinutesEnd,
             $page,
             $limit,
-            MetricParameter::fromName($queryParams['parameter'])
+            $parameter
         );
     }
 
@@ -80,8 +81,8 @@ class SiteMetricRequestData
         return $this->limit;
     }
 
-    public function getMetricParameter(): MetricParameter
+    public function getParameter(): ?MetricParameter
     {
-        return $this->metricParameter;
+        return $this->parameter;
     }
 }
