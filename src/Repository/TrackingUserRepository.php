@@ -132,7 +132,7 @@ class TrackingUserRepository
                 MIN(language) AS language,
                 MIN(device) AS device,
                 MIN(browser) AS browser,
-                MIN(browser) AS browser,
+                MIN(browserVersion) AS browserVersion,
                 MIN(os) AS os,
                 MIN(osVersion) AS osVersion,
                 MIN(screenHeight) AS screenHeight,

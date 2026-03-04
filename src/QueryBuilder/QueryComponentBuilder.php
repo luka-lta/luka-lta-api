@@ -32,8 +32,10 @@ class QueryComponentBuilder
     private function buildPastMinutesRange(DateTime $start, DateTime $end): string
     {
         $now = new DateTime('now', new \DateTimeZone('UTC'));
-        $startTimestamp = (clone $now)->modify("-{$start->format('i')} minutes")->format('Y-m-d H:i:s');
-        $endTimestamp = (clone $now)->modify("-{$end->format('i')} minutes")->format('Y-m-d H:i:s');
+        $startMinutes = max(0, (int) floor(($now->getTimestamp() - $start->getTimestamp()) / 60));
+        $endMinutes = max(0, (int) floor(($now->getTimestamp() - $end->getTimestamp()) / 60));
+        $startTimestamp = (clone $now)->modify("-{$startMinutes} minutes")->format('Y-m-d H:i:s');
+        $endTimestamp = (clone $now)->modify("-{$endMinutes} minutes")->format('Y-m-d H:i:s');
 
         return "AND occurred_on > '$startTimestamp' AND occurred_on <= '$endTimestamp'";
     }

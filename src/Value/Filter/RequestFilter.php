@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace LukaLtaApi\Value\Filter;
 
+use Fig\Http\Message\StatusCodeInterface;
+use JsonException;
+use LukaLtaApi\Exception\ApiValidationException;
+
 class RequestFilter
 {
     private function __construct(
@@ -15,7 +19,15 @@ class RequestFilter
     public static function fromQueryParams(int $siteId, string $filters): self
     {
         $urlDecodedFilters = urldecode($filters);
-        $filters = json_decode($urlDecodedFilters, true, 512, JSON_THROW_ON_ERROR);
+        try {
+            $filters = json_decode($urlDecodedFilters, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $exception) {
+            throw new ApiValidationException(
+                'Invalid filter JSON format',
+                StatusCodeInterface::STATUS_BAD_REQUEST,
+                $exception
+            );
+        }
         $filterCollection = [];
 
         foreach ($filters as $filter) {

@@ -215,7 +215,6 @@ class SessionRepository
 
             return $result;
         } catch (PDOException $e) {
-            var_dump($e->getMessage());
             throw new ApiDatabaseException(
                 'Failed to get sessions for user',
                 StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR,
