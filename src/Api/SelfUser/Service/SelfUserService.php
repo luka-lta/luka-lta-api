@@ -15,6 +15,7 @@ use LukaLtaApi\Value\Result\JsonResult;
 use LukaLtaApi\Value\User\UserEmail;
 use LukaLtaApi\Value\User\UserId;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\UploadedFileInterface;
 
 class SelfUserService
 {

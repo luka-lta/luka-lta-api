@@ -23,7 +23,7 @@ class AvatarService
 
         if ($uploadedFile->getError() !== UPLOAD_ERR_OK) {
             throw new ApiAvatarUploadException(
-                'File upload error',
+                'File upload error' . 'Error code: ' . $uploadedFile->getError(),
                 StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR
             );
         }

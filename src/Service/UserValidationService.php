@@ -7,6 +7,7 @@ namespace LukaLtaApi\Service;
 use LukaLtaApi\Exception\UserAlreadyExistsException;
 use LukaLtaApi\Repository\UserRepository;
 use LukaLtaApi\Value\User\UserEmail;
+use LukaLtaApi\Value\User\UserId;
 
 class UserValidationService
 {
@@ -15,13 +16,16 @@ class UserValidationService
     ) {
     }
 
-    public function ensureUserDoesNotExists(UserEmail $email, string $username): void
-    {
-        if ($this->userRepository->findByEmail($email)) {
+    public function ensureUserDoesNotExists(
+        UserEmail $email,
+        string $username,
+        ?UserId $excludeUserId = null,
+    ): void {
+        if ($this->userRepository->findByEmail($email, $excludeUserId)) {
             throw new UserAlreadyExistsException('User already exists with this email');
         }
 
-        if ($this->userRepository->findByUsername($username)) {
+        if ($this->userRepository->findByUsername($username, $excludeUserId)) {
             throw new UserAlreadyExistsException('User already exists with this username');
         }
     }
