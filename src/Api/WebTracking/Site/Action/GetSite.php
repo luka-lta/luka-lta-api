@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace LukaLtaApi\Api\WebTracking\SiteConfig\Action;
+namespace LukaLtaApi\Api\WebTracking\Site\Action;
 
 use LukaLtaApi\Api\ApiAction;
 use LukaLtaApi\Api\WebTracking\SiteConfig\Service\SiteConfigService;

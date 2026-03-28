@@ -24,6 +24,28 @@ class Site
     ) {
     }
 
+    public static function create(
+        string $name,
+        string $domain,
+        UserId $createdBy,
+        SiteConfig $siteConfig,
+    ): self {
+        return new self(
+            '',
+            $name,
+            $domain,
+            null,
+            null,
+            $createdBy,
+            false,
+            true,
+            [],
+            [],
+            $siteConfig,
+            true,
+        );
+    }
+
     public static function fromDatabase(array $row): self
     {
         $createdAt = $row['created_at'] === null ? null : new DateTimeImmutable($row['created_at']);

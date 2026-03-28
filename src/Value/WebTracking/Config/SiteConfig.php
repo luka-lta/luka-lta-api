@@ -17,6 +17,21 @@ class SiteConfig
     ) {
     }
 
+    public static function createDefaultConfig(): self
+    {
+        return new self(
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+        );
+    }
+
     public static function from(
         bool $webVitals,
         bool $trackErrors,
