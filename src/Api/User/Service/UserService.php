@@ -79,7 +79,7 @@ class UserService
 
         try {
             if ($user->getEmail()->asString() !== $email->asString() || $user->getUsername() !== $username) {
-                $this->validationService->ensureUserDoesNotExists($email, $username);
+                $this->validationService->ensureUserDoesNotExists($email, $username, $userId);
             }
         } catch (UserAlreadyExistsException $e) {
             return ApiResult::from(
@@ -139,6 +139,7 @@ class UserService
         if (!$fileData) {
             return ApiResult::from(
                 JsonResult::from('Avatar not found'),
+                StatusCodeInterface::STATUS_NOT_FOUND // ✅ korrekter 404-Status
             )->getResponse($response);
         }
 
@@ -181,12 +182,14 @@ class UserService
         if ($user === null) {
             return ApiResult::from(
                 JsonResult::from('User not found'),
+                StatusCodeInterface::STATUS_NOT_FOUND
             )->getResponse($response);
         }
 
         if ($user->isActive()) {
             return ApiResult::from(
-                JsonResult::from('User is not deactivated'),
+                JsonResult::from('User must be deactivated before deletion'),
+                StatusCodeInterface::STATUS_BAD_REQUEST
             )->getResponse($response);
         }
 

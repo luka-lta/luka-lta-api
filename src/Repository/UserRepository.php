@@ -19,7 +19,6 @@ class UserRepository
         private readonly PDO $pdo,
         private readonly QueryFactory $queryFactory,
     ) {
-        $this->pdo->beginTransaction();
     }
 
     public function create(User $user): void
@@ -29,6 +28,7 @@ class UserRepository
             VALUES (:email, :username, :password, :avatar_url)
         SQL;
 
+        $this->pdo->beginTransaction();
         try {
             $statement = $this->pdo->prepare($sql);
             $statement->execute([
@@ -62,6 +62,7 @@ class UserRepository
             WHERE user_id = :user_id
         SQL;
 
+        $this->pdo->beginTransaction();
         try {
             $statement = $this->pdo->prepare($sql);
             $statement->execute([
@@ -84,18 +85,24 @@ class UserRepository
         }
     }
 
-    public function findByEmail(UserEmail $email): ?User
+    public function findByEmail(UserEmail $email, ?UserId $excludeUserId = null): ?User
     {
         $sql = <<<SQL
-            SELECT *
-            FROM users
+            SELECT * FROM users
             WHERE email = :email
         SQL;
 
+        if ($excludeUserId !== null) {
+            $sql .= ' AND user_id != :exclude_id';
+        }
+
         try {
             $statement = $this->pdo->prepare($sql);
-            $statement->execute(['email' => $email->asString()]);
-
+            $params = ['email' => $email->asString()];
+            if ($excludeUserId !== null) {
+                $params['exclude_id'] = $excludeUserId->asInt();
+            }
+            $statement->execute($params);
             $row = $statement->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             throw new ApiDatabaseException(
@@ -105,11 +112,7 @@ class UserRepository
             );
         }
 
-        if ($row === false) {
-            return null;
-        }
-
-        return User::fromDatabase($row);
+        return $row !== false ? User::fromDatabase($row) : null;
     }
 
     public function findById(UserId $userId): ?User
@@ -133,25 +136,26 @@ class UserRepository
             );
         }
 
-        if ($row === false) {
-            return null;
-        }
-
-        return User::fromDatabase($row);
+        return $row !== false ? User::fromDatabase($row) : null;
     }
 
-    public function findByUsername(string $username): ?User
+    public function findByUsername(string $username, ?UserId $excludeUserId = null): ?User
     {
         $sql = <<<SQL
-            SELECT *
-            FROM users
-            WHERE username = :username
+            SELECT * FROM users WHERE username = :username
         SQL;
+
+        if ($excludeUserId !== null) {
+            $sql .= ' AND user_id != :exclude_id';
+        }
 
         try {
             $statement = $this->pdo->prepare($sql);
-            $statement->execute(['username' => $username]);
-
+            $params = ['username' => $username];
+            if ($excludeUserId !== null) {
+                $params['exclude_id'] = $excludeUserId->asInt();
+            }
+            $statement->execute($params);
             $row = $statement->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             throw new ApiDatabaseException(
@@ -161,19 +165,14 @@ class UserRepository
             );
         }
 
-        if ($row === false) {
-            return null;
-        }
-
-        return User::fromDatabase($row);
+        return $row !== false ? User::fromDatabase($row) : null;
     }
 
     public function getAll(UserExtraFilter $filter): Users
     {
         $select = $this->queryFactory->select('*')->from('users');
-
-        $query = $filter->createSqlFilter($select);
-        $sql = $query->compile();
+        $query  = $filter->createSqlFilter($select);
+        $sql    = $query->compile();
 
         try {
             $statement = $this->pdo->prepare($sql->sql());
@@ -199,6 +198,7 @@ class UserRepository
             DELETE FROM users WHERE user_id = :user_id
         SQL;
 
+        $this->pdo->beginTransaction();
         try {
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute(['user_id' => $userId->asInt()]);
