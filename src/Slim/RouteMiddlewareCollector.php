@@ -33,7 +33,8 @@ use LukaLtaApi\Api\User\Action\GetAvatarAction;
 use LukaLtaApi\Api\User\Action\UpdateProfileAction;
 use LukaLtaApi\Api\WebTracking\Identify\Action\IdentifyTrackingUserAction;
 use LukaLtaApi\Api\WebTracking\Metric\Action\GetMetricAction;
-use LukaLtaApi\Api\WebTracking\SiteConfig\Action\GetSite;
+use LukaLtaApi\Api\WebTracking\Site\Action\CreateSiteAction;
+use LukaLtaApi\Api\WebTracking\Site\Action\GetSite;
 use LukaLtaApi\Api\WebTracking\SiteConfig\Action\GetSiteConfig;
 use LukaLtaApi\Api\WebTracking\SiteConfig\Action\UpdateSiteConfig;
 use LukaLtaApi\Api\WebTracking\TrackEvent\Action\TrackEventAction;
@@ -253,6 +254,7 @@ class RouteMiddlewareCollector
             })->add(AuthMiddleware::class);
 
             $app->group('/site', function (RouteCollectorProxy $site) use ($app) {
+                $site->post('/', CreateSiteAction::class)->add(AuthMiddleware::class);
                 $site->get('/{siteId:[0-9]+}/tracking-config', GetSiteConfig::class);
                 $site->get('/{siteId:[0-9]+}/metric', GetMetricAction::class)
                     ->add(AuthMiddleware::class);
