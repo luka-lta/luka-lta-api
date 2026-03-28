@@ -23,7 +23,6 @@ class SiteService
     public function createSite(RequestInterface $request): ApiResult
     {
         $body = $request->getParsedBody();
-        var_dump($request->getAttribute('userId'));
         $requestedUser = UserId::fromString($request->getAttribute('userId'));
         $site = Site::create(
             $body['name'],
