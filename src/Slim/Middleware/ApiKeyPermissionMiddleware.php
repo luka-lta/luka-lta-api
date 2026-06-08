@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace LukaLtaApi\Slim\Middleware;
 
 use Fig\Http\Message\StatusCodeInterface;
-use LukaLtaApi\Service\PermissionService;
+use LukaLtaApi\Service\Contracts\PermissionServiceInterface;
 use LukaLtaApi\Value\ApiKey\KeyId;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
@@ -18,7 +18,7 @@ use Slim\Psr7\Factory\ResponseFactory;
 class ApiKeyPermissionMiddleware implements MiddlewareInterface
 {
     public function __construct(
-        private readonly PermissionService $service,
+        private readonly PermissionServiceInterface $service,
         private readonly array $permissions
     ) {
     }

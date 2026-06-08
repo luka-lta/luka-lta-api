@@ -7,7 +7,7 @@ namespace LukaLtaApi\Api\WebTracking\Identify\Service;
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Repository\SiteRepository;
 use LukaLtaApi\Repository\TrackingUserAliasRepository;
-use LukaLtaApi\Service\CryptService;
+use LukaLtaApi\Service\Contracts\CryptServiceInterface;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
 use LukaLtaApi\Value\Tracking\User\TrackingUser;
@@ -18,7 +18,7 @@ class TrackingUserService
 {
     public function __construct(
         private readonly SiteRepository $siteRepository,
-        private readonly CryptService $cryptService,
+        private readonly CryptServiceInterface $cryptService,
         private readonly TrackingUserAliasRepository $trackingUserAliasRepository,
         private readonly LoggerInterface $logger,
     ) {
