@@ -80,7 +80,7 @@ class LinkCollectionRepository
         return LinkItem::fromDatabase($row);
     }
 
-    public function getById(LinkId $linkId): ?LinkItem
+    public function findById(LinkId $linkId): ?LinkItem
     {
         if ($linkItem = $this->caching->getItem($linkId)) {
             return $linkItem;

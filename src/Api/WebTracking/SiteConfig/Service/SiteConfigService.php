@@ -19,7 +19,7 @@ class SiteConfigService
 
     public function getSite(int $siteId): ApiResult
     {
-        $site = $this->siteRepository->getSite($siteId);
+        $site = $this->siteRepository->findById($siteId);
 
         if (!$site) {
             return ApiResult::from(
@@ -39,7 +39,7 @@ class SiteConfigService
 
     public function getSiteConfig(int $siteId): ApiResult
     {
-        $site = $this->siteRepository->getSite($siteId);
+        $site = $this->siteRepository->findById($siteId);
 
         if (!$site) {
             return ApiResult::from(
@@ -60,7 +60,7 @@ class SiteConfigService
     public function updateSiteConfig(int $siteId, array $parsedBody): ApiResult
     {
         // TODO: Check if domain changed and already exists
-        $site = $this->siteRepository->getSite($siteId);
+        $site = $this->siteRepository->findById($siteId);
 
         if (!$site) {
             return ApiResult::from(

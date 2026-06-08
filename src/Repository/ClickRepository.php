@@ -134,7 +134,7 @@ class ClickRepository
         }
     }
 
-    public function listAll(ClickExtraFilter $filter): PaginatedData
+    public function getAll(ClickExtraFilter $filter): PaginatedData
     {
         $select = $this->queryFactory->select(
             'lc.displayname',

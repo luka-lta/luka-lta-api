@@ -28,7 +28,7 @@ class TrackingUserService
     {
         $body = $request->getParsedBody();
 
-        $siteConfiguration = $this->siteRepository->getSite($body['siteId']);
+        $siteConfiguration = $this->siteRepository->findById($body['siteId']);
         if (!$siteConfiguration) {
             return ApiResult::from(
                 JsonResult::from('Site not found'),
@@ -49,7 +49,7 @@ class TrackingUserService
             $existingAlias = $this->trackingUserAliasRepository->getUserAlias((int)$siteId, $anonymousId);
 
             if (!$existingAlias) {
-                $this->trackingUserAliasRepository->insertUserAlias($trackingUser);
+                $this->trackingUserAliasRepository->create($trackingUser);
 
                 return ApiResult::from(
                     JsonResult::from(

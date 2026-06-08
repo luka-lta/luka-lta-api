@@ -45,7 +45,7 @@ class PreviewTokenService
             $createdBy,
         );
 
-        $this->repository->createToken($token);
+        $this->repository->create($token);
 
         return ApiResult::from(
             JsonResult::from('Token created', ['token' => $token->getToken()]),
@@ -72,7 +72,7 @@ class PreviewTokenService
 
     public function editToken(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $token = $this->repository->getToken($request->getAttribute('tokenId'));
+        $token = $this->repository->findById($request->getAttribute('tokenId'));
 
         if (!$token) {
             return ApiResult::from(
@@ -94,7 +94,7 @@ class PreviewTokenService
 
     public function deleteToken(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $token = $this->repository->getToken($request->getAttribute('tokenId'));
+        $token = $this->repository->findById($request->getAttribute('tokenId'));
 
         if (!$token) {
             return ApiResult::from(
@@ -102,7 +102,7 @@ class PreviewTokenService
             )->getResponse($response);
         }
 
-        $this->repository->deleteToken($token->getToken());
+        $this->repository->delete($token->getToken());
 
         return ApiResult::from(
             JsonResult::from('Token deleted'),

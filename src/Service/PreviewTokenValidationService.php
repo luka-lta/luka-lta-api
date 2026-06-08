@@ -17,7 +17,7 @@ class PreviewTokenValidationService
 
     public function validatePreviewToken(string $token): void
     {
-        $token = $this->tokenRepository->getToken($token);
+        $token = $this->tokenRepository->findById($token);
 
         if (!$token) {
             throw new InvalidPreviewTokenException('Invalid preview token');

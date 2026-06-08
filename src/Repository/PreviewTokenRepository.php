@@ -18,7 +18,7 @@ class PreviewTokenRepository
     ) {
     }
 
-    public function createToken(PreviewToken $token): void
+    public function create(PreviewToken $token): void
     {
         $sql = <<<SQL
             INSERT INTO preview_access_tokens (token, max_uses, is_active, created_by, created_at)
@@ -122,7 +122,7 @@ class PreviewTokenRepository
         }
     }
 
-    public function getToken(string $tokenId): ?PreviewToken
+    public function findById(string $tokenId): ?PreviewToken
     {
         $sql = <<<SQL
             SELECT 
@@ -177,7 +177,7 @@ class PreviewTokenRepository
         }
     }
 
-    public function deleteToken(string $tokenId): void
+    public function delete(string $tokenId): void
     {
         $sql = <<<SQL
             DELETE FROM preview_access_tokens WHERE token = :token
