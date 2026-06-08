@@ -8,7 +8,6 @@ use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Api\User\Value\UserExtraFilter;
 use LukaLtaApi\Exception\ApiAvatarUploadException;
 use LukaLtaApi\Exception\UserAlreadyExistsException;
-use LukaLtaApi\Repository\S3Repository;
 use LukaLtaApi\Repository\UserRepository;
 use LukaLtaApi\Service\AvatarService;
 use LukaLtaApi\Service\UserValidationService;
@@ -26,7 +25,6 @@ class UserService
         private readonly UserRepository $repository,
         private readonly UserValidationService $validationService,
         private readonly AvatarService $avatarService,
-        private readonly S3Repository $s3Repository,
     ) {
     }
 
@@ -129,24 +127,6 @@ class UserService
         return ApiResult::from(
             JsonResult::from('Users fetched successfully', ['users' => $users->toArray()])
         );
-    }
-
-    public function getAvatar(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
-    {
-        $userId = UserId::fromString($request->getAttribute('userId'));
-        $fileData = $this->s3Repository->getAvatarImageFromS3($userId);
-
-        if (!$fileData) {
-            return ApiResult::from(
-                JsonResult::from('Avatar not found'),
-                StatusCodeInterface::STATUS_NOT_FOUND // ✅ korrekter 404-Status
-            )->getResponse($response);
-        }
-
-        $response->getBody()->write($fileData['body']);
-
-        return $response
-            ->withHeader('Content-Type', $fileData['contentType']);
     }
 
     public function deactivateUser(string $userId, ResponseInterface $response): ResponseInterface
