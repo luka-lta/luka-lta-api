@@ -5,7 +5,7 @@ namespace LukaLtaApi\Repository;
 use Latitude\QueryBuilder\QueryFactory;
 use LukaLtaApi\Api\LinkCollection\Value\LinkTreeExtraFilter;
 use LukaLtaApi\Exception\ApiDatabaseException;
-use LukaLtaApi\Service\LinkItemCachingService;
+use LukaLtaApi\Service\Contracts\LinkItemCachingServiceInterface;
 use LukaLtaApi\Value\LinkCollection\LinkId;
 use LukaLtaApi\Value\LinkCollection\LinkItem;
 use LukaLtaApi\Value\LinkCollection\LinkItems;
@@ -17,7 +17,7 @@ class LinkCollectionRepository
 {
     public function __construct(
         private readonly PDO $pdo,
-        private readonly LinkItemCachingService $caching,
+        private readonly LinkItemCachingServiceInterface $caching,
         private readonly QueryFactory $queryFactory,
     ) {
     }

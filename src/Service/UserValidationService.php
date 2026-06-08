@@ -6,10 +6,11 @@ namespace LukaLtaApi\Service;
 
 use LukaLtaApi\Exception\UserAlreadyExistsException;
 use LukaLtaApi\Repository\UserRepository;
+use LukaLtaApi\Service\Contracts\UserValidationServiceInterface;
 use LukaLtaApi\Value\User\UserEmail;
 use LukaLtaApi\Value\User\UserId;
 
-class UserValidationService
+class UserValidationService implements UserValidationServiceInterface
 {
     public function __construct(
         private readonly UserRepository $userRepository,

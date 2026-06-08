@@ -5,7 +5,7 @@ namespace LukaLtaApi\Api\Auth\Service;
 use DateTimeImmutable;
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Repository\UserRepository;
-use LukaLtaApi\Service\TokenService;
+use LukaLtaApi\Service\Contracts\TokenServiceInterface;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
 use LukaLtaApi\Value\User\UserEmail;
@@ -15,7 +15,7 @@ class AuthService
 {
     public function __construct(
         private readonly UserRepository $repository,
-        private readonly TokenService $tokenService,
+        private readonly TokenServiceInterface $tokenService,
     ) {
     }
 

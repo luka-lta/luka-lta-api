@@ -7,10 +7,11 @@ namespace LukaLtaApi\Service;
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Exception\ApiAvatarUploadException;
 use LukaLtaApi\Repository\S3Repository;
+use LukaLtaApi\Service\Contracts\AvatarServiceInterface;
 use LukaLtaApi\Value\User\UserId;
 use Slim\Psr7\UploadedFile;
 
-class AvatarService
+class AvatarService implements AvatarServiceInterface
 {
     public function __construct(
         private readonly S3Repository $s3Repository,

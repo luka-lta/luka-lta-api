@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace LukaLtaApi\Service;
 
-class CryptService
+use LukaLtaApi\Service\Contracts\CryptServiceInterface;
+
+class CryptService implements CryptServiceInterface
 {
     public function generateAnonymousId(string $ipAddress, string $userAgent): string
     {
