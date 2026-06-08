@@ -3,14 +3,14 @@
 namespace LukaLtaApi\Api\Click\Action;
 
 use LukaLtaApi\Api\ApiAction;
-use LukaLtaApi\Api\Click\Service\ClickService;
+use LukaLtaApi\Api\Click\Service\ClickAnalyticsService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 class GetClicksStatsAction extends ApiAction
 {
     public function __construct(
-        private readonly ClickService $service
+        private readonly ClickAnalyticsService $service
     ) {
     }
 
