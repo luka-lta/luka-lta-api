@@ -30,10 +30,6 @@ class ApiResult
 
         return $response
             ->withStatus($this->statusCode)
-            ->withHeader('Content-Type', 'application/json')
-            ->withHeader('Access-Control-Allow-Origin', '*')
-            ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-            ->withHeader('Access-Control-Allow-Headers', '*')
-            ->withHeader('Access-Control-Max-Age', '86400');
+            ->withHeader('Content-Type', 'application/json');
     }
 }
