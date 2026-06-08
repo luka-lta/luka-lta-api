@@ -38,7 +38,7 @@ class LinkCollectionService
         }
 
         $linkId = LinkId::fromString($attributes['linkId']);
-        $link = $this->repository->getById($linkId);
+        $link = $this->repository->findById($linkId);
 
         if ($link === null) {
             return ApiResult::from(
@@ -112,7 +112,7 @@ class LinkCollectionService
         }
 
         $linkId = LinkId::fromString($params['linkId']);
-        $link = $this->repository->getById($linkId);
+        $link = $this->repository->findById($linkId);
 
         if (!$link) {
             return ApiResult::from(
@@ -133,7 +133,7 @@ class LinkCollectionService
     {
         $linkId = (int)$request->getAttribute('linkId');
 
-        $linkItem = $this->repository->getById(LinkId::fromInt($linkId));
+        $linkItem = $this->repository->findById(LinkId::fromInt($linkId));
 
         if (!$linkItem) {
             return ApiResult::from(

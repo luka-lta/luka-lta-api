@@ -45,7 +45,7 @@ class TrackingUserAliasRepository
         return $result;
     }
 
-    public function insertUserAlias(TrackingUser $user): void
+    public function create(TrackingUser $user): void
     {
         $sql = <<<SQL
             INSERT INTO 

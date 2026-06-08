@@ -58,7 +58,7 @@ class ApiKeyRepository
         $this->addPermissions($keyId, $keyObject->getPermissions());
     }
 
-    public function loadAll(ApiKeyExtraFilter $filter): ApiKeyObjects
+    public function getAll(ApiKeyExtraFilter $filter): ApiKeyObjects
     {
         $select = $this->queryFactory
             ->select(

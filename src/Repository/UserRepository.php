@@ -192,7 +192,7 @@ class UserRepository
         return Users::from(...$users);
     }
 
-    public function deleteUser(UserId $userId): void
+    public function delete(UserId $userId): void
     {
         $sql = <<<SQL
             DELETE FROM users WHERE user_id = :user_id

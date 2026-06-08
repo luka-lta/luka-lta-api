@@ -193,7 +193,7 @@ class UserService
             )->getResponse($response);
         }
 
-        $this->repository->deleteUser(UserId::fromString($userId));
+        $this->repository->delete(UserId::fromString($userId));
 
         return ApiResult::from(
             JsonResult::from('User deleted'),
