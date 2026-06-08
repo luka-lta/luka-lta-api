@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace LukaLtaApi\Api\User\Action;
 
 use LukaLtaApi\Api\ApiAction;
-use LukaLtaApi\Api\User\Service\UserService;
+use LukaLtaApi\Api\User\Service\UserAvatarService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 class GetAvatarAction extends ApiAction
 {
     public function __construct(
-        private readonly UserService $service,
+        private readonly UserAvatarService $service,
     ) {
     }
 
