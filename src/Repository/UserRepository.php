@@ -2,10 +2,10 @@
 
 namespace LukaLtaApi\Repository;
 
-use Fig\Http\Message\StatusCodeInterface;
 use Latitude\QueryBuilder\QueryFactory;
 use LukaLtaApi\Api\User\Value\UserExtraFilter;
 use LukaLtaApi\Exception\ApiDatabaseException;
+use LukaLtaApi\Repository\Contracts\UserRepositoryInterface;
 use LukaLtaApi\Value\User\User;
 use LukaLtaApi\Value\User\UserEmail;
 use LukaLtaApi\Value\User\UserId;
@@ -13,8 +13,9 @@ use LukaLtaApi\Value\User\Users;
 use PDO;
 use PDOException;
 
-class UserRepository
+class UserRepository implements UserRepositoryInterface
 {
+    use TransactionTrait;
     public function __construct(
         private readonly PDO $pdo,
         private readonly QueryFactory $queryFactory,
@@ -28,8 +29,7 @@ class UserRepository
             VALUES (:email, :username, :password, :avatar_url)
         SQL;
 
-        $this->pdo->beginTransaction();
-        try {
+        $this->executeInTransaction(function () use ($sql, $user): void {
             $statement = $this->pdo->prepare($sql);
             $statement->execute([
                 'email' => $user->getEmail()->asString(),
@@ -37,15 +37,7 @@ class UserRepository
                 'password' => $user->getPassword()->asString(),
                 'avatar_url' => $user->getAvatarUrl(),
             ]);
-            $this->pdo->commit();
-        } catch (PDOException $e) {
-            $this->pdo->rollBack();
-            throw new ApiDatabaseException(
-                'Failed to create user',
-                StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR,
-                $e
-            );
-        }
+        });
     }
 
     public function update(User $user): void
@@ -62,8 +54,7 @@ class UserRepository
             WHERE user_id = :user_id
         SQL;
 
-        $this->pdo->beginTransaction();
-        try {
+        $this->executeInTransaction(function () use ($sql, $user): void {
             $statement = $this->pdo->prepare($sql);
             $statement->execute([
                 'username' => $user->getUsername(),
@@ -74,15 +65,7 @@ class UserRepository
                 'is_active' => (int)$user->isActive(),
                 'last_active' => $user->getLastActive()?->format('Y-m-d H:i:s'),
             ]);
-            $this->pdo->commit();
-        } catch (PDOException $e) {
-            $this->pdo->rollBack();
-            throw new ApiDatabaseException(
-                'Failed to update user',
-                StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR,
-                $e
-            );
-        }
+        });
     }
 
     public function findByEmail(UserEmail $email, ?UserId $excludeUserId = null): ?User
@@ -192,23 +175,15 @@ class UserRepository
         return Users::from(...$users);
     }
 
-    public function deleteUser(UserId $userId): void
+    public function delete(UserId $userId): void
     {
         $sql = <<<SQL
             DELETE FROM users WHERE user_id = :user_id
         SQL;
 
-        $this->pdo->beginTransaction();
-        try {
+        $this->executeInTransaction(function () use ($sql, $userId): void {
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute(['user_id' => $userId->asInt()]);
-            $this->pdo->commit();
-        } catch (PDOException $exception) {
-            $this->pdo->rollBack();
-            throw new ApiDatabaseException(
-                'Failed to delete user',
-                previous: $exception
-            );
-        }
+        });
     }
 }

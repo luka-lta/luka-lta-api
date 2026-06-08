@@ -4,19 +4,20 @@ namespace LukaLtaApi\Repository;
 
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Exception\ApiDatabaseException;
+use LukaLtaApi\Repository\Contracts\SiteRepositoryInterface;
 use LukaLtaApi\Value\WebTracking\Config\SiteConfig;
 use LukaLtaApi\Value\WebTracking\Site\Site;
 use PDO;
 use PDOException;
 
-class SiteRepository
+class SiteRepository implements SiteRepositoryInterface
 {
     public function __construct(
         private readonly PDO $pdo,
     ) {
     }
 
-    public function getSite(int $siteId): ?Site
+    public function findById(int $siteId): ?Site
     {
         $sql = <<<SQL
             SELECT * FROM sites WHERE site_id = :siteId

@@ -8,8 +8,8 @@ use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Exception\ApiAvatarUploadException;
 use LukaLtaApi\Exception\UserAlreadyExistsException;
 use LukaLtaApi\Repository\UserRepository;
-use LukaLtaApi\Service\AvatarService;
-use LukaLtaApi\Service\UserValidationService;
+use LukaLtaApi\Service\Contracts\AvatarServiceInterface;
+use LukaLtaApi\Service\Contracts\UserValidationServiceInterface;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
 use LukaLtaApi\Value\User\UserEmail;
@@ -21,8 +21,8 @@ class SelfUserService
 {
     public function __construct(
         private readonly UserRepository        $repository,
-        private readonly UserValidationService $validationService,
-        private readonly AvatarService         $avatarService,
+        private readonly UserValidationServiceInterface $validationService,
+        private readonly AvatarServiceInterface         $avatarService,
     ) {
     }
 

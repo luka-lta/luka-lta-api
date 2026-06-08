@@ -6,9 +6,10 @@ namespace LukaLtaApi\Service;
 
 use LukaLtaApi\Exception\InvalidPreviewTokenException;
 use LukaLtaApi\Repository\PreviewTokenRepository;
+use LukaLtaApi\Service\Contracts\PreviewTokenValidationServiceInterface;
 use LukaLtaApi\Value\Preview\PreviewToken;
 
-class PreviewTokenValidationService
+class PreviewTokenValidationService implements PreviewTokenValidationServiceInterface
 {
     public function __construct(
         private readonly PreviewTokenRepository $tokenRepository,
@@ -17,7 +18,7 @@ class PreviewTokenValidationService
 
     public function validatePreviewToken(string $token): void
     {
-        $token = $this->tokenRepository->getToken($token);
+        $token = $this->tokenRepository->findById($token);
 
         if (!$token) {
             throw new InvalidPreviewTokenException('Invalid preview token');

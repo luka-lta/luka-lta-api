@@ -78,7 +78,7 @@ class ClickService
     public function getAllClicks(ServerRequestInterface $request): ApiResult
     {
         $filter = ClickExtraFilter::parseFromQuery($request->getQueryParams());
-        $clicks = $this->repository->listAll($filter);
+        $clicks = $this->repository->getAll($filter);
         /** @var Clicks $clicksData */
         $clicksData = $clicks->getData();
 

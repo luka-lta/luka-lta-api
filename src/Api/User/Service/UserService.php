@@ -9,8 +9,8 @@ use LukaLtaApi\Api\User\Value\UserExtraFilter;
 use LukaLtaApi\Exception\ApiAvatarUploadException;
 use LukaLtaApi\Exception\UserAlreadyExistsException;
 use LukaLtaApi\Repository\UserRepository;
-use LukaLtaApi\Service\AvatarService;
-use LukaLtaApi\Service\UserValidationService;
+use LukaLtaApi\Service\Contracts\AvatarServiceInterface;
+use LukaLtaApi\Service\Contracts\UserValidationServiceInterface;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
 use LukaLtaApi\Value\User\User;
@@ -173,7 +173,7 @@ class UserService
             )->getResponse($response);
         }
 
-        $this->repository->deleteUser(UserId::fromString($userId));
+        $this->repository->delete(UserId::fromString($userId));
 
         return ApiResult::from(
             JsonResult::from('User deleted'),

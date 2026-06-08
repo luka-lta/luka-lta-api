@@ -6,6 +6,6 @@ namespace LukaLtaApi\Exception;
 
 use LukaLtaApi\Exception\ApiException;
 
-class ApiInvalidFIleTypeException extends ApiException
+class ApiInvalidFileTypeException extends ApiException
 {
 }

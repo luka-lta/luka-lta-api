@@ -8,9 +8,10 @@ use Fig\Http\Message\StatusCodeInterface;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use LukaLtaApi\Exception\ApiHttpException;
+use LukaLtaApi\Repository\Contracts\GeoLocationRepositoryInterface;
 use LukaLtaApi\Value\GeoLocation;
 
-class GeoLocationRepository
+class GeoLocationRepository implements GeoLocationRepositoryInterface
 {
     public function __construct(
         private readonly Client $client,

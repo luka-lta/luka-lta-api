@@ -6,10 +6,11 @@ namespace LukaLtaApi\Repository;
 
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Exception\ApiDatabaseException;
+use LukaLtaApi\Repository\Contracts\TrackingUserRepositoryInterface;
 use PDO;
 use PDOException;
 
-class TrackingUserRepository
+class TrackingUserRepository implements TrackingUserRepositoryInterface
 {
     public function __construct(
         private readonly PDO $pdo,

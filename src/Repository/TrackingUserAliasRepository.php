@@ -6,11 +6,12 @@ namespace LukaLtaApi\Repository;
 
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Exception\ApiDatabaseException;
+use LukaLtaApi\Repository\Contracts\TrackingUserAliasRepositoryInterface;
 use LukaLtaApi\Value\Tracking\User\TrackingUser;
 use PDO;
 use PDOException;
 
-class TrackingUserAliasRepository
+class TrackingUserAliasRepository implements TrackingUserAliasRepositoryInterface
 {
     public function __construct(
         private readonly PDO $pdo,
@@ -45,7 +46,7 @@ class TrackingUserAliasRepository
         return $result;
     }
 
-    public function insertUserAlias(TrackingUser $user): void
+    public function create(TrackingUser $user): void
     {
         $sql = <<<SQL
             INSERT INTO 

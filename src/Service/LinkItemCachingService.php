@@ -2,12 +2,13 @@
 
 namespace LukaLtaApi\Service;
 
+use LukaLtaApi\Service\Contracts\LinkItemCachingServiceInterface;
 use LukaLtaApi\Value\LinkCollection\LinkId;
 use LukaLtaApi\Value\LinkCollection\LinkItem;
 use Redis;
 use RedisException;
 
-class LinkItemCachingService
+class LinkItemCachingService implements LinkItemCachingServiceInterface
 {
     public const string HASH_KEY = 'link_items';
 

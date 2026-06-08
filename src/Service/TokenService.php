@@ -3,11 +3,12 @@
 namespace LukaLtaApi\Service;
 
 use LukaLtaApi\Repository\EnvironmentRepository;
+use LukaLtaApi\Service\Contracts\TokenServiceInterface;
 use LukaLtaApi\Value\User\User;
 use ReallySimpleJWT\Jwt;
 use ReallySimpleJWT\Token;
 
-class TokenService
+class TokenService implements TokenServiceInterface
 {
     public function __construct(
         private readonly EnvironmentRepository $environmentRepository,

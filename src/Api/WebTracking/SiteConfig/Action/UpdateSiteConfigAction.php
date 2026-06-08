@@ -10,7 +10,7 @@ use LukaLtaApi\Api\WebTracking\SiteConfig\Service\SiteConfigService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-class UpdateSiteConfig extends ApiAction
+class UpdateSiteConfigAction extends ApiAction
 {
     public function __construct(
         private readonly RequestValidator $requestValidator,

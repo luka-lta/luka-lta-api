@@ -8,11 +8,12 @@ use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Exception\ApiDatabaseException;
 use LukaLtaApi\Exception\InvalidSessionResultException;
 use LukaLtaApi\QueryBuilder\Value\QueryContext;
+use LukaLtaApi\Repository\Contracts\SessionRepositoryInterface;
 use LukaLtaApi\Value\Tracking\TrackingSession;
 use PDO;
 use PDOException;
 
-class SessionRepository
+class SessionRepository implements SessionRepositoryInterface
 {
     public function __construct(
         private readonly PDO $pdo,
