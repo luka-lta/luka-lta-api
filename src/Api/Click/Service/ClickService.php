@@ -15,7 +15,6 @@ use LukaLtaApi\Value\Tracking\Click;
 use LukaLtaApi\Value\Tracking\ClickMetadata;
 use LukaLtaApi\Value\Tracking\Clicks;
 use LukaLtaApi\Value\Tracking\ClickTag;
-use LukaLtaApi\Value\Tracking\UserAgent;
 use Psr\Http\Message\ServerRequestInterface;
 
 class ClickService
@@ -59,22 +58,6 @@ class ClickService
         );
     }
 
-    public function getClicksStats(ServerRequestInterface $request): ApiResult
-    {
-        $startDate = new DateTimeImmutable($request->getQueryParams()['startDate'] ?? 'now');
-        $endDate = new DateTimeImmutable($request->getQueryParams()['endDate'] ?? 'now');
-
-        $clicks = $this->repository->listStats($startDate, $endDate);
-
-        if (empty($clicks)) {
-            return ApiResult::from(
-                JsonResult::from('No clicks found', ['clicks' => []]),
-            );
-        }
-
-        return ApiResult::from(JsonResult::from('Clicks found', ['clicks' => $clicks]));
-    }
-
     public function getAllClicks(ServerRequestInterface $request): ApiResult
     {
         $filter = ClickExtraFilter::parseFromQuery($request->getQueryParams());
@@ -89,19 +72,5 @@ class ClickService
         }
 
         return ApiResult::from(JsonResult::from('Clicks found', ['clicks' => $clicksData->toFrontend()]));
-    }
-
-    public function getClickSummary(): ApiResult
-    {
-        $summary = $this->repository->getSummary();
-
-        return ApiResult::from(JsonResult::from('Summary found', ['summary' => $summary->toArray()]));
-    }
-
-    public function getFilters(): ApiResult
-    {
-        $filters = $this->repository->getFilters();
-
-        return ApiResult::from(JsonResult::from('Filters found', ['filters' => $filters->toArray()]));
     }
 }
