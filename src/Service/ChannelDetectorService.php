@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace LukaLtaApi\Service;
 
-class ChannelDetectorService
+use LukaLtaApi\Service\Contracts\ChannelDetectorServiceInterface;
+
+class ChannelDetectorService implements ChannelDetectorServiceInterface
 {
     public function detectChannel(
         ?string $referrer,

@@ -25,7 +25,7 @@ class ClickRepository implements ClickRepositoryInterface
     public function __construct(
         private readonly PDO $pdo,
         private readonly QueryFactory $queryFactory,
-        private readonly PaginationService $paginationService,
+        private readonly PaginationServiceInterface $paginationService,
     ) {
     }
 
@@ -135,7 +135,7 @@ class ClickRepository implements ClickRepositoryInterface
         }
     }
 
-    public function listAll(ClickExtraFilter $filter): PaginatedData
+    public function getAll(ClickExtraFilter $filter): PaginatedData
     {
         $select = $this->queryFactory->select(
             'lc.displayname',

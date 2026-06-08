@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace LukaLtaApi\Service;
 
 use LukaLtaApi\Repository\ApiKeyRepository;
+use LukaLtaApi\Service\Contracts\PermissionServiceInterface;
 use LukaLtaApi\Value\ApiKey\KeyId;
 
-class PermissionService
+class PermissionService implements PermissionServiceInterface
 {
     public function __construct(
         private readonly ApiKeyRepository $repository

@@ -17,7 +17,7 @@ class SiteRepository implements SiteRepositoryInterface
     ) {
     }
 
-    public function getSite(int $siteId): ?Site
+    public function findById(int $siteId): ?Site
     {
         $sql = <<<SQL
             SELECT * FROM sites WHERE site_id = :siteId

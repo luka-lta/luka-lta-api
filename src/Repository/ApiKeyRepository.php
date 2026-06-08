@@ -60,7 +60,7 @@ class ApiKeyRepository implements ApiKeyRepositoryInterface
         $this->addPermissions($keyId, $keyObject->getPermissions());
     }
 
-    public function loadAll(ApiKeyExtraFilter $filter): ApiKeyObjects
+    public function getAll(ApiKeyExtraFilter $filter): ApiKeyObjects
     {
         $select = $this->queryFactory
             ->select(

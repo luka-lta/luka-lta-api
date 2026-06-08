@@ -61,7 +61,7 @@ class ApiKeyService
     public function getAllKeys(ServerRequestInterface $request): ApiResult
     {
         $filter = ApiKeyExtraFilter::parseFromQuery($request->getQueryParams());
-        $apiKeys = $this->repository->loadAll($filter);
+        $apiKeys = $this->repository->getAll($filter);
 
         if ($apiKeys->count() === 0) {
             return ApiResult::from(

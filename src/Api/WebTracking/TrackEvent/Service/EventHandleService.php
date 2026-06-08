@@ -8,8 +8,8 @@ use DateTimeImmutable;
 use LukaLtaApi\Api\WebTracking\TrackEvent\Repository\TrackEventRepository;
 use LukaLtaApi\Repository\GeoLocationRepository;
 use LukaLtaApi\Repository\SessionRepository;
-use LukaLtaApi\Service\ChannelDetectorService;
-use LukaLtaApi\Service\CryptService;
+use LukaLtaApi\Service\Contracts\ChannelDetectorServiceInterface;
+use LukaLtaApi\Service\Contracts\CryptServiceInterface;
 use LukaLtaApi\Value\Device;
 use LukaLtaApi\Value\GeoLocation;
 use LukaLtaApi\Value\UserAgent;
@@ -21,9 +21,9 @@ use Throwable;
 class EventHandleService
 {
     public function __construct(
-        private readonly ChannelDetectorService $channelDetector,
-        private readonly TrackEventRepository   $trackEventRepository,
-        private readonly CryptService           $cryptService,
+        private readonly ChannelDetectorServiceInterface $channelDetector,
+        private readonly TrackEventRepository            $trackEventRepository,
+        private readonly CryptServiceInterface           $cryptService,
         private readonly SessionRepository      $sessionRepository,
         private readonly GeoLocationRepository  $geoLocationRepository,
     ) {

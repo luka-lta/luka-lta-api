@@ -9,8 +9,8 @@ use LukaLtaApi\Exception\InvalidPreviewTokenException;
 use LukaLtaApi\Exception\UserAlreadyExistsException;
 use LukaLtaApi\Repository\PreviewTokenRepository;
 use LukaLtaApi\Repository\UserRepository;
-use LukaLtaApi\Service\PreviewTokenValidationService;
-use LukaLtaApi\Service\UserValidationService;
+use LukaLtaApi\Service\Contracts\PreviewTokenValidationServiceInterface;
+use LukaLtaApi\Service\Contracts\UserValidationServiceInterface;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
 use LukaLtaApi\Value\User\User;
@@ -21,8 +21,8 @@ class RegisterService
 {
     public function __construct(
         private readonly UserRepository $userRepository,
-        private readonly UserValidationService $userValidationService,
-        private readonly PreviewTokenValidationService $previewTokenValidationService,
+        private readonly UserValidationServiceInterface $userValidationService,
+        private readonly PreviewTokenValidationServiceInterface $previewTokenValidationService,
     ) {
     }
 

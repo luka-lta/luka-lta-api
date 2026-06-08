@@ -18,7 +18,7 @@ class LinkCollectionRepository implements LinkCollectionRepositoryInterface
 {
     public function __construct(
         private readonly PDO $pdo,
-        private readonly LinkItemCachingService $caching,
+        private readonly LinkItemCachingServiceInterface $caching,
         private readonly QueryFactory $queryFactory,
     ) {
     }
@@ -81,7 +81,7 @@ class LinkCollectionRepository implements LinkCollectionRepositoryInterface
         return LinkItem::fromDatabase($row);
     }
 
-    public function getById(LinkId $linkId): ?LinkItem
+    public function findById(LinkId $linkId): ?LinkItem
     {
         if ($linkItem = $this->caching->getItem($linkId)) {
             return $linkItem;

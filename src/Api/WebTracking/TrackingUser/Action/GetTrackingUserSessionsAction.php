@@ -6,11 +6,10 @@ namespace LukaLtaApi\Api\WebTracking\TrackingUser\Action;
 
 use LukaLtaApi\Api\ApiAction;
 use LukaLtaApi\Api\WebTracking\TrackingUser\Service\TrackingUserService;
-use LukaLtaApi\Value\Tracking\User\TrackingUser;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-class GetTrackingUserSessions extends ApiAction
+class GetTrackingUserSessionsAction extends ApiAction
 {
     public function __construct(
         private readonly TrackingUserService $trackingUserService,
