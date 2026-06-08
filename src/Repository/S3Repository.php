@@ -9,10 +9,11 @@ use Aws\S3\Exception\S3Exception;
 use Aws\S3\S3Client;
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Exception\ApiDatabaseException;
+use LukaLtaApi\Repository\Contracts\S3RepositoryInterface;
 use LukaLtaApi\Value\User\UserId;
 use Psr\Http\Message\UploadedFileInterface;
 
-class S3Repository
+class S3Repository implements S3RepositoryInterface
 {
     private readonly string $awsBucket;
 

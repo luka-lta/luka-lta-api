@@ -6,11 +6,12 @@ namespace LukaLtaApi\Repository;
 
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Exception\ApiDatabaseException;
+use LukaLtaApi\Repository\Contracts\SiteMetricRepositoryInterface;
 use LukaLtaApi\Value\Filter\FilterQueryBuilder;
 use PDO;
 use PDOException;
 
-class SiteMetricRepository
+class SiteMetricRepository implements SiteMetricRepositoryInterface
 {
     public function __construct(
         private readonly PDO $pdo,

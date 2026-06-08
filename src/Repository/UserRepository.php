@@ -6,6 +6,7 @@ use Fig\Http\Message\StatusCodeInterface;
 use Latitude\QueryBuilder\QueryFactory;
 use LukaLtaApi\Api\User\Value\UserExtraFilter;
 use LukaLtaApi\Exception\ApiDatabaseException;
+use LukaLtaApi\Repository\Contracts\UserRepositoryInterface;
 use LukaLtaApi\Value\User\User;
 use LukaLtaApi\Value\User\UserEmail;
 use LukaLtaApi\Value\User\UserId;
@@ -13,7 +14,7 @@ use LukaLtaApi\Value\User\Users;
 use PDO;
 use PDOException;
 
-class UserRepository
+class UserRepository implements UserRepositoryInterface
 {
     public function __construct(
         private readonly PDO $pdo,

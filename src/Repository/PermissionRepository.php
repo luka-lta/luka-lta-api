@@ -6,12 +6,13 @@ namespace LukaLtaApi\Repository;
 
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Exception\ApiDatabaseException;
+use LukaLtaApi\Repository\Contracts\PermissionRepositoryInterface;
 use LukaLtaApi\Value\Permission\Permission;
 use LukaLtaApi\Value\Permission\Permissions;
 use PDO;
 use PDOException;
 
-class PermissionRepository
+class PermissionRepository implements PermissionRepositoryInterface
 {
     public function __construct(
         private readonly PDO $pdo,
