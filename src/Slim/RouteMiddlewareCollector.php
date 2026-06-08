@@ -15,7 +15,7 @@ use LukaLtaApi\Api\LinkCollection\Action\CreateLinkAction;
 use LukaLtaApi\Api\LinkCollection\Action\DisableLinkAction;
 use LukaLtaApi\Api\LinkCollection\Action\EditLinkAction;
 use LukaLtaApi\Api\LinkCollection\Action\GetAllLinksAction;
-use LukaLtaApi\Api\LinkCollection\Action\GetDetailLink;
+use LukaLtaApi\Api\LinkCollection\Action\GetDetailLinkAction;
 use LukaLtaApi\Api\Permission\Action\GetPermissionsAction;
 use LukaLtaApi\Api\PreviewToken\Action\CreatePreviewTokenAction;
 use LukaLtaApi\Api\PreviewToken\Action\DeletePreviewTokenAction;
@@ -34,15 +34,15 @@ use LukaLtaApi\Api\User\Action\UpdateProfileAction;
 use LukaLtaApi\Api\WebTracking\Identify\Action\IdentifyTrackingUserAction;
 use LukaLtaApi\Api\WebTracking\Metric\Action\GetMetricAction;
 use LukaLtaApi\Api\WebTracking\Site\Action\CreateSiteAction;
-use LukaLtaApi\Api\WebTracking\Site\Action\GetSite;
-use LukaLtaApi\Api\WebTracking\SiteConfig\Action\GetSiteConfig;
-use LukaLtaApi\Api\WebTracking\SiteConfig\Action\UpdateSiteConfig;
+use LukaLtaApi\Api\WebTracking\Site\Action\GetSiteAction;
+use LukaLtaApi\Api\WebTracking\SiteConfig\Action\GetSiteConfigAction;
+use LukaLtaApi\Api\WebTracking\SiteConfig\Action\UpdateSiteConfigAction;
 use LukaLtaApi\Api\WebTracking\TrackEvent\Action\TrackEventAction;
 use LukaLtaApi\Api\WebTracking\TrackingScript\Action\GetTrackingScriptAction;
 use LukaLtaApi\Api\WebTracking\TrackingUser\Action\GetSessionAction;
 use LukaLtaApi\Api\WebTracking\TrackingUser\Action\GetTrackingUserAction;
 use LukaLtaApi\Api\WebTracking\TrackingUser\Action\GetTrackingUsersAction;
-use LukaLtaApi\Api\WebTracking\TrackingUser\Action\GetTrackingUserSessions;
+use LukaLtaApi\Api\WebTracking\TrackingUser\Action\GetTrackingUserSessionsAction;
 use LukaLtaApi\Service\PermissionService;
 use LukaLtaApi\Slim\Middleware\ApiKeyPermissionMiddleware;
 use LukaLtaApi\Slim\Middleware\AuthMiddleware;
@@ -157,7 +157,7 @@ class RouteMiddlewareCollector
                         $app->getContainer()?->get(PermissionService::class),
                         [Permission::VIEW_LINKS]
                     ));
-                $linkCollection->get('/{linkId:[0-9]+}', GetDetailLink::class)
+                $linkCollection->get('/{linkId:[0-9]+}', GetDetailLinkAction::class)
                     ->add(new ApiKeyPermissionMiddleware(
                         $app->getContainer()?->get(PermissionService::class),
                         [Permission::VIEW_LINKS]
@@ -255,14 +255,14 @@ class RouteMiddlewareCollector
 
             $app->group('/site', function (RouteCollectorProxy $site) use ($app) {
                 $site->post('/', CreateSiteAction::class)->add(AuthMiddleware::class);
-                $site->get('/{siteId:[0-9]+}/tracking-config', GetSiteConfig::class);
+                $site->get('/{siteId:[0-9]+}/tracking-config', GetSiteConfigAction::class);
                 $site->get('/{siteId:[0-9]+}/metric', GetMetricAction::class)
                     ->add(AuthMiddleware::class);
-                $site->get('/{siteId:[0-9]+}', GetSite::class)
+                $site->get('/{siteId:[0-9]+}', GetSiteAction::class)
                     ->add(AuthMiddleware::class);
-                $site->post('/{siteId:[0-9]+}/tracking-config', UpdateSiteConfig::class)
+                $site->post('/{siteId:[0-9]+}/tracking-config', UpdateSiteConfigAction::class)
                     ->add(AuthMiddleware::class);
-                $site->get('/{siteId:[0-9]+}/sessions', GetTrackingUserSessions::class)
+                $site->get('/{siteId:[0-9]+}/sessions', GetTrackingUserSessionsAction::class)
                     ->add(AuthMiddleware::class);
                 $site->get('/{siteId:[0-9]+}/sessions/{sessionId:[0-9A-Z-a-z]+}', GetSessionAction::class)
                     ->add(AuthMiddleware::class);
