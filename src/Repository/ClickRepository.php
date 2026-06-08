@@ -8,7 +8,8 @@ use Latitude\QueryBuilder\QueryFactory;
 use LukaLtaApi\Api\Click\Value\ClickExtraFilter;
 use LukaLtaApi\Api\Click\Value\ClicksFilter;
 use LukaLtaApi\Exception\ApiDatabaseException;
-use LukaLtaApi\Service\Contracts\PaginationServiceInterface;
+use LukaLtaApi\Repository\Contracts\ClickRepositoryInterface;
+use LukaLtaApi\Service\PaginationService;
 use LukaLtaApi\Value\PaginatedData;
 use LukaLtaApi\Value\Tracking\Click;
 use LukaLtaApi\Value\Tracking\Clicks;
@@ -19,7 +20,7 @@ use PDOException;
 use function Latitude\QueryBuilder\alias;
 use function Latitude\QueryBuilder\on;
 
-class ClickRepository
+class ClickRepository implements ClickRepositoryInterface
 {
     public function __construct(
         private readonly PDO $pdo,

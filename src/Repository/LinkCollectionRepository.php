@@ -5,7 +5,8 @@ namespace LukaLtaApi\Repository;
 use Latitude\QueryBuilder\QueryFactory;
 use LukaLtaApi\Api\LinkCollection\Value\LinkTreeExtraFilter;
 use LukaLtaApi\Exception\ApiDatabaseException;
-use LukaLtaApi\Service\Contracts\LinkItemCachingServiceInterface;
+use LukaLtaApi\Repository\Contracts\LinkCollectionRepositoryInterface;
+use LukaLtaApi\Service\LinkItemCachingService;
 use LukaLtaApi\Value\LinkCollection\LinkId;
 use LukaLtaApi\Value\LinkCollection\LinkItem;
 use LukaLtaApi\Value\LinkCollection\LinkItems;
@@ -13,7 +14,7 @@ use LukaLtaApi\Value\Tracking\ClickTag;
 use PDO;
 use PDOException;
 
-class LinkCollectionRepository
+class LinkCollectionRepository implements LinkCollectionRepositoryInterface
 {
     public function __construct(
         private readonly PDO $pdo,

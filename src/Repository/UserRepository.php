@@ -4,7 +4,8 @@ namespace LukaLtaApi\Repository;
 
 use Latitude\QueryBuilder\QueryFactory;
 use LukaLtaApi\Api\User\Value\UserExtraFilter;
-use LukaLtaApi\Repository\Traits\TransactionTrait;
+use LukaLtaApi\Exception\ApiDatabaseException;
+use LukaLtaApi\Repository\Contracts\UserRepositoryInterface;
 use LukaLtaApi\Value\User\User;
 use LukaLtaApi\Value\User\UserEmail;
 use LukaLtaApi\Value\User\UserId;
@@ -12,7 +13,7 @@ use LukaLtaApi\Value\User\Users;
 use PDO;
 use PDOException;
 
-class UserRepository
+class UserRepository implements UserRepositoryInterface
 {
     use TransactionTrait;
     public function __construct(

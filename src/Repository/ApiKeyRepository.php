@@ -17,12 +17,14 @@ use LukaLtaApi\Value\Permission\Permissions;
 use PDO;
 use PDOException;
 
+use LukaLtaApi\Repository\Contracts\ApiKeyRepositoryInterface;
+
 use function Latitude\QueryBuilder\alias;
 use function Latitude\QueryBuilder\express;
 use function Latitude\QueryBuilder\identify;
 use function Latitude\QueryBuilder\on;
 
-class ApiKeyRepository
+class ApiKeyRepository implements ApiKeyRepositoryInterface
 {
     public function __construct(
         private readonly PDO $pdo,
