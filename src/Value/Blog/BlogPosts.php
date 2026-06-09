@@ -26,16 +26,7 @@ class BlogPosts implements IteratorAggregate, JsonSerializable, Countable
         $blogPosts = [];
 
         foreach ($this->blogPosts as $blogPost) {
-            $blogPosts[] = [
-                'blogId' => $blogPost->getBlogId(),
-                'title' => $blogPost->getTitle(),
-                'excerpt' => $blogPost->getExcerpt(),
-                'content' => $blogPost->getContent()->toHtml(),
-                'createdAt' => $blogPost->getCreatedAt()->format('Y-m-d H:i:s'),
-                'updatedAt' => $blogPost->getUpdatedAt()?->format('Y-m-d H:i:s'),
-                'isPublished' => $blogPost->isPublished(),
-                'user' => $blogPost->getUser()->toArray(),
-            ];
+            $blogPosts[] = $blogPost->toArray();
         }
 
         return $blogPosts;

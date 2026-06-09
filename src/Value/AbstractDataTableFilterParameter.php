@@ -69,6 +69,11 @@ abstract class AbstractDataTableFilterParameter
         return $query;
     }
 
+    public function getPage(): int
+    {
+        return $this->page;
+    }
+
     public function getPageSize(): int
     {
         return $this->pageSize;
