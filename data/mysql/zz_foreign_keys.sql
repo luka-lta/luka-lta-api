@@ -6,3 +6,9 @@ ALTER TABLE `preview_access_tokens`
 
 ALTER TABLE `blog_posts`
     ADD CONSTRAINT `blog_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE RESTRICT;
+
+ALTER TABLE `blog_post_tags`
+    ADD CONSTRAINT `fk_bpt_blog_id` FOREIGN KEY (`blog_id`) REFERENCES `blog_posts` (`blog_id`) ON DELETE CASCADE;
+
+ALTER TABLE `blog_post_tags`
+    ADD CONSTRAINT `fk_bpt_tag_id` FOREIGN KEY (`tag_id`) REFERENCES `blog_tags` (`tag_id`) ON DELETE CASCADE;

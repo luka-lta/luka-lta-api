@@ -3,11 +3,14 @@
 namespace LukaLtaApi\Value\Blog;
 
 use DateTimeImmutable;
+use LukaLtaApi\Value\Blog\Tag\Tags;
 use LukaLtaApi\Value\User\User;
 use Ramsey\Uuid\Uuid;
 
 class BlogPost
 {
+    private Tags $tags;
+
     private function __construct(
         private readonly string            $blogId,
         private readonly User              $user,
@@ -18,6 +21,7 @@ class BlogPost
         private readonly DateTimeImmutable $createdAt,
         private ?DateTimeImmutable         $updatedAt,
     ) {
+        $this->tags = Tags::empty();
     }
 
     public static function create(
@@ -71,24 +75,36 @@ class BlogPost
             $row['title'],
             $row['excerpt'],
             BlogContent::fromRaw($row['content']),
-            $row['is_published'],
-            new DateTimeImmutable($row['created_at']),
-            isset($row['updated_at']) ? new DateTimeImmutable($row['updated_at']) : null
+            (bool) $row['is_published'],
+            new DateTimeImmutable($row['blog_created_at']),
+            isset($row['blog_updated_at']) ? new DateTimeImmutable($row['blog_updated_at']) : null
         );
     }
 
     public function toArray(): array
     {
         return [
-            'blogId' => $this->getBlogId(),
-            'user' => $this->getUser()->toArray(),
-            'title' => $this->getTitle(),
-            'excerpt' => $this->getExcerpt(),
-            'content' => $this->content->getContent(),
+            'blogId'      => $this->getBlogId(),
+            'user'        => $this->getUser()->toArray(),
+            'title'       => $this->getTitle(),
+            'excerpt'     => $this->getExcerpt(),
+            'content'     => $this->content->getContent(),
+            'contentHtml' => $this->content->toHtml(),
             'isPublished' => $this->isPublished,
-            'createdAt' => $this->createdAt->format('Y-m-d H:i:s'),
-            'updatedAt' => $this->updatedAt?->format('Y-m-d H:i:s'),
+            'tags'        => $this->tags->toArray(),
+            'createdAt'   => $this->createdAt->format('Y-m-d H:i:s'),
+            'updatedAt'   => $this->updatedAt?->format('Y-m-d H:i:s'),
         ];
+    }
+
+    public function getTags(): Tags
+    {
+        return $this->tags;
+    }
+
+    public function setTags(Tags $tags): void
+    {
+        $this->tags = $tags;
     }
 
     public function getBlogId(): string

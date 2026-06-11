@@ -2,6 +2,15 @@
 
 namespace LukaLtaApi\Slim;
 
+use LukaLtaApi\Api\Blog\Action\CreateBlogAction;
+use LukaLtaApi\Api\Blog\Action\CreateTagAction;
+use LukaLtaApi\Api\Blog\Action\DeleteBlogAction;
+use LukaLtaApi\Api\Blog\Action\DeleteTagAction;
+use LukaLtaApi\Api\Blog\Action\GetAllBlogsAction;
+use LukaLtaApi\Api\Blog\Action\GetBlogAction;
+use LukaLtaApi\Api\Blog\Action\GetTagsAction;
+use LukaLtaApi\Api\Blog\Action\PublishBlogAction;
+use LukaLtaApi\Api\Blog\Action\UpdateBlogAction;
 use LukaLtaApi\Api\ApiKey\Action\CreateApiKeyAction;
 use LukaLtaApi\Api\ApiKey\Action\GetAllApiKeysAction;
 use LukaLtaApi\Api\Auth\Action\AuthAction;
@@ -251,6 +260,21 @@ class RouteMiddlewareCollector
 
             $app->group('/statistics', function (RouteCollectorProxy $statistics) use ($app) {
                 $statistics->get('/', GetStatisticsAction::class);
+            })->add(AuthMiddleware::class);
+
+            // Blog — public read routes
+            $app->get('/blog', GetAllBlogsAction::class);
+            $app->get('/blog/tags', GetTagsAction::class);
+            $app->get('/blog/{blogId}', GetBlogAction::class);
+
+            // Blog — protected write routes
+            $app->group('/blog', function (RouteCollectorProxy $blog) {
+                $blog->post('', CreateBlogAction::class);
+                $blog->put('/{blogId}', UpdateBlogAction::class);
+                $blog->delete('/{blogId}', DeleteBlogAction::class);
+                $blog->patch('/{blogId}/publish', PublishBlogAction::class);
+                $blog->post('/tags', CreateTagAction::class);
+                $blog->delete('/tags/{tagId:[0-9]+}', DeleteTagAction::class);
             })->add(AuthMiddleware::class);
 
             $app->group('/site', function (RouteCollectorProxy $site) use ($app) {
