@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace LukaLtaApi\Service;
 
 use LukaLtaApi\Repository\PaginationRepository;
-use LukaLtaApi\Service\Contracts\PaginationServiceInterface;
 
-class PaginationService implements PaginationServiceInterface
+class PaginationService
 {
     public function __construct(
         private readonly PaginationRepository $paginationRepository,

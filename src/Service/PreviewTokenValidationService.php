@@ -6,10 +6,9 @@ namespace LukaLtaApi\Service;
 
 use LukaLtaApi\Exception\InvalidPreviewTokenException;
 use LukaLtaApi\Repository\PreviewTokenRepository;
-use LukaLtaApi\Service\Contracts\PreviewTokenValidationServiceInterface;
 use LukaLtaApi\Value\Preview\PreviewToken;
 
-class PreviewTokenValidationService implements PreviewTokenValidationServiceInterface
+class PreviewTokenValidationService
 {
     public function __construct(
         private readonly PreviewTokenRepository $tokenRepository,

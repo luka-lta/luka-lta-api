@@ -6,13 +6,12 @@ namespace LukaLtaApi\Repository;
 
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Exception\ApiDatabaseException;
-use LukaLtaApi\Repository\Contracts\PreviewTokenRepositoryInterface;
 use LukaLtaApi\Value\Preview\PreviewToken;
 use LukaLtaApi\Value\Preview\PreviewTokens;
 use PDO;
 use PDOException;
 
-class PreviewTokenRepository implements PreviewTokenRepositoryInterface
+class PreviewTokenRepository
 {
     public function __construct(
         private readonly PDO $pdo,

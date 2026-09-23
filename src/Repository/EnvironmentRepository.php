@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace LukaLtaApi\Repository;
 
 use LukaLtaApi\Exception\UnsetEnvironmentVariableException;
-use LukaLtaApi\Repository\Contracts\EnvironmentRepositoryInterface;
 
-class EnvironmentRepository implements EnvironmentRepositoryInterface
+class EnvironmentRepository
 {
     public function getEnvironmentVariable(string $name, $default = null, bool $defaultIsNull = false): ?string
     {

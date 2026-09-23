@@ -40,18 +40,6 @@ use LukaLtaApi\Api\User\Action\DeleteUserAction;
 use LukaLtaApi\Api\User\Action\GetAllUsersAction;
 use LukaLtaApi\Api\User\Action\GetAvatarAction;
 use LukaLtaApi\Api\User\Action\UpdateProfileAction;
-use LukaLtaApi\Api\WebTracking\Identify\Action\IdentifyTrackingUserAction;
-use LukaLtaApi\Api\WebTracking\Metric\Action\GetMetricAction;
-use LukaLtaApi\Api\WebTracking\Site\Action\CreateSiteAction;
-use LukaLtaApi\Api\WebTracking\Site\Action\GetSiteAction;
-use LukaLtaApi\Api\WebTracking\SiteConfig\Action\GetSiteConfigAction;
-use LukaLtaApi\Api\WebTracking\SiteConfig\Action\UpdateSiteConfigAction;
-use LukaLtaApi\Api\WebTracking\TrackEvent\Action\TrackEventAction;
-use LukaLtaApi\Api\WebTracking\TrackingScript\Action\GetTrackingScriptAction;
-use LukaLtaApi\Api\WebTracking\TrackingUser\Action\GetSessionAction;
-use LukaLtaApi\Api\WebTracking\TrackingUser\Action\GetTrackingUserAction;
-use LukaLtaApi\Api\WebTracking\TrackingUser\Action\GetTrackingUsersAction;
-use LukaLtaApi\Api\WebTracking\TrackingUser\Action\GetTrackingUserSessionsAction;
 use LukaLtaApi\Service\PermissionService;
 use LukaLtaApi\Slim\Middleware\ApiKeyPermissionMiddleware;
 use LukaLtaApi\Slim\Middleware\AuthMiddleware;
@@ -132,10 +120,6 @@ class RouteMiddlewareCollector
 
     public function registerApiRoutes(App $app): void
     {
-        $app->get('/script.js', GetTrackingScriptAction::class);
-        $app->post('/track', TrackEventAction::class);
-        $app->post('/identify', IdentifyTrackingUserAction::class);
-
         $app->group('/api/v1', function (RouteCollectorProxy $app) {
             $app->post('/auth', AuthAction::class);
             $app->post('/register', RegisterUserAction::class);
@@ -276,28 +260,6 @@ class RouteMiddlewareCollector
                 $blog->post('/tags', CreateTagAction::class);
                 $blog->delete('/tags/{tagId:[0-9]+}', DeleteTagAction::class);
             })->add(AuthMiddleware::class);
-
-            $app->group('/site', function (RouteCollectorProxy $site) use ($app) {
-                $site->post('/', CreateSiteAction::class)->add(AuthMiddleware::class);
-                $site->get('/{siteId:[0-9]+}/tracking-config', GetSiteConfigAction::class);
-                $site->get('/{siteId:[0-9]+}/metric', GetMetricAction::class)
-                    ->add(AuthMiddleware::class);
-                $site->get('/{siteId:[0-9]+}', GetSiteAction::class)
-                    ->add(AuthMiddleware::class);
-                $site->post('/{siteId:[0-9]+}/tracking-config', UpdateSiteConfigAction::class)
-                    ->add(AuthMiddleware::class);
-                $site->get('/{siteId:[0-9]+}/sessions', GetTrackingUserSessionsAction::class)
-                    ->add(AuthMiddleware::class);
-                $site->get('/{siteId:[0-9]+}/sessions/{sessionId:[0-9A-Z-a-z]+}', GetSessionAction::class)
-                    ->add(AuthMiddleware::class);
-
-                $site->group('/{siteId:[0-9]+}/users', function (RouteCollectorProxy $users) use ($app) {
-                    $users->get('/', GetTrackingUsersAction::class)
-                        ->add(AuthMiddleware::class);
-                    $users->get('/{trackingUserId:[0-9A-Z-a-z]+}', GetTrackingUserAction::class)
-                        ->add(AuthMiddleware::class);
-                });
-            });
         });
     }
 }

@@ -165,4 +165,3 @@ Project Link: [https://github.com/luka-lta/luka-lta-api](https://github.com/luka
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://linkedin.com/in/linkedin_username
 [php]: https://img.shields.io/badge/php-000000?style=for-the-badge&logo=php&logoColor=white
-

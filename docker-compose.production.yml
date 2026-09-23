@@ -3,7 +3,8 @@ services:
     build:
       context: .
       dockerfile: docker/nginx/Dockerfile
-    platform: linux/arm64
+      platforms:
+        - linux/arm64
     image: ghcr.io/luka-lta/luka-lta-api/api-nginx:production
 
   php-fpm:
@@ -11,5 +12,6 @@ services:
       context: .
       dockerfile: docker/php/Dockerfile
       target: production
-    platform: linux/arm64
+      platforms:
+        - linux/arm64
     image: ghcr.io/luka-lta/luka-lta-api/api-php-fpm:production
