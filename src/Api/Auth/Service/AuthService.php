@@ -28,18 +28,15 @@ class AuthService
 
         if ($user === null || $user->isActive() === false || $user->getPassword()->verify($password) === false) {
             return ApiResult::from(
-                JsonResult::from('Authentication failed'),
+                JsonResult::from('Invalid credentials'),
                 StatusCodeInterface::STATUS_UNAUTHORIZED
             );
         }
 
-        $user->setLastActive(new DateTimeImmutable());
-        $this->repository->update($user);
+        $this->repository->updateLastActive($user->getUserId());
 
-        $token = $this->tokenService->generateToken($user);
-
-        return ApiResult::from(JsonResult::from('User logged in', [
-            'token' => $token->getToken(),
+        return ApiResult::from(JsonResult::from('Login successful', [
+            'token' => $this->tokenService->generateToken($user),
             'user' => $user->toArray(),
         ]));
     }
