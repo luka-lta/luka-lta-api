@@ -145,17 +145,17 @@ class LinkCollectionRepository
         return $linkItem;
     }
 
-    public function disableLink(LinkId $linkId): void
+    public function setDeactivated(LinkId $linkId, bool $deactivated): void
     {
         if ($linkItem = $this->caching->getItem($linkId)) {
-            $linkItem->setDeactivated(true);
+            $linkItem->setDeactivated($deactivated);
             $this->caching->updateItem($linkItem);
         }
 
         $sql = <<<SQL
             UPDATE link_collection
             SET deactivated = :deactivated,
-                deactivated_at = NOW()
+                deactivated_at = :deactivated_at
             WHERE link_id = :link_id
         SQL;
 
@@ -163,14 +163,35 @@ class LinkCollectionRepository
             $statement = $this->pdo->prepare($sql);
             $statement->execute([
                 'link_id' => $linkId->asInt(),
-                'deactivated' => 1,
+                'deactivated' => $deactivated ? 1 : 0,
+                'deactivated_at' => $deactivated ? date('Y-m-d H:i:s') : null,
             ]);
         } catch (PDOException $exception) {
             throw new ApiDatabaseException(
-                'Failed to disable link',
+                'Failed to update link deactivation state',
                 previous: $exception,
             );
         }
+    }
+
+    public function delete(LinkId $linkId): void
+    {
+        $sql = 'DELETE FROM link_collection WHERE link_id = :link_id';
+
+        try {
+            $this->pdo->beginTransaction();
+            $statement = $this->pdo->prepare($sql);
+            $statement->execute(['link_id' => $linkId->asInt()]);
+            $this->pdo->commit();
+        } catch (PDOException $exception) {
+            $this->pdo->rollBack();
+            throw new ApiDatabaseException(
+                'Failed to delete link',
+                previous: $exception,
+            );
+        }
+
+        $this->caching->deleteItem($linkId);
     }
 
     public function getAll(LinkTreeExtraFilter $filter): LinkItems

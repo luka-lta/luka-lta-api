@@ -100,7 +100,7 @@ class LinkCollectionService
         );
     }
 
-    public function disableLink(array $params): ApiResult
+    public function deactivateLink(array $params): ApiResult
     {
         if (!isset($params['linkId'])) {
             return ApiResult::from(
@@ -123,10 +123,84 @@ class LinkCollectionService
             );
         }
 
-        $link->setDeactivated(true);
-        $this->repository->disableLink($link->getLinkId());
+        if ($link->isDeactivated()) {
+            return ApiResult::from(
+                JsonResult::from('Link is already deactivated'),
+                StatusCodeInterface::STATUS_BAD_REQUEST
+            );
+        }
 
-        return ApiResult::from(JsonResult::from('Link disabled'));
+        $link->setDeactivated(true);
+        $this->repository->setDeactivated($link->getLinkId(), true);
+
+        return ApiResult::from(JsonResult::from('Link deactivated'));
+    }
+
+    public function activateLink(array $params): ApiResult
+    {
+        if (!isset($params['linkId'])) {
+            return ApiResult::from(
+                JsonResult::from(
+                    'Link ID not found'
+                ),
+                StatusCodeInterface::STATUS_BAD_REQUEST
+            );
+        }
+
+        $linkId = LinkId::fromString($params['linkId']);
+        $link = $this->repository->findById($linkId);
+
+        if (!$link) {
+            return ApiResult::from(
+                JsonResult::from(
+                    'Link not found'
+                ),
+                StatusCodeInterface::STATUS_NOT_FOUND
+            );
+        }
+
+        if (!$link->isDeactivated()) {
+            return ApiResult::from(
+                JsonResult::from('Link is already active'),
+                StatusCodeInterface::STATUS_BAD_REQUEST
+            );
+        }
+
+        $link->setDeactivated(false);
+        $this->repository->setDeactivated($link->getLinkId(), false);
+
+        return ApiResult::from(JsonResult::from('Link activated'));
+    }
+
+    public function deleteLink(array $params): ApiResult
+    {
+        if (!isset($params['linkId'])) {
+            return ApiResult::from(
+                JsonResult::from(
+                    'Link ID not found'
+                ),
+                StatusCodeInterface::STATUS_BAD_REQUEST
+            );
+        }
+
+        $linkId = LinkId::fromString($params['linkId']);
+        $link = $this->repository->findById($linkId);
+
+        if (!$link) {
+            return ApiResult::from(
+                JsonResult::from(
+                    'Link not found'
+                ),
+                StatusCodeInterface::STATUS_NOT_FOUND
+            );
+        }
+
+        $this->repository->delete($linkId);
+
+        return ApiResult::from(
+            JsonResult::from('Link deleted'),
+            StatusCodeInterface::STATUS_NO_CONTENT
+        );
     }
 
     public function editLink(ServerRequestInterface $request): ApiResult

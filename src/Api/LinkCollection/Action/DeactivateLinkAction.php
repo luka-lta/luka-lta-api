@@ -9,7 +9,7 @@ use LukaLtaApi\Api\LinkCollection\Service\LinkCollectionService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-class DisableLinkAction extends ApiAction
+class DeactivateLinkAction extends ApiAction
 {
     public function __construct(
         private readonly LinkCollectionService $service,
@@ -18,6 +18,6 @@ class DisableLinkAction extends ApiAction
 
     protected function execute(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        return $this->service->disableLink($request->getAttributes())->getResponse($response);
+        return $this->service->deactivateLink($request->getAttributes())->getResponse($response);
     }
 }
