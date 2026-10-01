@@ -4,13 +4,12 @@ namespace LukaLtaApi\Repository;
 
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Exception\ApiDatabaseException;
-use LukaLtaApi\Repository\Contracts\StatisticRepositoryInterface;
 use LukaLtaApi\Value\Stats\AbstractStat;
 use LukaLtaApi\Value\Stats\StatsCollection;
 use PDO;
 use PDOException;
 
-class StatisticRepository implements StatisticRepositoryInterface
+class StatisticRepository
 {
     public function __construct(
         private readonly PDO $pdo,

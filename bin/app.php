@@ -4,7 +4,7 @@
 declare(strict_types=1);
 
 use LukaLtaApi\App\Factory\ContainerFactory;
-use LukaLtaApi\Command\CleanupSessionsCommand;
+use LukaLtaApi\Command\Homelab\CleanupHomelabDataCommand;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\CommandLoader\ContainerCommandLoader;
@@ -21,7 +21,7 @@ try {
 
     $application->setCommandLoader(
         new ContainerCommandLoader($container, [
-            CleanupSessionsCommand::COMMAND_NAME => CleanupSessionsCommand::class,
+            'homelab:cleanup' => CleanupHomelabDataCommand::class,
         ])
     );
 

@@ -7,12 +7,11 @@ namespace LukaLtaApi\Repository;
 use Fig\Http\Message\StatusCodeInterface;
 use Latitude\QueryBuilder\QueryFactory;
 use LukaLtaApi\Exception\ApiDatabaseException;
-use LukaLtaApi\Repository\Contracts\PaginationRepositoryInterface;
 use PDO;
 use PDOException;
 use function Latitude\QueryBuilder\field;
 
-class PaginationRepository implements PaginationRepositoryInterface
+class PaginationRepository
 {
     public function __construct(
         private readonly QueryFactory $queryFactory,

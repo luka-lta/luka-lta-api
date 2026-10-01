@@ -4,73 +4,91 @@ declare(strict_types=1);
 
 namespace LukaLtaApi\Api\ApiKey\Service;
 
+use DateTimeImmutable;
 use Fig\Http\Message\StatusCodeInterface;
-use LukaLtaApi\Api\ApiKey\Value\ApiKeyExtraFilter;
+use LukaLtaApi\Exception\ApiKeyNotFoundException;
 use LukaLtaApi\Repository\ApiKeyRepository;
 use LukaLtaApi\Repository\PermissionRepository;
-use LukaLtaApi\Value\ApiKey\ApiKeyObject;
-use LukaLtaApi\Value\Permission\Permission;
-use LukaLtaApi\Value\Permission\Permissions;
+use LukaLtaApi\Value\ApiKey\ApiKeyId;
+use LukaLtaApi\Value\User\UserId;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
-use Psr\Http\Message\ServerRequestInterface;
 
 class ApiKeyService
 {
+    /** Random token length in bytes before hex-encoding (64 hex chars). */
+    private const TOKEN_BYTES = 32;
+
+    private const TOKEN_PREFIX = 'lta_';
+
     public function __construct(
-        private readonly ApiKeyRepository     $repository,
+        private readonly ApiKeyRepository     $apiKeyRepository,
         private readonly PermissionRepository $permissionRepository,
     ) {
     }
 
-    public function create(ServerRequestInterface $request): ApiResult
+    public function createApiKey(array $data, int $createdByUserId): ApiResult
     {
-        $body = $request->getParsedBody();
-        $createdBy = (int)$request->getAttribute('userId');
-        $keyOrigin = $body['origin'];
-        $expiresAt = $body['expiresAt'] ?? null;
-        $permissions = $body['permissions'] ?? [];
+        $plainKey  = self::TOKEN_PREFIX . bin2hex(random_bytes(self::TOKEN_BYTES));
+        $hashedKey = hash('sha256', $plainKey);
+        $keySuffix = substr($plainKey, -4);
 
-        $availablePermissions = $this->permissionRepository->getAvailablePermissions();
-        $keyPermissions = [];
+        $expiresAt = isset($data['expiresAt']) ? new DateTimeImmutable($data['expiresAt']) : null;
 
-        /** @var Permission $permission */
-        foreach ($availablePermissions as $permission) {
-            $permissionId = $permission->getPermissionId();
-
-            if (in_array($permissionId, $permissions, true)) {
-                $keyPermissions[] = $permission;
-            }
-        }
-
-        $apiKey = ApiKeyObject::create(
-            $keyOrigin,
-            $createdBy,
-            date('Y-m-d H:i:s'),
+        $keyId = $this->apiKeyRepository->create(
+            $data['label'],
+            $data['origin'],
+            $hashedKey,
+            $keySuffix,
+            UserId::fromInt($createdByUserId),
             $expiresAt,
-            Permissions::fromObjects(...$keyPermissions),
         );
 
-        $this->repository->create($apiKey);
+        $this->apiKeyRepository->attachPermissions($keyId, $data['permissionIds'] ?? []);
+
+        $apiKey = $this->apiKeyRepository->loadById($keyId);
+        $apiKey->setPermissions($this->apiKeyRepository->loadPermissionsFor($keyId));
 
         return ApiResult::from(
-            JsonResult::from('API key created successfully', ['apiKey' => $apiKey->toArray()])
+            JsonResult::from('API key created.', [
+                'apiKey' => $apiKey,
+                'plainKey' => $plainKey,
+            ]),
+            StatusCodeInterface::STATUS_CREATED,
         );
     }
 
-    public function getAllKeys(ServerRequestInterface $request): ApiResult
+    public function listApiKeys(): ApiResult
     {
-        $filter = ApiKeyExtraFilter::parseFromQuery($request->getQueryParams());
-        $apiKeys = $this->repository->getAll($filter);
+        $apiKeys = $this->apiKeyRepository->loadAll();
 
-        if ($apiKeys->count() === 0) {
-            return ApiResult::from(
-                JsonResult::from('No API keys found', ['apiKeys' => []]),
-            );
+        foreach ($apiKeys as $apiKey) {
+            $apiKey->setPermissions($this->apiKeyRepository->loadPermissionsFor($apiKey->getKeyId()));
         }
 
         return ApiResult::from(
-            JsonResult::from('API keys fetched successfully', ['apiKeys' => $apiKeys->toArray()])
+            JsonResult::from('API keys fetched.', ['apiKeys' => $apiKeys])
+        );
+    }
+
+    public function deleteApiKey(ApiKeyId $keyId): ApiResult
+    {
+        if ($this->apiKeyRepository->loadById($keyId) === null) {
+            throw new ApiKeyNotFoundException();
+        }
+
+        $this->apiKeyRepository->delete($keyId);
+
+        return ApiResult::from(
+            JsonResult::from('API key deleted.'),
+            StatusCodeInterface::STATUS_NO_CONTENT,
+        );
+    }
+
+    public function listPermissions(): ApiResult
+    {
+        return ApiResult::from(
+            JsonResult::from('Permissions fetched.', ['permissions' => $this->permissionRepository->loadAll()])
         );
     }
 }

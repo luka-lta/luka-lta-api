@@ -4,210 +4,195 @@ declare(strict_types=1);
 
 namespace LukaLtaApi\Repository;
 
-use Fig\Http\Message\StatusCodeInterface;
-use Latitude\QueryBuilder\QueryFactory;
-use LukaLtaApi\Api\ApiKey\Value\ApiKeyExtraFilter;
+use DateTimeImmutable;
 use LukaLtaApi\Exception\ApiDatabaseException;
-use LukaLtaApi\Value\ApiKey\ApiKeyObject;
-use LukaLtaApi\Value\ApiKey\ApiKeyObjects;
-use LukaLtaApi\Value\ApiKey\KeyId;
-use LukaLtaApi\Value\ApiKey\KeyOrigin;
-use LukaLtaApi\Value\Permission\Permission;
-use LukaLtaApi\Value\Permission\Permissions;
+use LukaLtaApi\Value\ApiKey\ApiKey;
+use LukaLtaApi\Value\ApiKey\ApiKeyId;
+use LukaLtaApi\Value\ApiKey\ApiKeys;
+use LukaLtaApi\Value\ApiKey\Permission;
+use LukaLtaApi\Value\ApiKey\Permissions;
+use LukaLtaApi\Value\User\UserId;
 use PDO;
 use PDOException;
 
-use LukaLtaApi\Repository\Contracts\ApiKeyRepositoryInterface;
-
-use function Latitude\QueryBuilder\alias;
-use function Latitude\QueryBuilder\express;
-use function Latitude\QueryBuilder\identify;
-use function Latitude\QueryBuilder\on;
-
-class ApiKeyRepository implements ApiKeyRepositoryInterface
+class ApiKeyRepository
 {
+    private const API_KEY_SELECT = <<<SQL
+        SELECT key_id, label, origin, key_suffix, created_by, created_at, expires_at
+        FROM api_keys
+    SQL;
+
     public function __construct(
         private readonly PDO $pdo,
-        private readonly QueryFactory $queryFactory,
     ) {
     }
 
-    public function create(ApiKeyObject $keyObject): void
-    {
+    public function create(
+        string $label,
+        string $origin,
+        string $hashedKey,
+        string $keySuffix,
+        UserId $createdBy,
+        ?DateTimeImmutable $expiresAt,
+    ): ApiKeyId {
         $sql = <<<SQL
-            INSERT INTO api_keys (origin, created_at, created_by, expires_at, api_key)
-            VALUES (:origin, :created_at, :created_by, :expires_at, :api_key)
+            INSERT INTO api_keys (label, origin, api_key, key_suffix, created_by, expires_at)
+            VALUES (:label, :origin, :api_key, :key_suffix, :created_by, :expires_at)
         SQL;
 
         try {
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([
-                'origin' => (string)$keyObject->getOrigin(),
-                'created_at' => $keyObject->getCreatedAt()->format('Y-m-d H:i:s'),
-                'created_by' => $keyObject->getCreatedBy()->asInt(),
-                'expires_at' => $keyObject->getExpiresAt()?->format('Y-m-d H:i:s'),
-                'api_key' => (string)$keyObject->getApiKey(),
+                'label'      => $label,
+                'origin'     => $origin,
+                'api_key'    => $hashedKey,
+                'key_suffix' => $keySuffix,
+                'created_by' => $createdBy->asInt(),
+                'expires_at' => $expiresAt?->format('Y-m-d H:i:s'),
             ]);
 
-            $keyId = KeyId::fromString($this->pdo->lastInsertId());
-        } catch (PDOException) {
-            throw new ApiDatabaseException(
-                'Failed to create API key',
-                StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR
-            );
+            return ApiKeyId::fromInt((int) $this->pdo->lastInsertId());
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException('Failed to create API key.', previous: $exception);
         }
-
-        $this->addPermissions($keyId, $keyObject->getPermissions());
     }
 
-    public function getAll(ApiKeyExtraFilter $filter): ApiKeyObjects
+    public function loadAll(): ApiKeys
     {
-        $select = $this->queryFactory
-            ->select(
-                'ak.key_id',
-                'ak.origin',
-                'ak.created_at',
-                'ak.created_by',
-                'ak.expires_at',
-                'ak.api_key',
-                express(
-                    'COALESCE(
-                NULLIF(
-                    JSON_ARRAYAGG(
-                        JSON_OBJECT(
-                            \'permission_id\', %s,
-                            \'permission_name\', %s,
-                            \'permission_description\', %s
-                        )
-                    ),
-                    JSON_ARRAY(NULL)
-                ),
-                JSON_ARRAY()
-            ) AS permissions',
-                    identify('p.permission_id'),
-                    identify('p.permission_name'),
-                    identify('p.permission_description')
-                )
-            )
-            ->from(alias('api_keys', 'ak'))
-            ->leftJoin(alias('api_key_permissions', 'akp'), on('ak.key_id', 'akp.api_key_id'))
-            ->leftJoin(alias('permissions', 'p'), on('akp.permission_id', 'p.permission_id'))
-            ->groupBy('ak.key_id');
-
-        $query = $filter->createSqlFilter($select);
-        $sql = $query->compile();
+        $sql = self::API_KEY_SELECT . ' ORDER BY created_at DESC';
 
         try {
-            $stmt = $this->pdo->prepare($sql->sql());
-            $stmt->execute($sql->params());
+            $stmt = $this->pdo->query($sql);
 
-            $keyObjects = [];
+            $apiKeys = [];
             foreach ($stmt as $row) {
-                $keyObjects[] = ApiKeyObject::fromDatabase($row);
+                $apiKeys[] = ApiKey::fromDatabase($row);
             }
         } catch (PDOException $exception) {
-            throw new ApiDatabaseException(
-                'Failed to load API keys with permissions',
-                StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR,
-                $exception
-            );
+            throw new ApiDatabaseException('Failed to fetch API keys.', previous: $exception);
         }
 
-        return ApiKeyObjects::from(...$keyObjects);
+        return ApiKeys::from(...$apiKeys);
     }
 
-
-    public function getApiKeyByOrigin(KeyOrigin $origin): ?ApiKeyObject
+    public function loadById(ApiKeyId $keyId): ?ApiKey
     {
+        $sql = self::API_KEY_SELECT . ' WHERE key_id = :key_id';
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute(['key_id' => $keyId->asInt()]);
+            $row = $stmt->fetch();
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException('Failed to fetch API key.', previous: $exception);
+        }
+
+        if ($row === false) {
+            return null;
+        }
+
+        return ApiKey::fromDatabase($row);
+    }
+
+    public function findActiveByHashedKey(string $hashedKey): ?ApiKey
+    {
+        $sql = self::API_KEY_SELECT . ' WHERE api_key = :api_key AND (expires_at IS NULL OR expires_at > NOW())';
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute(['api_key' => $hashedKey]);
+            $row = $stmt->fetch();
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException('Failed to look up API key.', previous: $exception);
+        }
+
+        if ($row === false) {
+            return null;
+        }
+
+        return ApiKey::fromDatabase($row);
+    }
+
+    public function delete(ApiKeyId $keyId): void
+    {
+        $sql = 'DELETE FROM api_keys WHERE key_id = :key_id';
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute(['key_id' => $keyId->asInt()]);
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException('Failed to delete API key.', previous: $exception);
+        }
+    }
+
+    public function attachPermissions(ApiKeyId $keyId, array $permissionIds): void
+    {
+        if (empty($permissionIds)) {
+            return;
+        }
+
         $sql = <<<SQL
-            SELECT 
-                ak.key_id, 
-                ak.origin, 
-                ak.created_at, 
-                ak.created_by, 
-                ak.expires_at, 
-                ak.api_key,
-                COALESCE(
-                NULLIF(
-                    JSON_ARRAYAGG(
-                        JSON_OBJECT(
-                            'permission_id', p.permission_id,
-                            'permission_name', p.permission_name,
-                            'permission_description', p.permission_description
-                        )
-                    ),
-                JSON_ARRAY(NULL)
-                ),
-                JSON_ARRAY()
-                ) AS permissions
-            FROM api_keys ak
-            LEFT JOIN api_key_permissions akp ON ak.key_id = akp.api_key_id
-            LEFT JOIN permissions p ON akp.permission_id = p.permission_id
-            WHERE ak.origin = :origin
-            GROUP BY ak.key_id
+            INSERT IGNORE INTO api_key_permissions (api_key_id, permission_id)
+            VALUES (:api_key_id, :permission_id)
         SQL;
 
         try {
             $stmt = $this->pdo->prepare($sql);
-            $stmt->execute(['origin' => (string)$origin]);
-            $row = $stmt->fetch();
-
-            if ($row === false) {
-                return null;
-            }
-
-            return ApiKeyObject::fromDatabase($row);
-        } catch (PDOException) {
-            throw new ApiDatabaseException(
-                'Failed to get API key',
-                StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR
-            );
-        }
-    }
-
-    public function hasPermission(KeyId $apiKeyId, int $permissionId): bool
-    {
-        $query = "
-            SELECT COUNT(*) as count
-            FROM api_key_permissions akp
-            INNER JOIN permissions p ON akp.permission_id = p.permission_id
-            WHERE akp.api_key_id = :apiKeyId AND p.permission_id = :permissionId
-        ";
-
-        try {
-            $stmt = $this->pdo->prepare($query);
-            $stmt->execute([
-                'apiKeyId' => $apiKeyId->asInt(),
-                'permissionId' => $permissionId,
-            ]);
-        } catch (PDOException) {
-            throw new ApiDatabaseException(
-                'Failed to check permission',
-                StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR
-            );
-        }
-
-        return $stmt->fetchColumn() > 0;
-    }
-
-    public function addPermissions(KeyId $apiKeyId, Permissions $permissions): void
-    {
-        $query = "INSERT INTO api_key_permissions (api_key_id, permission_id) VALUES (:apiKeyId, :permissionId)";
-
-        try {
-            /** @var Permission $permission */
-            foreach ($permissions as $permission) {
-                $stmt = $this->pdo->prepare($query);
+            foreach ($permissionIds as $permissionId) {
                 $stmt->execute([
-                    'apiKeyId' => $apiKeyId->asInt(),
-                    'permissionId' => $permission->getPermissionId(),
+                    'api_key_id'    => $keyId->asInt(),
+                    'permission_id' => (int) $permissionId,
                 ]);
             }
-        } catch (PDOException) {
-            throw new ApiDatabaseException(
-                'Failed to add permission',
-                StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR
-            );
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException('Failed to attach permissions.', previous: $exception);
+        }
+    }
+
+    public function loadPermissionsFor(ApiKeyId $keyId): Permissions
+    {
+        $sql = <<<SQL
+            SELECT p.permission_id, p.permission_name, p.permission_description
+            FROM permissions p
+            INNER JOIN api_key_permissions akp ON p.permission_id = akp.permission_id
+            WHERE akp.api_key_id = :api_key_id
+        SQL;
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute(['api_key_id' => $keyId->asInt()]);
+
+            $permissions = [];
+            foreach ($stmt as $row) {
+                $permissions[] = Permission::fromDatabase($row);
+            }
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException('Failed to fetch permissions for API key.', previous: $exception);
+        }
+
+        return Permissions::from(...$permissions);
+    }
+
+    public function hasPermission(ApiKeyId $keyId, string $permissionName): bool
+    {
+        $sql = <<<SQL
+            SELECT 1
+            FROM api_key_permissions akp
+            INNER JOIN permissions p ON p.permission_id = akp.permission_id
+            WHERE akp.api_key_id = :api_key_id AND p.permission_name = :permission_name
+            LIMIT 1
+        SQL;
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([
+                'api_key_id'      => $keyId->asInt(),
+                'permission_name' => $permissionName,
+            ]);
+
+            return $stmt->fetch() !== false;
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException('Failed to check API key permission.', previous: $exception);
         }
     }
 }

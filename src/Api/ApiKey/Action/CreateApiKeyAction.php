@@ -13,21 +13,22 @@ use Psr\Http\Message\ServerRequestInterface;
 class CreateApiKeyAction extends ApiAction
 {
     public function __construct(
-        private readonly ApiKeyService $service,
-        private readonly RequestValidator    $validator,
+        private readonly RequestValidator $requestValidator,
+        private readonly ApiKeyService    $service,
     ) {
     }
 
     protected function execute(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $rules = [
-            'origin' => ['required' => true, 'location' => RequestValidator::LOCATION_BODY],
-            'expiresAt' => ['required' => false, 'location' => RequestValidator::LOCATION_BODY],
-            'permissions' => ['required' => false, 'location' => RequestValidator::LOCATION_BODY],
-        ];
+        $this->requestValidator->validate($request, [
+            'label'         => ['required' => true, 'location' => 'body'],
+            'origin'        => ['required' => true, 'location' => 'body'],
+            'permissionIds' => ['required' => false, 'location' => 'body'],
+            'expiresAt'     => ['required' => false, 'location' => 'body'],
+        ]);
 
-        $this->validator->validate($request, $rules);
+        $userId = (int) $request->getAttribute('userId');
 
-        return $this->service->create($request)->getResponse($response);
+        return $this->service->createApiKey($request->getParsedBody(), $userId)->getResponse($response);
     }
 }

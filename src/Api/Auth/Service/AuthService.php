@@ -5,7 +5,7 @@ namespace LukaLtaApi\Api\Auth\Service;
 use DateTimeImmutable;
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Repository\UserRepository;
-use LukaLtaApi\Service\Contracts\TokenServiceInterface;
+use LukaLtaApi\Service\TokenService;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
 use LukaLtaApi\Value\User\UserEmail;
@@ -15,7 +15,7 @@ class AuthService
 {
     public function __construct(
         private readonly UserRepository $repository,
-        private readonly TokenServiceInterface $tokenService,
+        private readonly TokenService $tokenService,
     ) {
     }
 
@@ -28,18 +28,15 @@ class AuthService
 
         if ($user === null || $user->isActive() === false || $user->getPassword()->verify($password) === false) {
             return ApiResult::from(
-                JsonResult::from('Authentication failed'),
+                JsonResult::from('Invalid credentials'),
                 StatusCodeInterface::STATUS_UNAUTHORIZED
             );
         }
 
-        $user->setLastActive(new DateTimeImmutable());
-        $this->repository->update($user);
+        $this->repository->updateLastActive($user->getUserId());
 
-        $token = $this->tokenService->generateToken($user);
-
-        return ApiResult::from(JsonResult::from('User logged in', [
-            'token' => $token->getToken(),
+        return ApiResult::from(JsonResult::from('Login successful', [
+            'token' => $this->tokenService->generateToken($user),
             'user' => $user->toArray(),
         ]));
     }

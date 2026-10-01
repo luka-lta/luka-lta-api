@@ -2,18 +2,19 @@
 
 namespace LukaLtaApi\Repository;
 
+use Fig\Http\Message\StatusCodeInterface;
 use Latitude\QueryBuilder\QueryFactory;
 use LukaLtaApi\Api\User\Value\UserExtraFilter;
 use LukaLtaApi\Exception\ApiDatabaseException;
-use LukaLtaApi\Repository\Contracts\UserRepositoryInterface;
 use LukaLtaApi\Value\User\User;
 use LukaLtaApi\Value\User\UserEmail;
 use LukaLtaApi\Value\User\UserId;
 use LukaLtaApi\Value\User\Users;
+use LukaLtaApi\Repository\Traits\TransactionTrait;
 use PDO;
 use PDOException;
 
-class UserRepository implements UserRepositoryInterface
+class UserRepository
 {
     use TransactionTrait;
     public function __construct(
@@ -66,6 +67,22 @@ class UserRepository implements UserRepositoryInterface
                 'last_active' => $user->getLastActive()?->format('Y-m-d H:i:s'),
             ]);
         });
+    }
+
+    public function updateLastActive(UserId $userId): void
+    {
+        $sql = 'UPDATE users SET last_active = NOW() WHERE user_id = :userId';
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute(['userId' => $userId->asString()]);
+        } catch (PDOException $e) {
+            throw new ApiDatabaseException(
+                'Failed to update last active',
+                StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR,
+                $e
+            );
+        }
     }
 
     public function findByEmail(UserEmail $email, ?UserId $excludeUserId = null): ?User

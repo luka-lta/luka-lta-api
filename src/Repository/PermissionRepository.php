@@ -4,26 +4,25 @@ declare(strict_types=1);
 
 namespace LukaLtaApi\Repository;
 
-use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Exception\ApiDatabaseException;
-use LukaLtaApi\Repository\Contracts\PermissionRepositoryInterface;
-use LukaLtaApi\Value\Permission\Permission;
-use LukaLtaApi\Value\Permission\Permissions;
+use LukaLtaApi\Value\ApiKey\Permission;
+use LukaLtaApi\Value\ApiKey\Permissions;
 use PDO;
 use PDOException;
 
-class PermissionRepository implements PermissionRepositoryInterface
+class PermissionRepository
 {
     public function __construct(
         private readonly PDO $pdo,
     ) {
     }
 
-    public function getAvailablePermissions(): Permissions
+    public function loadAll(): Permissions
     {
         $sql = <<<SQL
-            SELECT *
+            SELECT permission_id, permission_name, permission_description
             FROM permissions
+            ORDER BY permission_name ASC
         SQL;
 
         try {
@@ -33,13 +32,10 @@ class PermissionRepository implements PermissionRepositoryInterface
             foreach ($stmt as $row) {
                 $permissions[] = Permission::fromDatabase($row);
             }
-        } catch (PDOException) {
-            throw new ApiDatabaseException(
-                'Failed to load permissions',
-                StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR
-            );
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException('Failed to fetch permissions.', previous: $exception);
         }
 
-        return Permissions::fromObjects(...$permissions);
+        return Permissions::from(...$permissions);
     }
 }

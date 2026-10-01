@@ -22,13 +22,6 @@ WORKDIR /app/
 RUN chown -R app:app /app/ \
     && mkdir -p /app/php-file-cache/
 
-RUN apk add --no-cache curl bash \
-    && curl -fsSL https://bun.sh/install | bash
-
-ENV BUN_INSTALL=/root/.bun
-ENV PATH=$BUN_INSTALL/bin:$PATH
-
-
 #############################################################################
 FROM base as build
 
@@ -58,7 +51,9 @@ FROM build as production
 
 USER root
 
-RUN curl -L https://github.com/aptible/supercronic/releases/download/v0.2.37/supercronic-linux-amd64 \
+ARG TARGETARCH
+
+RUN curl -L https://github.com/aptible/supercronic/releases/download/v0.2.37/supercronic-linux-${TARGETARCH} \
     -o /usr/local/bin/supercronic && \
     chmod +x /usr/local/bin/supercronic
 
@@ -66,10 +61,5 @@ COPY ./crontab /etc/crontab
 
 COPY --chown=app:app --from=build /app /app
 COPY --chown=app:app . /app
-
-RUN bun install \
-    && bun run build:analytics  \
-    && mkdir /app/logs \
-    && chmod 777 /app/logs
 
 USER app
