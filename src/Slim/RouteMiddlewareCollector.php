@@ -2,6 +2,10 @@
 
 namespace LukaLtaApi\Slim;
 
+use LukaLtaApi\Api\ApiKey\Action\CreateApiKeyAction;
+use LukaLtaApi\Api\ApiKey\Action\DeleteApiKeyAction;
+use LukaLtaApi\Api\ApiKey\Action\ListApiKeysAction;
+use LukaLtaApi\Api\ApiKey\Action\ListPermissionsAction;
 use LukaLtaApi\Api\Blog\Action\CreateBlogAction;
 use LukaLtaApi\Api\Blog\Action\CreateTagAction;
 use LukaLtaApi\Api\Blog\Action\DeleteBlogAction;
@@ -18,8 +22,25 @@ use LukaLtaApi\Api\Click\Action\GetClicksFiltersAction;
 use LukaLtaApi\Api\Click\Action\GetClicksStatsAction;
 use LukaLtaApi\Api\Click\Action\GetClickSummaryAction;
 use LukaLtaApi\Api\Health\Action\GetHealthAction;
+use LukaLtaApi\Api\Homelab\Action\CreateTopologyEdgeAction;
+use LukaLtaApi\Api\Homelab\Action\CreateTopologyNodeAction;
+use LukaLtaApi\Api\Homelab\Action\DeleteTopologyEdgeAction;
+use LukaLtaApi\Api\Homelab\Action\DeleteTopologyNodeAction;
+use LukaLtaApi\Api\Homelab\Action\GetContainerAction;
+use LukaLtaApi\Api\Homelab\Action\GetContainerMetricsAction;
+use LukaLtaApi\Api\Homelab\Action\GetHostMetricsAction;
+use LukaLtaApi\Api\Homelab\Action\GetTopologyAction;
+use LukaLtaApi\Api\Homelab\Action\IngestContainerMetricsAction;
+use LukaLtaApi\Api\Homelab\Action\IngestHostMetricsAction;
+use LukaLtaApi\Api\Homelab\Action\ListAlertsAction;
+use LukaLtaApi\Api\Homelab\Action\ListContainersAction;
+use LukaLtaApi\Api\Homelab\Action\ListHostsAction;
+use LukaLtaApi\Api\Homelab\Action\UpdateContainerRoleAction;
+use LukaLtaApi\Api\Homelab\Action\UpdateHostNodeTypeAction;
+use LukaLtaApi\Api\LinkCollection\Action\ActivateLinkAction;
 use LukaLtaApi\Api\LinkCollection\Action\CreateLinkAction;
-use LukaLtaApi\Api\LinkCollection\Action\DisableLinkAction;
+use LukaLtaApi\Api\LinkCollection\Action\DeactivateLinkAction;
+use LukaLtaApi\Api\LinkCollection\Action\DeleteLinkAction;
 use LukaLtaApi\Api\LinkCollection\Action\EditLinkAction;
 use LukaLtaApi\Api\LinkCollection\Action\GetAllLinksAction;
 use LukaLtaApi\Api\LinkCollection\Action\GetDetailLinkAction;
@@ -32,6 +53,8 @@ use LukaLtaApi\Api\User\Action\DeleteUserAction;
 use LukaLtaApi\Api\User\Action\GetAllUsersAction;
 use LukaLtaApi\Api\User\Action\GetAvatarAction;
 use LukaLtaApi\Api\User\Action\UpdateProfileAction;
+use LukaLtaApi\Repository\ApiKeyRepository;
+use LukaLtaApi\Slim\Middleware\ApiKeyPermissionMiddleware;
 use LukaLtaApi\Slim\Middleware\AuthMiddleware;
 use LukaLtaApi\Slim\Middleware\CORSMiddleware;
 use LukaLtaApi\Value\Misc\AppEnv;
@@ -109,7 +132,9 @@ class RouteMiddlewareCollector
 
     public function registerApiRoutes(App $app): void
     {
-        $app->group('/api/v1', function (RouteCollectorProxy $app) {
+        $container = $app->getContainer();
+
+        $app->group('/api/v1', function (RouteCollectorProxy $app) use ($container) {
             $app->post('/auth/login', AuthAction::class);
             $app->get('/health', GetHealthAction::class);
             $app->get('/avatar/{userId}', GetAvatarAction::class);
@@ -119,7 +144,9 @@ class RouteMiddlewareCollector
                 $linkCollection->get('/', GetAllLinksAction::class);
                 $linkCollection->get('/{linkId:[0-9]+}', GetDetailLinkAction::class);
                 $linkCollection->put('/{linkId:[0-9]+}', EditLinkAction::class);
-                $linkCollection->delete('/{linkId:[0-9]+}', DisableLinkAction::class);
+                $linkCollection->put('/deactivate/{linkId:[0-9]+}', DeactivateLinkAction::class);
+                $linkCollection->put('/activate/{linkId:[0-9]+}', ActivateLinkAction::class);
+                $linkCollection->delete('/{linkId:[0-9]+}', DeleteLinkAction::class);
             })->add(AuthMiddleware::class);
 
             $app->group('/click', function (RouteCollectorProxy $click) use ($app) {
@@ -165,6 +192,44 @@ class RouteMiddlewareCollector
                 $blog->patch('/{blogId}/publish', PublishBlogAction::class);
                 $blog->post('/tags', CreateTagAction::class);
                 $blog->delete('/tags/{tagId:[0-9]+}', DeleteTagAction::class);
+            })->add(AuthMiddleware::class);
+
+            // Homelab — dashboard read routes
+            $app->group('/homelab', function (RouteCollectorProxy $homelab) {
+                $homelab->get('/hosts', ListHostsAction::class);
+                $homelab->get('/hosts/{hostId}/metrics', GetHostMetricsAction::class);
+                $homelab->get('/containers', ListContainersAction::class);
+                $homelab->get('/containers/{containerId}', GetContainerAction::class);
+                $homelab->get('/containers/{containerId}/metrics', GetContainerMetricsAction::class);
+                $homelab->get('/alerts', ListAlertsAction::class);
+                $homelab->patch('/hosts/{hostId}', UpdateHostNodeTypeAction::class);
+                $homelab->patch('/containers/{containerId}/role', UpdateContainerRoleAction::class);
+
+                $homelab->get('/topology', GetTopologyAction::class);
+                $homelab->post('/topology/nodes', CreateTopologyNodeAction::class);
+                $homelab->delete('/topology/nodes/{nodeId}', DeleteTopologyNodeAction::class);
+                $homelab->post('/topology/edges', CreateTopologyEdgeAction::class);
+                $homelab->delete('/topology/edges/{edgeId}', DeleteTopologyEdgeAction::class);
+            })->add(AuthMiddleware::class);
+
+            // Homelab — agent ingest routes, API-key authenticated
+            $app->group('/homelab/ingest', function (RouteCollectorProxy $ingest) {
+                $ingest->post('/host', IngestHostMetricsAction::class);
+                $ingest->post('/container', IngestContainerMetricsAction::class);
+            })->add(new ApiKeyPermissionMiddleware(
+                $container->get(ApiKeyRepository::class),
+                'Ingest Homelab Metrics',
+            ));
+
+            // API key management — dashboard only
+            $app->group('/api-keys', function (RouteCollectorProxy $apiKeys) {
+                $apiKeys->post('/', CreateApiKeyAction::class);
+                $apiKeys->get('/', ListApiKeysAction::class);
+                $apiKeys->delete('/{keyId:[0-9]+}', DeleteApiKeyAction::class);
+            })->add(AuthMiddleware::class);
+
+            $app->group('/permissions', function (RouteCollectorProxy $permissions) {
+                $permissions->get('/', ListPermissionsAction::class);
             })->add(AuthMiddleware::class);
         });
     }
