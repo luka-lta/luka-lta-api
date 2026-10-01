@@ -50,8 +50,10 @@ class AuthMiddleware implements MiddlewareInterface
         }
 
         $payload = Token::getPayload($jwt);
-        if (!empty($payload['sub'])) {
-            $request = $request->withAttribute('userId', $payload['sub']);
+        $userId  = $payload['user_id'] ?? $payload['sub'] ?? null;
+
+        if (!empty($userId)) {
+            $request = $request->withAttribute('userId', $userId);
             $request = $request->withAttribute('authType', 'jwt');
         }
 
