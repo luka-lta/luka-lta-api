@@ -2,6 +2,8 @@
 /vendor/
 /.pdepend/
 /logs/
+logs-*
 /uploads/
 public/script*
 /node_modules/
+.DS_Store
