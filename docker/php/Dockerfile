@@ -51,7 +51,9 @@ FROM build as production
 
 USER root
 
-RUN curl -L https://github.com/aptible/supercronic/releases/download/v0.2.37/supercronic-linux-amd64 \
+ARG TARGETARCH
+
+RUN curl -L https://github.com/aptible/supercronic/releases/download/v0.2.37/supercronic-linux-${TARGETARCH} \
     -o /usr/local/bin/supercronic && \
     chmod +x /usr/local/bin/supercronic
 

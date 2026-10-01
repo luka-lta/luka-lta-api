@@ -1,2 +1,3 @@
 SHELL=/bin/sh
 
+0 * * * * php /app/bin/app.php homelab:cleanup

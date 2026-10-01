@@ -15,3 +15,13 @@ services:
       platforms:
         - linux/arm64
     image: ghcr.io/luka-lta/luka-lta-api/api-php-fpm:production
+
+  cron:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      target: production
+      platforms:
+        - linux/arm64
+    image: ghcr.io/luka-lta/luka-lta-api/api-php-fpm:production
+    command: supercronic /etc/crontab
