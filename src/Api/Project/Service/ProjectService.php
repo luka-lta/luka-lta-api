@@ -26,6 +26,13 @@ class ProjectService
     /** Fallback entspricht der Produktions-URL, damit ein fehlendes Env dort nichts bricht. */
     private const string DEFAULT_API_BASE_URL = 'https://api.luka-lta.dev/api/v1';
 
+    /**
+     * Slugs, die mit statischen Routen unter /projects/ kollidieren. Slim matcht in
+     * Registrierungsreihenfolge, deshalb waere ein Projekt mit einem dieser Slugs
+     * ueber die oeffentliche Route /projects/{slug} nicht erreichbar.
+     */
+    private const array RESERVED_SLUGS = ['manage', 'order', 'tags'];
+
     public function __construct(
         private readonly ProjectRepository      $repository,
         private readonly ProjectAssetRepository $assetRepository,
@@ -83,6 +90,7 @@ class ProjectService
     {
         $project = Project::create($data);
 
+        $this->assertSlugIsNotReserved($project->getSlug());
         $this->assertSlugIsFree($project->getSlug(), null);
         $this->assertTagIdsValid($data);
 
@@ -105,6 +113,7 @@ class ProjectService
         $project = $this->loadProjectOrFail($projectId);
         $project->applyChanges($data);
 
+        $this->assertSlugIsNotReserved($project->getSlug());
         $this->assertSlugIsFree($project->getSlug(), $projectId);
         $this->assertTagIdsValid($data);
 
@@ -171,6 +180,18 @@ class ProjectService
     {
         $project->setTags($this->tagRepository->getTagsForProject($project->getProjectId()));
         $project->setAssets($this->assetRepository->getByProject($project->getProjectId()));
+    }
+
+    private function assertSlugIsNotReserved(ProjectSlug $slug): void
+    {
+        if (!in_array($slug->asString(), self::RESERVED_SLUGS, true)) {
+            return;
+        }
+
+        throw new ApiInvalidArgumentException(
+            sprintf('Project slug "%s" is reserved and cannot be used.', $slug->asString()),
+            400,
+        );
     }
 
     private function assertSlugIsFree(ProjectSlug $slug, ?ProjectId $ignoredProjectId): void
