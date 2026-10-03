@@ -7,6 +7,7 @@ namespace LukaLtaApi\Api\Project\Action;
 use LukaLtaApi\Api\ApiAction;
 use LukaLtaApi\Api\Project\Service\ProjectAssetService;
 use LukaLtaApi\Exception\ProjectAssetNotFoundException;
+use LukaLtaApi\Value\Project\ProjectId;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -25,7 +26,13 @@ class GetProjectAssetAction extends ApiAction
      */
     protected function execute(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $asset  = $this->assetService->loadAssetOrFail((string) $request->getAttribute('assetId'));
+        $projectId = ProjectId::fromString((string) $request->getAttribute('projectId'));
+        $asset     = $this->assetService->loadAssetOrFail((string) $request->getAttribute('assetId'));
+
+        if ($asset->getProjectId()->asString() !== $projectId->asString()) {
+            throw new ProjectAssetNotFoundException();
+        }
+
         $object = $this->assetService->getObjectForAsset($asset);
 
         if ($object === null) {

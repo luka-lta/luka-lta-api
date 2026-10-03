@@ -21,6 +21,9 @@ class ProjectAssetService
     /** 5 MiB in bytes */
     private const int MAX_FILE_SIZE = 5 * 1024 * 1024;
 
+    /** Entspricht der Spaltenbreite von project_assets.alt_text */
+    private const int MAX_ALT_TEXT_LENGTH = 150;
+
     /** Erlaubte Bild-Formate. Bewusst inkl. webp, anders als der Avatar-Upload. */
     private const array ALLOWED_MIME_TYPES = [
         'image/jpeg' => 'jpg',
@@ -40,6 +43,13 @@ class ProjectAssetService
         UploadedFileInterface $uploadedFile,
         ?string               $altText,
     ): ProjectAsset {
+        if ($altText !== null && mb_strlen($altText) > self::MAX_ALT_TEXT_LENGTH) {
+            throw new ProjectAssetUploadException(
+                'Alt text must not exceed 150 characters.',
+                StatusCodeInterface::STATUS_BAD_REQUEST,
+            );
+        }
+
         $extension = $this->validate($uploadedFile);
 
         // logo/cover existieren pro Projekt nur einmal: altes Asset inkl.
