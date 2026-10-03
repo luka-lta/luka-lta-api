@@ -7,6 +7,7 @@ namespace LukaLtaApi\Api\Project\Service;
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Repository\ProjectTagRepository;
 use LukaLtaApi\Value\Project\Tag\ProjectTag;
+use LukaLtaApi\Value\Project\Tag\ProjectTagName;
 use LukaLtaApi\Value\Project\Tag\ProjectTagSlug;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
@@ -34,12 +35,21 @@ class ProjectTagService
      */
     public function createTag(string $name): ApiResult
     {
-        $tag      = ProjectTag::create($name);
-        $existing = $this->repository->getBySlug(ProjectTagSlug::fromName($name));
+        $tag = ProjectTag::create($name);
 
-        if ($existing !== null) {
+        $existingBySlug = $this->repository->getBySlug(ProjectTagSlug::fromName($name));
+
+        if ($existingBySlug !== null) {
             return ApiResult::from(
-                JsonResult::from('Project tag already exists.', ['tag' => $existing->toArray()])
+                JsonResult::from('Project tag already exists.', ['tag' => $existingBySlug->toArray()])
+            );
+        }
+
+        $existingByName = $this->repository->getByName(ProjectTagName::fromString($name));
+
+        if ($existingByName !== null) {
+            return ApiResult::from(
+                JsonResult::from('Project tag already exists.', ['tag' => $existingByName->toArray()])
             );
         }
 

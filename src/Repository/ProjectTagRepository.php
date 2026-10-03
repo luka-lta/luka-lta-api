@@ -9,6 +9,7 @@ use LukaLtaApi\Exception\ProjectTagNotFoundException;
 use LukaLtaApi\Value\Project\ProjectId;
 use LukaLtaApi\Value\Project\Tag\ProjectTag;
 use LukaLtaApi\Value\Project\Tag\ProjectTagId;
+use LukaLtaApi\Value\Project\Tag\ProjectTagName;
 use LukaLtaApi\Value\Project\Tag\ProjectTagSlug;
 use LukaLtaApi\Value\Project\Tag\ProjectTags;
 use PDO;
@@ -67,6 +68,21 @@ class ProjectTagRepository
             $row = $stmt->fetch();
         } catch (PDOException $exception) {
             throw new ApiDatabaseException('Failed to fetch project tag by slug.', previous: $exception);
+        }
+
+        return $row !== false ? ProjectTag::fromDatabase($row) : null;
+    }
+
+    public function getByName(ProjectTagName $name): ?ProjectTag
+    {
+        $sql = self::TAG_SELECT . ' WHERE t.name = :name';
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute(['name' => (string) $name]);
+            $row = $stmt->fetch();
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException('Failed to fetch project tag by name.', previous: $exception);
         }
 
         return $row !== false ? ProjectTag::fromDatabase($row) : null;
