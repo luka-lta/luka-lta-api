@@ -7,9 +7,11 @@ namespace LukaLtaApi\Api\Homelab\Service;
 use LukaLtaApi\Exception\ApiValidationException;
 use LukaLtaApi\Exception\ContainerNotFoundException;
 use LukaLtaApi\Exception\HostNotFoundException;
-use LukaLtaApi\Repository\HomelabAlertRepository;
+use LukaLtaApi\Repository\AlertRepository;
 use LukaLtaApi\Repository\HomelabContainerRepository;
+use LukaLtaApi\Repository\HomelabEventRepository;
 use LukaLtaApi\Repository\HomelabHostRepository;
+use LukaLtaApi\Value\Alert\Alert;
 use LukaLtaApi\Value\Homelab\ContainerId;
 use LukaLtaApi\Value\Homelab\HostId;
 use LukaLtaApi\Value\Result\ApiResult;
@@ -23,7 +25,8 @@ class HomelabService
     public function __construct(
         private readonly HomelabHostRepository      $hostRepository,
         private readonly HomelabContainerRepository $containerRepository,
-        private readonly HomelabAlertRepository      $alertRepository,
+        private readonly AlertRepository             $alertRepository,
+        private readonly HomelabEventRepository      $eventRepository,
     ) {
     }
 
@@ -100,10 +103,37 @@ class HomelabService
 
     public function listAlerts(): ApiResult
     {
-        $alerts = $this->alertRepository->loadActive();
+        $alerts = array_map(
+            $this->toLegacyHomelabAlertShape(...),
+            iterator_to_array($this->alertRepository->loadActive('homelab')),
+        );
 
         return ApiResult::from(
             JsonResult::from('Alerts fetched.', ['alerts' => $alerts])
+        );
+    }
+
+    private function toLegacyHomelabAlertShape(Alert $alert): array
+    {
+        $context = $alert->getContext();
+
+        return [
+            'id' => $alert->getAlertId(),
+            'severity' => $alert->getSeverity(),
+            'title' => $alert->getTitle(),
+            'description' => $alert->getDescription(),
+            'timestamp' => $alert->getFirstOccurredAt()->format('Y-m-d H:i:s'),
+            'containerId' => $context['containerId'] ?? null,
+            'hostId' => $context['hostId'] ?? null,
+        ];
+    }
+
+    public function listEvents(int $limit = 100): ApiResult
+    {
+        $events = $this->eventRepository->loadRecent($limit);
+
+        return ApiResult::from(
+            JsonResult::from('Events fetched.', ['events' => $events])
         );
     }
 }

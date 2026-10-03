@@ -293,25 +293,23 @@ class HomelabContainerRepository
     }
 
     /**
-     * Marks any container stored for this host but absent from $presentContainerIds
-     * as stopped — it no longer exists on the host (removed, not just paused).
+     * Deletes any container stored for this host but absent from $presentContainerIds.
+     * The agent reports every container `docker ps -a` still sees, running or stopped —
+     * so a container missing from that list was actually removed (`docker rm`), not
+     * merely stopped, and must not be kept around as a stale row.
      *
      * @param string[] $presentContainerIds
      */
-    public function markMissingAsStopped(HostId $hostId, array $presentContainerIds): int
+    public function deleteMissing(HostId $hostId, array $presentContainerIds): int
     {
         if (empty($presentContainerIds)) {
-            $sql = <<<SQL
-                UPDATE homelab_containers
-                SET status = 'stopped', health_status = 'none'
-                WHERE host_id = :host_id AND status != 'stopped'
-            SQL;
+            $sql = 'DELETE FROM homelab_containers WHERE host_id = :host_id';
 
             try {
                 $stmt = $this->pdo->prepare($sql);
                 $stmt->execute(['host_id' => $hostId->asString()]);
             } catch (PDOException $exception) {
-                throw new ApiDatabaseException('Failed to mark missing containers stopped.', previous: $exception);
+                throw new ApiDatabaseException('Failed to delete removed containers.', previous: $exception);
             }
 
             return $stmt->rowCount();
@@ -327,10 +325,8 @@ class HomelabContainerRepository
 
         $placeholderList = implode(',', $placeholders);
         $sql             = <<<SQL
-            UPDATE homelab_containers
-            SET status = 'stopped', health_status = 'none'
+            DELETE FROM homelab_containers
             WHERE host_id = :host_id
-              AND status != 'stopped'
               AND container_id NOT IN ({$placeholderList})
         SQL;
 
@@ -338,7 +334,7 @@ class HomelabContainerRepository
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute($params);
         } catch (PDOException $exception) {
-            throw new ApiDatabaseException('Failed to mark missing containers stopped.', previous: $exception);
+            throw new ApiDatabaseException('Failed to delete removed containers.', previous: $exception);
         }
 
         return $stmt->rowCount();

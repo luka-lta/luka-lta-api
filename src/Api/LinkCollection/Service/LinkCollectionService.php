@@ -26,7 +26,7 @@ class LinkCollectionService
     ) {
     }
 
-    public function getDetailLink(array $attributes): ApiResult
+    public function getDetailLink(array $attributes, bool $isAuthenticated = false): ApiResult
     {
         if (!isset($attributes['linkId'])) {
             return ApiResult::from(
@@ -38,7 +38,7 @@ class LinkCollectionService
         }
 
         $linkId = LinkId::fromString($attributes['linkId']);
-        $link = $this->repository->findById($linkId);
+        $link = $this->repository->findById($linkId, $isAuthenticated);
 
         if ($link === null) {
             return ApiResult::from(
@@ -59,8 +59,9 @@ class LinkCollectionService
             FILTER_VALIDATE_BOOL,
             FILTER_NULL_ON_FAILURE
         ) ?? false;
+        $isAuthenticated = !empty($request->getHeaderLine('Authorization'));
 
-        $links = $this->repository->getAll($filter);
+        $links = $this->repository->getAll($filter, $isAuthenticated);
 
         if ($links->count() === 0) {
             return ApiResult::from(
@@ -112,7 +113,7 @@ class LinkCollectionService
         }
 
         $linkId = LinkId::fromString($params['linkId']);
-        $link = $this->repository->findById($linkId);
+        $link = $this->repository->findById($linkId, true);
 
         if (!$link) {
             return ApiResult::from(
@@ -148,7 +149,7 @@ class LinkCollectionService
         }
 
         $linkId = LinkId::fromString($params['linkId']);
-        $link = $this->repository->findById($linkId);
+        $link = $this->repository->findById($linkId, true);
 
         if (!$link) {
             return ApiResult::from(
@@ -184,7 +185,7 @@ class LinkCollectionService
         }
 
         $linkId = LinkId::fromString($params['linkId']);
-        $link = $this->repository->findById($linkId);
+        $link = $this->repository->findById($linkId, true);
 
         if (!$link) {
             return ApiResult::from(
@@ -207,7 +208,7 @@ class LinkCollectionService
     {
         $linkId = (int)$request->getAttribute('linkId');
 
-        $linkItem = $this->repository->findById(LinkId::fromInt($linkId));
+        $linkItem = $this->repository->findById(LinkId::fromInt($linkId), true);
 
         if (!$linkItem) {
             return ApiResult::from(

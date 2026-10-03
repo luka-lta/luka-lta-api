@@ -31,8 +31,16 @@ ALTER TABLE `homelab_container_health_checks`
 ALTER TABLE `homelab_container_logs`
     ADD CONSTRAINT `fk_container_log_container` FOREIGN KEY (`container_id`) REFERENCES `homelab_containers` (`container_id`) ON DELETE CASCADE;
 
-ALTER TABLE `homelab_alerts`
-    ADD CONSTRAINT `fk_alert_container` FOREIGN KEY (`container_id`) REFERENCES `homelab_containers` (`container_id`) ON DELETE CASCADE;
+-- SET NULL (not CASCADE): an event must survive the container/host it was about
+-- being removed — "container X was removed" needs to stay readable afterwards.
+ALTER TABLE `homelab_events`
+    ADD CONSTRAINT `fk_event_container` FOREIGN KEY (`container_id`) REFERENCES `homelab_containers` (`container_id`) ON DELETE SET NULL;
 
-ALTER TABLE `homelab_alerts`
-    ADD CONSTRAINT `fk_alert_host` FOREIGN KEY (`host_id`) REFERENCES `homelab_hosts` (`host_id`) ON DELETE CASCADE;
+ALTER TABLE `homelab_events`
+    ADD CONSTRAINT `fk_event_host` FOREIGN KEY (`host_id`) REFERENCES `homelab_hosts` (`host_id`) ON DELETE SET NULL;
+
+ALTER TABLE `notification_reads`
+    ADD CONSTRAINT `fk_notification_read_alert` FOREIGN KEY (`alert_id`) REFERENCES `alerts` (`alert_id`) ON DELETE CASCADE;
+
+ALTER TABLE `notification_reads`
+    ADD CONSTRAINT `fk_notification_read_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;

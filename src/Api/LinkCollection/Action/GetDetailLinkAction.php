@@ -18,6 +18,8 @@ class GetDetailLinkAction extends ApiAction
 
     protected function execute(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        return $this->service->getDetailLink($request->getAttributes())->getResponse($response);
+        $isAuthenticated = !empty($request->getHeaderLine('Authorization'));
+
+        return $this->service->getDetailLink($request->getAttributes(), $isAuthenticated)->getResponse($response);
     }
 }

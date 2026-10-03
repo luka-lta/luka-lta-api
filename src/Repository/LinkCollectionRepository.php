@@ -13,6 +13,8 @@ use LukaLtaApi\Value\Tracking\ClickTag;
 use PDO;
 use PDOException;
 
+use function Latitude\QueryBuilder\field;
+
 class LinkCollectionRepository
 {
     public function __construct(
@@ -80,16 +82,30 @@ class LinkCollectionRepository
         return LinkItem::fromDatabase($row);
     }
 
-    public function findById(LinkId $linkId): ?LinkItem
+    public function findById(LinkId $linkId, bool $isAuthenticated = false): ?LinkItem
     {
-        if ($linkItem = $this->caching->getItem($linkId)) {
-            return $linkItem;
+        $cachedItem = $this->caching->getItem($linkId);
+
+        if ($cachedItem !== null && $isAuthenticated) {
+            return $cachedItem;
+        }
+
+        if ($cachedItem !== null && $cachedItem->getMetaData()->isActive() && !$cachedItem->isDeactivated()) {
+            return $cachedItem;
+        }
+
+        if ($cachedItem !== null) {
+            return null;
         }
 
         $sql = <<<SQL
             SELECT * FROM link_collection
             WHERE link_id = :linkId
         SQL;
+
+        if (!$isAuthenticated) {
+            $sql .= ' AND is_active = 1 AND deactivated = 0';
+        }
 
         try {
             $stmt = $this->pdo->prepare($sql);
@@ -194,9 +210,13 @@ class LinkCollectionRepository
         $this->caching->deleteItem($linkId);
     }
 
-    public function getAll(LinkTreeExtraFilter $filter): LinkItems
+    public function getAll(LinkTreeExtraFilter $filter, bool $isAuthenticated = false): LinkItems
     {
         $select = $this->queryFactory->select('*')->from('link_collection');
+
+        if (!$isAuthenticated) {
+            $select->andWhere(field('is_active')->eq(1))->andWhere(field('deactivated')->eq(0));
+        }
 
         $query = $filter->createSqlFilter($select);
         $sql = $query->compile();

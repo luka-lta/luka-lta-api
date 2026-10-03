@@ -22,6 +22,12 @@ use LukaLtaApi\Api\Click\Action\GetClicksFiltersAction;
 use LukaLtaApi\Api\Click\Action\GetClicksStatsAction;
 use LukaLtaApi\Api\Click\Action\GetClickSummaryAction;
 use LukaLtaApi\Api\Health\Action\GetHealthAction;
+use LukaLtaApi\Api\Calendar\Action\CreateCalendarSourceAction;
+use LukaLtaApi\Api\Calendar\Action\DeleteCalendarSourceAction;
+use LukaLtaApi\Api\Calendar\Action\GetCalendarEventsAction;
+use LukaLtaApi\Api\Calendar\Action\GetCalendarSummaryAction;
+use LukaLtaApi\Api\Calendar\Action\ListCalendarSourcesAction;
+use LukaLtaApi\Api\Calendar\Action\UpdateCalendarSourceAction;
 use LukaLtaApi\Api\Homelab\Action\CreateTopologyEdgeAction;
 use LukaLtaApi\Api\Homelab\Action\CreateTopologyNodeAction;
 use LukaLtaApi\Api\Homelab\Action\DeleteTopologyEdgeAction;
@@ -34,9 +40,14 @@ use LukaLtaApi\Api\Homelab\Action\IngestContainerMetricsAction;
 use LukaLtaApi\Api\Homelab\Action\IngestHostMetricsAction;
 use LukaLtaApi\Api\Homelab\Action\ListAlertsAction;
 use LukaLtaApi\Api\Homelab\Action\ListContainersAction;
+use LukaLtaApi\Api\Homelab\Action\ListEventsAction;
 use LukaLtaApi\Api\Homelab\Action\ListHostsAction;
 use LukaLtaApi\Api\Homelab\Action\UpdateContainerRoleAction;
 use LukaLtaApi\Api\Homelab\Action\UpdateHostNodeTypeAction;
+use LukaLtaApi\Api\Weather\Action\GetWeatherDetailAction;
+use LukaLtaApi\Api\Weather\Action\GetWeatherLocationAction;
+use LukaLtaApi\Api\Weather\Action\GetWeatherSummaryAction;
+use LukaLtaApi\Api\Weather\Action\UpdateWeatherLocationAction;
 use LukaLtaApi\Api\LinkCollection\Action\ActivateLinkAction;
 use LukaLtaApi\Api\LinkCollection\Action\CreateLinkAction;
 use LukaLtaApi\Api\LinkCollection\Action\DeactivateLinkAction;
@@ -44,6 +55,9 @@ use LukaLtaApi\Api\LinkCollection\Action\DeleteLinkAction;
 use LukaLtaApi\Api\LinkCollection\Action\EditLinkAction;
 use LukaLtaApi\Api\LinkCollection\Action\GetAllLinksAction;
 use LukaLtaApi\Api\LinkCollection\Action\GetDetailLinkAction;
+use LukaLtaApi\Api\Notification\Action\ListNotificationsAction;
+use LukaLtaApi\Api\Notification\Action\MarkAllNotificationsReadAction;
+use LukaLtaApi\Api\Notification\Action\MarkNotificationReadAction;
 use LukaLtaApi\Api\SelfUser\Action\GetSelfUserAction;
 use LukaLtaApi\Api\SelfUser\Action\SelfUserUpdateAction;
 use LukaLtaApi\Api\Statistics\Action\GetStatisticsAction;
@@ -139,10 +153,12 @@ class RouteMiddlewareCollector
             $app->get('/health', GetHealthAction::class);
             $app->get('/avatar/{userId}', GetAvatarAction::class);
 
+            $app->get('/linkCollection', GetAllLinksAction::class);
+            $app->get('/linkCollection/', GetAllLinksAction::class);
+            $app->get('/linkCollection/{linkId:[0-9]+}', GetDetailLinkAction::class);
+
             $app->group('/linkCollection', function (RouteCollectorProxy $linkCollection) use ($app) {
                 $linkCollection->post('/', CreateLinkAction::class);
-                $linkCollection->get('/', GetAllLinksAction::class);
-                $linkCollection->get('/{linkId:[0-9]+}', GetDetailLinkAction::class);
                 $linkCollection->put('/{linkId:[0-9]+}', EditLinkAction::class);
                 $linkCollection->put('/deactivate/{linkId:[0-9]+}', DeactivateLinkAction::class);
                 $linkCollection->put('/activate/{linkId:[0-9]+}', ActivateLinkAction::class);
@@ -202,6 +218,7 @@ class RouteMiddlewareCollector
                 $homelab->get('/containers/{containerId}', GetContainerAction::class);
                 $homelab->get('/containers/{containerId}/metrics', GetContainerMetricsAction::class);
                 $homelab->get('/alerts', ListAlertsAction::class);
+                $homelab->get('/events', ListEventsAction::class);
                 $homelab->patch('/hosts/{hostId}', UpdateHostNodeTypeAction::class);
                 $homelab->patch('/containers/{containerId}/role', UpdateContainerRoleAction::class);
 
@@ -210,6 +227,30 @@ class RouteMiddlewareCollector
                 $homelab->delete('/topology/nodes/{nodeId}', DeleteTopologyNodeAction::class);
                 $homelab->post('/topology/edges', CreateTopologyEdgeAction::class);
                 $homelab->delete('/topology/edges/{edgeId}', DeleteTopologyEdgeAction::class);
+            })->add(AuthMiddleware::class);
+
+            // Weather — dashboard widget routes
+            $app->group('/weather', function (RouteCollectorProxy $weather) {
+                $weather->get('', GetWeatherSummaryAction::class);
+                $weather->get('/detail', GetWeatherDetailAction::class);
+                $weather->get('/location', GetWeatherLocationAction::class);
+                $weather->patch('/location', UpdateWeatherLocationAction::class);
+            })->add(AuthMiddleware::class);
+
+            // Calendar — dashboard widget routes
+            $app->group('/calendar', function (RouteCollectorProxy $calendar) {
+                $calendar->get('', GetCalendarSummaryAction::class);
+                $calendar->get('/events', GetCalendarEventsAction::class);
+                $calendar->get('/sources', ListCalendarSourcesAction::class);
+                $calendar->post('/sources', CreateCalendarSourceAction::class);
+                $calendar->patch('/sources/{sourceId}', UpdateCalendarSourceAction::class);
+                $calendar->delete('/sources/{sourceId}', DeleteCalendarSourceAction::class);
+            })->add(AuthMiddleware::class);
+
+            $app->group('/notifications', function (RouteCollectorProxy $notifications) {
+                $notifications->get('', ListNotificationsAction::class);
+                $notifications->patch('/read-all', MarkAllNotificationsReadAction::class);
+                $notifications->patch('/{alertId}/read', MarkNotificationReadAction::class);
             })->add(AuthMiddleware::class);
 
             // Homelab — agent ingest routes, API-key authenticated

@@ -1,3 +1,7 @@
 SHELL=/bin/sh
 
 0 * * * * php /app/bin/app.php homelab:cleanup
+*/5 * * * * php /app/bin/app.php homelab:check-heartbeats
+*/15 * * * * php /app/bin/app.php weather:fetch
+*/10 * * * * php /app/bin/app.php calendar:sync
+0 3 * * * php /app/bin/app.php alerts:cleanup

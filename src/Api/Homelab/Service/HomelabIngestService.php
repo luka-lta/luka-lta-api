@@ -6,11 +6,13 @@ namespace LukaLtaApi\Api\Homelab\Service;
 
 use DateTimeImmutable;
 use Fig\Http\Message\StatusCodeInterface;
-use LukaLtaApi\Repository\HomelabAlertRepository;
 use LukaLtaApi\Repository\HomelabContainerRepository;
+use LukaLtaApi\Repository\HomelabEventRepository;
 use LukaLtaApi\Repository\HomelabHostRepository;
-use LukaLtaApi\Value\Homelab\Alert;
+use LukaLtaApi\Service\AlertManager;
+use LukaLtaApi\Service\AlertTransition;
 use LukaLtaApi\Value\Homelab\ContainerId;
+use LukaLtaApi\Value\Homelab\Event;
 use LukaLtaApi\Value\Homelab\HostId;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
@@ -23,10 +25,14 @@ class HomelabIngestService
     /** Host disk usage percent threshold that raises a warning alert. */
     private const HOST_DISK_WARNING_PERCENT = 90.0;
 
+    /** Restart count that marks a container as crash-looping. */
+    private const CONTAINER_RESTART_CRITICAL_COUNT = 10;
+
     public function __construct(
         private readonly HomelabHostRepository      $hostRepository,
         private readonly HomelabContainerRepository $containerRepository,
-        private readonly HomelabAlertRepository      $alertRepository,
+        private readonly HomelabEventRepository     $eventRepository,
+        private readonly AlertManager               $alertManager,
     ) {
     }
 
@@ -55,11 +61,28 @@ class HomelabIngestService
         ));
 
         // The agent reports every container it currently sees (docker ps -a) on each
-        // poll. Anything we have stored for this host but that's missing from that
-        // list no longer exists on the host — mark it stopped instead of leaving a
-        // stale "running" row behind forever.
+        // poll, running or stopped. Anything we have stored for this host but that's
+        // missing from that list was actually removed (docker rm) — delete it instead
+        // of leaving a stale row behind forever. Record the removal as an event first;
+        // the FK is ON DELETE SET NULL so the event outlives the deleted container row.
         if (isset($data['containerIds']) && is_array($data['containerIds'])) {
-            $this->containerRepository->markMissingAsStopped($hostId, $data['containerIds']);
+            $presentIds = $data['containerIds'];
+            foreach ($this->containerRepository->loadByHost($hostId) as $existingContainer) {
+                if (in_array($existingContainer->getContainerId(), $presentIds, true)) {
+                    continue;
+                }
+
+                $this->eventRepository->insert(Event::create(
+                    'container.removed',
+                    'info',
+                    "{$existingContainer->getName()} removed",
+                    "Container no longer exists on {$data['name']}.",
+                    $existingContainer->getContainerId(),
+                    $hostId->asString(),
+                ));
+            }
+
+            $this->containerRepository->deleteMissing($hostId, $presentIds);
         }
 
         return ApiResult::from(
@@ -74,7 +97,27 @@ class HomelabIngestService
         $hostId      = HostId::fromString($data['hostId']);
         $now         = new DateTimeImmutable();
 
+        // A stopped container uses no CPU or memory — zero it out instead of keeping
+        // the last reported usage, which would otherwise read as still-running load.
+        if ($data['status'] === 'stopped') {
+            $data['cpuUsagePercent'] = 0.0;
+            $data['memoryUsedMb']    = 0.0;
+        }
+
+        $isNewContainer = $this->containerRepository->loadContainer($containerId) === null;
+
         $this->containerRepository->upsert($containerId, $hostId, $data);
+
+        if ($isNewContainer) {
+            $this->eventRepository->insert(Event::create(
+                'container.added',
+                'info',
+                "{$data['name']} added",
+                "Container first seen on this host.",
+                $containerId->asString(),
+                $hostId->asString(),
+            ));
+        }
 
         $this->containerRepository->insertMetric($containerId, 'cpu', (float) $data['cpuUsagePercent'], $now);
         $this->containerRepository->insertMetric($containerId, 'memory', (float) $data['memoryUsedMb'], $now);
@@ -85,6 +128,14 @@ class HomelabIngestService
                 $data['restartEvent']['reason'],
                 new DateTimeImmutable($data['restartEvent']['occurredAt']),
             );
+            $this->eventRepository->insert(Event::create(
+                'container.restarted',
+                'warning',
+                "{$data['name']} restarted",
+                $data['restartEvent']['reason'],
+                $containerId->asString(),
+                $hostId->asString(),
+            ));
         }
 
         if (isset($data['healthCheckEvent'])) {
@@ -128,20 +179,26 @@ class HomelabIngestService
         float $memoryUsagePercent,
         float $diskUsagePercent,
     ): void {
-        $this->evaluateThresholdAlert(
+        $this->applyAlert(
             $memoryUsagePercent >= self::HOST_MEMORY_WARNING_PERCENT,
+            $hostId->asString(),
+            'host.memory_high',
             'warning',
             "High memory usage on {$hostName}",
             "Host memory usage at {$memoryUsagePercent}%.",
+            ['hostId' => $hostId->asString()],
             null,
             $hostId->asString(),
         );
 
-        $this->evaluateThresholdAlert(
+        $this->applyAlert(
             $diskUsagePercent >= self::HOST_DISK_WARNING_PERCENT,
+            $hostId->asString(),
+            'host.disk_high',
             'warning',
             "Disk nearly full on {$hostName}",
             "Disk usage at {$diskUsagePercent}%.",
+            ['hostId' => $hostId->asString()],
             null,
             $hostId->asString(),
         );
@@ -149,33 +206,79 @@ class HomelabIngestService
 
     private function evaluateContainerAlerts(ContainerId $containerId, HostId $hostId, array $data): void
     {
-        $this->evaluateThresholdAlert(
+        $context = ['containerId' => $containerId->asString(), 'hostId' => $hostId->asString()];
+
+        $this->applyAlert(
             $data['healthStatus'] === 'unhealthy',
+            $containerId->asString(),
+            'container.unhealthy',
             'critical',
             "{$data['name']} unhealthy",
-            "Container health status is unhealthy.",
+            'Container health status is unhealthy.',
+            $context,
+            $containerId->asString(),
+            $hostId->asString(),
+        );
+
+        $restartCount = (int) ($data['restartCount'] ?? 0);
+        $this->applyAlert(
+            $restartCount >= self::CONTAINER_RESTART_CRITICAL_COUNT,
+            $containerId->asString(),
+            'container.crash_loop',
+            'critical',
+            "{$data['name']} is crash-looping",
+            "Container has restarted {$restartCount} times.",
+            $context,
+            $containerId->asString(),
+            $hostId->asString(),
+        );
+
+        $this->applyAlert(
+            $data['status'] === 'stopped' && $restartCount > 0,
+            $containerId->asString(),
+            'container.stopped_after_restart',
+            'warning',
+            "{$data['name']} stopped unexpectedly",
+            "Container is stopped after {$restartCount} restart(s).",
+            $context,
             $containerId->asString(),
             $hostId->asString(),
         );
     }
 
-    private function evaluateThresholdAlert(
-        bool $isTriggered,
-        string $severity,
-        string $title,
-        string $description,
+    private function applyAlert(
+        bool    $isTriggered,
+        string  $sourceId,
+        string  $type,
+        string  $severity,
+        string  $title,
+        string  $description,
+        array   $context,
         ?string $containerId,
         ?string $hostId,
     ): void {
-        $hasActiveAlert = $this->alertRepository->hasActiveAlert($title, $containerId, $hostId);
+        $transition = $this->alertManager->evaluate(
+            $isTriggered,
+            'homelab',
+            $sourceId,
+            $type,
+            $severity,
+            $title,
+            $description,
+            $context,
+        );
 
-        if ($isTriggered && !$hasActiveAlert) {
-            $this->alertRepository->create(Alert::create($severity, $title, $description, $containerId, $hostId));
+        if ($transition === AlertTransition::Created) {
+            $this->eventRepository->insert(
+                Event::create('alert.created', $severity, $title, $description, $containerId, $hostId),
+            );
             return;
         }
 
-        if (!$isTriggered && $hasActiveAlert) {
-            $this->alertRepository->resolve($title, $containerId, $hostId);
+        if ($transition === AlertTransition::Resolved) {
+            $this->eventRepository->insert(
+                Event::create('alert.resolved', 'info', $title, "Resolved: {$description}", $containerId, $hostId),
+            );
         }
     }
 }

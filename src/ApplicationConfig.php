@@ -8,10 +8,13 @@ use LukaLtaApi\App\Factory\MinIOFactory;
 use LukaLtaApi\App\Factory\PdoFactory;
 use LukaLtaApi\App\Factory\RedisFactory;
 use LukaLtaApi\App\Factory\TelegramBotFactory;
+use LukaLtaApi\Weather\OpenMeteoWeatherProvider;
+use LukaLtaApi\Weather\WeatherProviderInterface;
 use PDO;
 use Redis;
 use TelegramBot\Api\BotApi;
 
+use function DI\create;
 use function DI\factory;
 
 class ApplicationConfig extends DefinitionArray
@@ -28,6 +31,7 @@ class ApplicationConfig extends DefinitionArray
             Redis::class => factory(RedisFactory::class),
             BotApi::class => factory(TelegramBotFactory::class),
             S3Client::class => factory(MinIOFactory::class),
+            WeatherProviderInterface::class => create(OpenMeteoWeatherProvider::class),
         ];
     }
 }

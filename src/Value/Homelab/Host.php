@@ -62,6 +62,11 @@ class Host implements JsonSerializable
         return $this->nodeType;
     }
 
+    public function getUpdatedAt(): DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
     public function getMemoryUsagePercent(): float
     {
         if ($this->memoryTotalGb <= 0.0) {
