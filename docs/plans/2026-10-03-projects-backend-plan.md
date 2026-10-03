@@ -2904,15 +2904,24 @@ Direkt **nach** der in Task 4 angelegten `/projects/tags`-Gruppe ergänzen:
             })->add(AuthMiddleware::class);
 ```
 
-Die **öffentlichen** Routen kommen dort hin, wo auch `$app->get('/blog', ...)` steht (ungruppiert, neben `$app->get('/avatar/{userId}', ...)`), und zwar **nach** allen `/projects/...`-Gruppen, damit `{slug}` nichts Spezifischeres verschluckt:
+Die **öffentlichen** Routen kommen **unmittelbar nach** der eben ergänzten geschützten `/projects`-Gruppe — also ebenfalls innerhalb derselben Closure, auf derselben Einrückungsebene (12 Spaces), **nicht** oben bei den Blog-Routen:
 
 ```php
-// Projects — public read routes
-$app->get('/projects', GetAllProjectsAction::class);
-$app->get('/projects/{slug}', GetProjectAction::class);
+            // Projects — public read routes
+            $app->get('/projects', GetAllProjectsAction::class);
+            $app->get('/projects/{slug}', GetProjectAction::class);
 ```
 
-**Reihenfolge-Kontrolle:** Slim matcht in Registrierungsreihenfolge. Die konkrete Abfolge muss sein: `/projects/tags` (Gruppe) → `/projects` Verwaltungs-Gruppe (mit `/manage`, `/order`) → öffentliche `/projects` und `/projects/{slug}`. Wenn `/projects/{slug}` vorher registriert wird, liefert `GET /projects/manage` einen 404 "Project not found" statt der Verwaltungsliste. Das ist in Step 7 explizit zu prüfen.
+**Reihenfolge-Kontrolle (korrigiert — vorherige Fassung dieses Plans war hier falsch):** Die gesamte Routen-Registrierung liegt in **einer** Closure und Slim matcht in Registrierungsreihenfolge, erster Treffer gewinnt. Ein früherer Entwurf sagte, die öffentlichen Routen gehörten zu den Blog-Routen (dort, wo `$app->get('/blog', ...)` steht). Das ist **falsch**: diese Zeilen stehen deutlich **vor** der in Task 4 angelegten `/projects/tags`-Gruppe, womit `{slug}` sowohl `/projects/tags` als auch `/projects/manage` verschlucken würde.
+
+Verbindliche Abfolge:
+
+1. `/projects/tags`-Gruppe (Task 4, steht bereits)
+2. geschützte `/projects`-Gruppe (dieser Task, mit `/manage` und `/order`)
+3. öffentliche `/projects/{projectId}/assets/{assetId}` (Task 8)
+4. öffentliche `/projects` und `/projects/{slug}` (dieser Task) — **zuletzt**
+
+Lege die öffentlichen Routen also hinter die geschützte Gruppe. Task 8 schiebt seine öffentliche Asset-Route später **zwischen** 2 und 4 ein. Step 7 prüft per curl explizit, dass `GET /projects/manage` nicht als Slug aufgelöst wird.
 
 - [ ] **Step 6: Lint**
 
@@ -3448,10 +3457,10 @@ In der geschützten `/projects`-Gruppe aus Task 6 **vor** `$projects->patch('/{p
                 $projects->delete('/{projectId}/assets/{assetId}', DeleteProjectAssetAction::class);
 ```
 
-Die öffentliche Asset-Route zu den öffentlichen Projects-Routen, **vor** `/projects/{slug}`:
+Die öffentliche Asset-Route gehört in dieselbe Closure, auf dieselbe Einrückungsebene (12 Spaces), **zwischen** die geschützte `/projects`-Gruppe und die öffentliche Route `/projects/{slug}` aus Task 6. Steht sie nach `{slug}`, verschluckt der Platzhalter sie:
 
 ```php
-$app->get('/projects/{projectId}/assets/{assetId}', GetProjectAssetAction::class);
+            $app->get('/projects/{projectId}/assets/{assetId}', GetProjectAssetAction::class);
 ```
 
 - [ ] **Step 6: Lint**
