@@ -20,31 +20,63 @@
 - Kommentare auf Deutsch (internes Projekt), nur wo das *Warum* nicht offensichtlich ist.
 - Keine Magic Numbers — benannte Konstanten mit Doc-Comment.
 - Exception-Messages kurz, ohne abschließendes Satzzeichen-Fehlverhalten (bestehender Stil: mit Punkt, z. B. `'Tag not found.'`) — bestehenden Stil übernehmen.
-- **Keine Test-Infrastruktur** (bewusste Entscheidung): Verifikation pro Task = `just lint` + echte HTTP-Calls per `curl` gegen den Dev-Stack + Prüfung der DB-Zeilen.
+- **Keine Test-Infrastruktur** (bewusste Entscheidung): Verifikation pro Task = Lint + echte HTTP-Calls per `curl` gegen den Dev-Stack + Prüfung der DB-Zeilen.
 - Es gibt **keinen** Test-Runner. Niemals `phpunit`, `composer test` o. ä. aufrufen.
 - Trailing-Kommata wo möglich.
 
-## Dev-Stack Vorbereitung (gilt für jeden Task mit curl-Verifikation)
+## Verifizierte Umgebungs-Fakten (alle im Dev-Stack geprüft, nicht raten)
+
+Diese Werte sind gemessen, nicht angenommen. Weicht etwas ab, erst prüfen, nicht umbauen.
+
+| Fakt | Wert |
+|---|---|
+| Compose-Service PHP | `php-fpm-api` (**nicht** `php-fpm`) |
+| Laufender Container | `php-fpm-luka-lta` |
+| Datenbank | `luka_lta_api` (ein früherer Entwurf dieses Plans nannte `luka_lta` — falsch) |
+| MySQL-Container | `mysql-luka-lta`, root-Passwort steht als `MYSQL_ROOT_PASSWORD` im Container |
+| API Base-URL | `http://localhost/api/v1` |
+| Auth-Route | `POST /auth/login` mit `{"email","password"}` |
+| MinIO-Bucket | `avatars` (Env `AWS_BUCKET`) — Projekt-Keys liegen als Prefix `projects/…` in **diesem** Bucket |
+
+### Lint
+
+`just lint` ist **nicht** benutzbar: phpmd läuft unter PHP 8.4 nicht (pdepend/Symfony-DI-Inkompatibilität, Fatal Error) und bricht die Recipe ab, bevor phpcs läuft. Das Gate für neuen Code ist deshalb phpcs, begrenzt auf die Pfade des Tasks:
 
 ```bash
-just dev          # startet nginx, php-fpm, mysql, redis, minio
+just lint-path src/Value/Project src/Api/Project      # Beispiel: eigene Pfade des Tasks einsetzen
 ```
 
-Base-URL ist `http://localhost/api/v1`. Token für geschützte Routen holen:
+Erwartet: `FOUND 0 ERRORS` und keine Warnings für die eigenen Dateien. `src` im Ganzen (`just lint-cs`) enthält Altbestand mit Line-Length-Warnings in fremden Dateien — die sind **nicht** Aufgabe dieses Plans und werden nicht angefasst.
+
+Die `@SuppressWarnings(PHPMD.…)`-Annotationen im geplanten Code bleiben drin: sie dokumentieren die Absicht und greifen, sobald phpmd wieder läuft.
+
+### Auth für geschützte Routen (wichtig — zwei Stolperfallen)
+
+`AuthMiddleware` verlangt **beides**: einen `Authorization`-Header **und** einen nicht-leeren `Origin`-Header. Und es übergibt den kompletten Header-Wert an `Token::validate()` — ein `Bearer `-Prefix lässt die Validierung fehlschlagen. Der Header enthält also den **rohen JWT ohne `Bearer`**.
+
+Token ohne Passwort erzeugen (das Dev-Passwort ist unbekannt und wird **nicht** geändert):
 
 ```bash
-TOKEN=$(curl -s -X POST http://localhost/api/v1/auth \
-  -H 'Content-Type: application/json' \
-  -d '{"email":"luka@luka-lta.dev","password":"<dev-passwort>"}' | jq -r '.data.token')
+TOKEN=$(docker compose -f docker-compose.development.yml run --rm -T php-fpm-api php -r \
+  'require "/app/vendor/autoload.php";
+   echo ReallySimpleJWT\Token::create("1", getenv("JWT_SECRET"), time()+86400, "backend.luka-lta.dev");' \
+  2>/dev/null | tr -d "\r\n")
+
+AUTH=(-H "Authorization: $TOKEN" -H "Origin: http://localhost:5173")
 ```
 
-Falls das Dev-Passwort unbekannt ist: User-Zeile in `data/mysql/users.sql` nutzt einen bcrypt-Hash; im Dev-Stack notfalls per SQL ein bekanntes Passwort setzen. **Niemals** ein Passwort in den Plan, in Code oder in Commits schreiben.
-
-MySQL-Zugriff für Verifikation:
+Alle curl-Aufrufe auf geschützte Routen in diesem Plan verwenden `"${AUTH[@]}"`. Gegenprobe, dass das Setup steht:
 
 ```bash
-docker compose -f docker-compose.development.yml exec mysql \
-  mysql -u root -p"$MYSQL_ROOT_PASSWORD" luka_lta -e "SELECT ..."
+curl -s -o /dev/null -w '%{http_code}\n' http://localhost/api/v1/api-keys/ "${AUTH[@]}"   # 200
+curl -s -o /dev/null -w '%{http_code}\n' http://localhost/api/v1/api-keys/                 # 401
+```
+
+### MySQL-Zugriff für Verifikation
+
+```bash
+docker compose -f docker-compose.development.yml exec -T mysql \
+  sh -c 'exec mysql -u root -p"$MYSQL_ROOT_PASSWORD" luka_lta_api' -e "SELECT ..."
 ```
 
 ## Review Focus
@@ -259,10 +291,10 @@ Die SQL-Dateien laufen nur beim **ersten** Container-Init. Für die bestehende D
 cd /Users/lliebenthal/projects/luka-lta-api
 for f in projects project_tags project_tag_assignments project_assets; do
   docker compose -f docker-compose.development.yml exec -T mysql \
-    sh -c 'exec mysql -u root -p"$MYSQL_ROOT_PASSWORD" luka_lta' < "data/mysql/$f.sql"
+    sh -c 'exec mysql -u root -p"$MYSQL_ROOT_PASSWORD" luka_lta_api' < "data/mysql/$f.sql"
 done
 docker compose -f docker-compose.development.yml exec -T mysql \
-  sh -c 'exec mysql -u root -p"$MYSQL_ROOT_PASSWORD" luka_lta' <<'SQL'
+  sh -c 'exec mysql -u root -p"$MYSQL_ROOT_PASSWORD" luka_lta_api' <<'SQL'
 ALTER TABLE `project_assets`
     ADD CONSTRAINT `fk_project_asset_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`) ON DELETE CASCADE;
 ALTER TABLE `project_tag_assignments`
@@ -272,13 +304,13 @@ ALTER TABLE `project_tag_assignments`
 SQL
 ```
 
-Erwartet: keine Fehlerausgabe. Falls der DB-Name nicht `luka_lta` ist, aus `docker-compose.development.yml` den Wert von `MYSQL_DATABASE` lesen und verwenden.
+Erwartet: keine Fehlerausgabe. Falls der DB-Name nicht `luka_lta_api` ist, aus `docker-compose.development.yml` den Wert von `MYSQL_DATABASE` lesen und verwenden.
 
 - [ ] **Step 7: Schema verifizieren**
 
 ```bash
 docker compose -f docker-compose.development.yml exec -T mysql \
-  sh -c 'exec mysql -u root -p"$MYSQL_ROOT_PASSWORD" luka_lta' \
+  sh -c 'exec mysql -u root -p"$MYSQL_ROOT_PASSWORD" luka_lta_api' \
   -e "SHOW TABLES LIKE 'project%'; SHOW CREATE TABLE project_tag_assignments;"
 ```
 
@@ -1813,7 +1845,7 @@ use LukaLtaApi\Api\Project\Service\ProjectTagService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-// Usage: curl http://localhost/api/v1/projects/tags --header 'Authorization: Bearer <token>'
+// Usage: curl http://localhost/api/v1/projects/tags --header 'Authorization: <raw-jwt>' --header 'Origin: <origin>'
 class GetProjectTagsAction extends ApiAction
 {
     public function __construct(
@@ -1844,7 +1876,7 @@ use LukaLtaApi\Api\RequestValidator;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-// Usage: curl -X POST http://localhost/api/v1/projects/tags --header 'Authorization: Bearer <token>'
+// Usage: curl -X POST http://localhost/api/v1/projects/tags --header 'Authorization: <raw-jwt>' --header 'Origin: <origin>'
 //        --header 'Content-Type: application/json' --data '{"name":"Analytics"}'
 class CreateProjectTagAction extends ApiAction
 {
@@ -1897,19 +1929,19 @@ Erwartet: keine Findings.
 
 ```bash
 # Token holen (s. "Dev-Stack Vorbereitung")
-curl -s http://localhost/api/v1/projects/tags -H "Authorization: Bearer $TOKEN" | jq
+curl -s http://localhost/api/v1/projects/tags "${AUTH[@]}" | jq
 ```
 Erwartet: `{"status":200,"message":"Project tags fetched.","data":{"tags":[]}}`
 
 ```bash
-curl -s -X POST http://localhost/api/v1/projects/tags -H "Authorization: Bearer $TOKEN" \
+curl -s -X POST http://localhost/api/v1/projects/tags "${AUTH[@]}" \
   -H 'Content-Type: application/json' -d '{"name":"Analytics"}' | jq
 ```
 Erwartet: Status 201, `data.tag` mit `tagId`, `name: "Analytics"`, `slug: "analytics"`.
 
 ```bash
 # Idempotenz: gleicher Name, andere Schreibweise
-curl -s -X POST http://localhost/api/v1/projects/tags -H "Authorization: Bearer $TOKEN" \
+curl -s -X POST http://localhost/api/v1/projects/tags "${AUTH[@]}" \
   -H 'Content-Type: application/json' -d '{"name":"analytics"}' | jq
 ```
 Erwartet: Status 200, Message `"Project tag already exists."`, **dieselbe** `tagId` wie zuvor — keine zweite Zeile.
@@ -2324,14 +2356,33 @@ EOF
 
 - [ ] **Step 1: `ProjectService.php`**
 
-`ASSET_BASE_URL_ENV` nutzt dieselbe Env-Variable, aus der auch `User::getAvatarUrl()` die öffentliche API-URL baut. Prüfe vor dem Schreiben den exakten Namen:
+**Verifiziert:** Es gibt **keine** Env-Variable für die öffentliche API-URL. `User::getAvatarUrl()` hat `https://api.luka-lta.dev/api/v1/avatar/` **hart im Code** (`src/Value/User/User.php:79`) — in Dev zeigen Avatar-URLs damit auf Produktion. Dieser Fehler wird für Projekt-Assets **nicht** kopiert, aber auch nicht im Avatar-Code mitgefixt (anderes Subsystem, nicht im Auftrag).
 
-```bash
-grep -rn "getAvatarUrl" src/Value/User/User.php
-grep -rn "API_BASE_URL\|APP_URL\|BASE_URL" src/ .env* docker-compose.development.yml 2>/dev/null | head
+Lösung: `API_BASE_URL` mit Produktions-Default. `EnvironmentRepository::get()` unterstützt einen zweiten Parameter als Default, d. h. Produktion funktioniert ohne Deploy-Änderung weiter und Dev wird korrekt, sobald die Variable gesetzt ist:
+
+```php
+    /** Fallback entspricht der Produktions-URL, damit ein fehlendes Env dort nichts bricht. */
+    private const string DEFAULT_API_BASE_URL = 'https://api.luka-lta.dev/api/v1';
 ```
 
-Nutze den gefundenen Namen in der Konstante. Existiert keine solche Variable, verwende `API_BASE_URL` und ergänze sie in `docker-compose.development.yml` beim `php-fpm`-Service mit `API_BASE_URL: http://localhost/api/v1`.
+und im Service:
+
+```php
+    public function getAssetBaseUrl(): string
+    {
+        $baseUrl = $this->environmentRepository->get('API_BASE_URL', self::DEFAULT_API_BASE_URL);
+
+        return rtrim((string) $baseUrl, '/') . '/projects';
+    }
+```
+
+Zusätzlich in `docker-compose.development.yml` beim Service `php-fpm-api` zu den übrigen `environment:`-Einträgen ergänzen:
+
+```yaml
+      API_BASE_URL: 'http://localhost/api/v1'
+```
+
+Danach `docker compose -f docker-compose.development.yml up -d php-fpm-api`, damit der laufende Container die Variable sieht — ohne Neustart liefert er weiter den Produktions-Default.
 
 ```php
 <?php
@@ -2359,6 +2410,9 @@ class ProjectService
     /** Maximale Anzahl Tags pro Projekt */
     private const int MAX_TAGS_PER_PROJECT = 20;
 
+    /** Fallback entspricht der Produktions-URL, damit ein fehlendes Env dort nichts bricht. */
+    private const string DEFAULT_API_BASE_URL = 'https://api.luka-lta.dev/api/v1';
+
     public function __construct(
         private readonly ProjectRepository      $repository,
         private readonly ProjectAssetRepository $assetRepository,
@@ -2369,7 +2423,9 @@ class ProjectService
 
     public function getAssetBaseUrl(): string
     {
-        return rtrim($this->environmentRepository->get('API_BASE_URL'), '/') . '/projects';
+        $baseUrl = $this->environmentRepository->get('API_BASE_URL', self::DEFAULT_API_BASE_URL);
+
+        return rtrim((string) $baseUrl, '/') . '/projects';
     }
 
     public function getAllProjects(bool $onlyVisible): ApiResult
@@ -2627,7 +2683,7 @@ use LukaLtaApi\Api\Project\Service\ProjectService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-// Usage: curl http://localhost/api/v1/projects/manage --header 'Authorization: Bearer <token>'
+// Usage: curl http://localhost/api/v1/projects/manage --header 'Authorization: <raw-jwt>' --header 'Origin: <origin>'
 class GetManagedProjectsAction extends ApiAction
 {
     public function __construct(
@@ -2658,7 +2714,7 @@ use LukaLtaApi\Value\Project\ProjectId;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-// Usage: curl http://localhost/api/v1/projects/manage/<uuid> --header 'Authorization: Bearer <token>'
+// Usage: curl http://localhost/api/v1/projects/manage/<uuid> --header 'Authorization: <raw-jwt>' --header 'Origin: <origin>'
 class GetManagedProjectAction extends ApiAction
 {
     public function __construct(
@@ -2692,7 +2748,7 @@ use LukaLtaApi\Api\RequestValidator;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-// Usage: curl -X POST http://localhost/api/v1/projects --header 'Authorization: Bearer <token>'
+// Usage: curl -X POST http://localhost/api/v1/projects --header 'Authorization: <raw-jwt>' --header 'Origin: <origin>'
 //        --header 'Content-Type: application/json' --data '{"name":"My New App"}'
 class CreateProjectAction extends ApiAction
 {
@@ -2728,7 +2784,7 @@ use LukaLtaApi\Value\Project\ProjectId;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-// Usage: curl -X PATCH http://localhost/api/v1/projects/<uuid> --header 'Authorization: Bearer <token>'
+// Usage: curl -X PATCH http://localhost/api/v1/projects/<uuid> --header 'Authorization: <raw-jwt>' --header 'Origin: <origin>'
 //        --header 'Content-Type: application/json' --data '{"status":"active"}'
 class UpdateProjectAction extends ApiAction
 {
@@ -2763,7 +2819,7 @@ use LukaLtaApi\Value\Project\ProjectId;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-// Usage: curl -X DELETE http://localhost/api/v1/projects/<uuid> --header 'Authorization: Bearer <token>'
+// Usage: curl -X DELETE http://localhost/api/v1/projects/<uuid> --header 'Authorization: <raw-jwt>' --header 'Origin: <origin>'
 class DeleteProjectAction extends ApiAction
 {
     public function __construct(
@@ -2795,7 +2851,7 @@ use LukaLtaApi\Api\RequestValidator;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-// Usage: curl -X PATCH http://localhost/api/v1/projects/order --header 'Authorization: Bearer <token>'
+// Usage: curl -X PATCH http://localhost/api/v1/projects/order --header 'Authorization: <raw-jwt>' --header 'Origin: <origin>'
 //        --header 'Content-Type: application/json'
 //        --data '{"projects":[{"projectId":"<uuid>","sortOrder":0}]}'
 class ReorderProjectsAction extends ApiAction
@@ -2867,7 +2923,7 @@ Erwartet: keine Findings.
 
 ```bash
 # Anlegen
-PROJECT=$(curl -s -X POST http://localhost/api/v1/projects -H "Authorization: Bearer $TOKEN" \
+PROJECT=$(curl -s -X POST http://localhost/api/v1/projects "${AUTH[@]}" \
   -H 'Content-Type: application/json' \
   -d '{"name":"Test Project","shortDescription":"Kurz","status":"active","websiteUrl":"https://example.tld","techStack":["PHP","MySQL"],"tagIds":[1]}')
 echo "$PROJECT" | jq
@@ -2877,48 +2933,48 @@ Erwartet: Status 201, `slug: "test-project"`, `sortOrder: 0`, `tags` enthält de
 
 ```bash
 # Review Focus 1: doppelter Slug -> 409, nicht 500
-curl -s -X POST http://localhost/api/v1/projects -H "Authorization: Bearer $TOKEN" \
+curl -s -X POST http://localhost/api/v1/projects "${AUTH[@]}" \
   -H 'Content-Type: application/json' -d '{"name":"Test Project"}' | jq '.status'
 ```
 Erwartet: `409`.
 
 ```bash
 # Ungueltige URL -> 400
-curl -s -X POST http://localhost/api/v1/projects -H "Authorization: Bearer $TOKEN" \
+curl -s -X POST http://localhost/api/v1/projects "${AUTH[@]}" \
   -H 'Content-Type: application/json' -d '{"name":"Bad Url","websiteUrl":"not-a-url"}' | jq '.status'
 ```
 Erwartet: `400`.
 
 ```bash
 # Unbekannte tagId -> 404
-curl -s -X POST http://localhost/api/v1/projects -H "Authorization: Bearer $TOKEN" \
+curl -s -X POST http://localhost/api/v1/projects "${AUTH[@]}" \
   -H 'Content-Type: application/json' -d '{"name":"Bad Tag","tagIds":[99999]}' | jq '.status'
 ```
 Erwartet: `404`.
 
 ```bash
 # Routen-Reihenfolge: /projects/manage darf NICHT als Slug interpretiert werden
-curl -s http://localhost/api/v1/projects/manage -H "Authorization: Bearer $TOKEN" | jq '.message'
+curl -s http://localhost/api/v1/projects/manage "${AUTH[@]}" | jq '.message'
 ```
 Erwartet: `"Projects fetched."` (nicht `"Project not found."`).
 
 ```bash
 # Review Focus 2: unsichtbares Projekt nicht oeffentlich auffindbar
-curl -s -X PATCH "http://localhost/api/v1/projects/$PROJECT_ID" -H "Authorization: Bearer $TOKEN" \
+curl -s -X PATCH "http://localhost/api/v1/projects/$PROJECT_ID" "${AUTH[@]}" \
   -H 'Content-Type: application/json' -d '{"isVisible":false}' | jq '.data.project.isVisible'
 curl -s http://localhost/api/v1/projects | jq '.data.projects | length'
 curl -s http://localhost/api/v1/projects/test-project | jq '.status'
 curl -s http://localhost/api/v1/projects/test-project -H 'Authorization: Bearer garbage' | jq '.status'
-curl -s http://localhost/api/v1/projects/manage -H "Authorization: Bearer $TOKEN" | jq '.data.projects | length'
+curl -s http://localhost/api/v1/projects/manage "${AUTH[@]}" | jq '.data.projects | length'
 ```
 Erwartet: `false`, dann `0`, dann `404`, dann **ebenfalls `404`** (gefälschter Header hilft nicht), dann `1`.
 
 ```bash
 # Sortierung
-curl -s -X PATCH http://localhost/api/v1/projects/order -H "Authorization: Bearer $TOKEN" \
+curl -s -X PATCH http://localhost/api/v1/projects/order "${AUTH[@]}" \
   -H 'Content-Type: application/json' \
   -d "{\"projects\":[{\"projectId\":\"$PROJECT_ID\",\"sortOrder\":5}]}" | jq '.message'
-curl -s "http://localhost/api/v1/projects/manage/$PROJECT_ID" -H "Authorization: Bearer $TOKEN" \
+curl -s "http://localhost/api/v1/projects/manage/$PROJECT_ID" "${AUTH[@]}" \
   | jq '.data.project.sortOrder'
 ```
 Erwartet: `"Project order updated."`, dann `5`.
@@ -2926,8 +2982,8 @@ Erwartet: `"Project order updated."`, dann `5`.
 ```bash
 # Review Focus 4 (Teil 1): Loeschen laesst Tags im Dictionary stehen
 curl -s -o /dev/null -w '%{http_code}\n' -X DELETE "http://localhost/api/v1/projects/$PROJECT_ID" \
-  -H "Authorization: Bearer $TOKEN"
-curl -s http://localhost/api/v1/projects/tags -H "Authorization: Bearer $TOKEN" | jq '.data.tags | length'
+  "${AUTH[@]}"
+curl -s http://localhost/api/v1/projects/tags "${AUTH[@]}" | jq '.data.tags | length'
 ```
 Erwartet: `204`, dann `1` (Tag "Analytics" lebt weiter).
 
@@ -3254,7 +3310,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 // Usage: curl -X POST http://localhost/api/v1/projects/<uuid>/assets
-//        --header 'Authorization: Bearer <token>' --form 'type=logo' --form 'file=@logo.png'
+//        --header 'Authorization: <raw-jwt>' --header 'Origin: <origin>' --form 'type=logo' --form 'file=@logo.png'
 class UploadProjectAssetAction extends ApiAction
 {
     public function __construct(
@@ -3310,7 +3366,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 // Usage: curl -X DELETE http://localhost/api/v1/projects/<uuid>/assets/<assetId>
-//        --header 'Authorization: Bearer <token>'
+//        --header 'Authorization: <raw-jwt>' --header 'Origin: <origin>'
 class DeleteProjectAssetAction extends ApiAction
 {
     public function __construct(
@@ -3407,7 +3463,7 @@ Erwartet: keine Findings.
 
 ```bash
 # Testprojekt + Testbild anlegen
-PROJECT=$(curl -s -X POST http://localhost/api/v1/projects -H "Authorization: Bearer $TOKEN" \
+PROJECT=$(curl -s -X POST http://localhost/api/v1/projects "${AUTH[@]}" \
   -H 'Content-Type: application/json' -d '{"name":"Asset Test"}')
 PROJECT_ID=$(echo "$PROJECT" | jq -r '.data.project.id')
 printf '\x89PNG\r\n\x1a\n' > /tmp/claude-asset-test.png
@@ -3415,7 +3471,7 @@ dd if=/dev/urandom bs=1024 count=4 >> /tmp/claude-asset-test.png 2>/dev/null
 
 # Upload Logo
 ASSET=$(curl -s -X POST "http://localhost/api/v1/projects/$PROJECT_ID/assets" \
-  -H "Authorization: Bearer $TOKEN" -F 'type=logo' -F 'file=@/tmp/claude-asset-test.png;type=image/png')
+  "${AUTH[@]}" -F 'type=logo' -F 'file=@/tmp/claude-asset-test.png;type=image/png')
 echo "$ASSET" | jq
 ASSET_ID=$(echo "$ASSET" | jq -r '.data.asset.id')
 ```
@@ -3431,12 +3487,12 @@ Erwartet: `200 image/png`.
 ```bash
 # Review Focus 3: Replace hinterlaesst nur ein Asset
 curl -s -X POST "http://localhost/api/v1/projects/$PROJECT_ID/assets" \
-  -H "Authorization: Bearer $TOKEN" -F 'type=logo' -F 'file=@/tmp/claude-asset-test.png;type=image/png' \
+  "${AUTH[@]}" -F 'type=logo' -F 'file=@/tmp/claude-asset-test.png;type=image/png' \
   | jq -r '.data.asset.id'
-curl -s "http://localhost/api/v1/projects/manage/$PROJECT_ID" -H "Authorization: Bearer $TOKEN" \
+curl -s "http://localhost/api/v1/projects/manage/$PROJECT_ID" "${AUTH[@]}" \
   | jq '{logo: .data.project.logo.id, screenshots: (.data.project.screenshots | length)}'
 docker compose -f docker-compose.development.yml exec -T mysql \
-  sh -c 'exec mysql -u root -p"$MYSQL_ROOT_PASSWORD" luka_lta' \
+  sh -c 'exec mysql -u root -p"$MYSQL_ROOT_PASSWORD" luka_lta_api' \
   -e "SELECT type, COUNT(*) FROM project_assets GROUP BY type;"
 ```
 Erwartet: neue Asset-ID, `logo` zeigt die **neue** ID, genau **eine** Zeile vom Typ `logo`. Das alte Objekt ist aus MinIO entfernt — Gegenprobe: der alte Asset-Endpoint liefert jetzt 404:
@@ -3449,11 +3505,11 @@ Erwartet: `404`.
 # Review Focus 5: falscher MIME-Type -> 400, zu grosse Datei -> 400
 printf 'nope' > /tmp/claude-asset-test.txt
 curl -s -X POST "http://localhost/api/v1/projects/$PROJECT_ID/assets" \
-  -H "Authorization: Bearer $TOKEN" -F 'type=logo' -F 'file=@/tmp/claude-asset-test.txt;type=text/plain' \
+  "${AUTH[@]}" -F 'type=logo' -F 'file=@/tmp/claude-asset-test.txt;type=text/plain' \
   | jq '.status'
 dd if=/dev/urandom of=/tmp/claude-asset-big.png bs=1M count=6 2>/dev/null
 curl -s -X POST "http://localhost/api/v1/projects/$PROJECT_ID/assets" \
-  -H "Authorization: Bearer $TOKEN" -F 'type=logo' -F 'file=@/tmp/claude-asset-big.png;type=image/png' \
+  "${AUTH[@]}" -F 'type=logo' -F 'file=@/tmp/claude-asset-big.png;type=image/png' \
   | jq '.status'
 ```
 Erwartet: beide `400`.
@@ -3462,7 +3518,7 @@ Erwartet: beide `400`.
 # Screenshots: mehrfach erlaubt, sort_order zaehlt hoch
 for i in 1 2; do
   curl -s -X POST "http://localhost/api/v1/projects/$PROJECT_ID/assets" \
-    -H "Authorization: Bearer $TOKEN" -F 'type=screenshot' \
+    "${AUTH[@]}" -F 'type=screenshot' \
     -F 'file=@/tmp/claude-asset-test.png;type=image/png' | jq -r '.data.asset.sortOrder'
 done
 ```
@@ -3470,13 +3526,13 @@ Erwartet: `0`, dann `1`.
 
 ```bash
 # Review Focus 4 (Teil 2): Projekt loeschen entfernt MinIO-Objekte
-SHOT_ID=$(curl -s "http://localhost/api/v1/projects/manage/$PROJECT_ID" -H "Authorization: Bearer $TOKEN" \
+SHOT_ID=$(curl -s "http://localhost/api/v1/projects/manage/$PROJECT_ID" "${AUTH[@]}" \
   | jq -r '.data.project.screenshots[0].id')
 curl -s -o /dev/null -w '%{http_code}\n' -X DELETE "http://localhost/api/v1/projects/$PROJECT_ID" \
-  -H "Authorization: Bearer $TOKEN"
+  "${AUTH[@]}"
 curl -s -o /dev/null -w '%{http_code}\n' "http://localhost/api/v1/projects/$PROJECT_ID/assets/$SHOT_ID"
 docker compose -f docker-compose.development.yml exec -T mysql \
-  sh -c 'exec mysql -u root -p"$MYSQL_ROOT_PASSWORD" luka_lta' \
+  sh -c 'exec mysql -u root -p"$MYSQL_ROOT_PASSWORD" luka_lta_api' \
   -e "SELECT COUNT(*) AS leftover FROM project_assets;"
 rm -f /tmp/claude-asset-test.png /tmp/claude-asset-test.txt /tmp/claude-asset-big.png
 ```
