@@ -61,13 +61,16 @@ use LukaLtaApi\Api\Notification\Action\MarkNotificationReadAction;
 use LukaLtaApi\Api\Project\Action\CreateProjectAction;
 use LukaLtaApi\Api\Project\Action\CreateProjectTagAction;
 use LukaLtaApi\Api\Project\Action\DeleteProjectAction;
+use LukaLtaApi\Api\Project\Action\DeleteProjectAssetAction;
 use LukaLtaApi\Api\Project\Action\GetAllProjectsAction;
 use LukaLtaApi\Api\Project\Action\GetManagedProjectAction;
 use LukaLtaApi\Api\Project\Action\GetManagedProjectsAction;
 use LukaLtaApi\Api\Project\Action\GetProjectAction;
+use LukaLtaApi\Api\Project\Action\GetProjectAssetAction;
 use LukaLtaApi\Api\Project\Action\GetProjectTagsAction;
 use LukaLtaApi\Api\Project\Action\ReorderProjectsAction;
 use LukaLtaApi\Api\Project\Action\UpdateProjectAction;
+use LukaLtaApi\Api\Project\Action\UploadProjectAssetAction;
 use LukaLtaApi\Api\SelfUser\Action\GetSelfUserAction;
 use LukaLtaApi\Api\SelfUser\Action\SelfUserUpdateAction;
 use LukaLtaApi\Api\Statistics\Action\GetStatisticsAction;
@@ -284,9 +287,14 @@ class RouteMiddlewareCollector
                 $projects->get('/manage/{projectId}', GetManagedProjectAction::class);
                 $projects->post('', CreateProjectAction::class);
                 $projects->patch('/order', ReorderProjectsAction::class);
+                $projects->post('/{projectId}/assets', UploadProjectAssetAction::class);
+                $projects->delete('/{projectId}/assets/{assetId}', DeleteProjectAssetAction::class);
                 $projects->patch('/{projectId}', UpdateProjectAction::class);
                 $projects->delete('/{projectId}', DeleteProjectAction::class);
             })->add(AuthMiddleware::class);
+
+            // Projects — oeffentlicher Byte-Proxy (kein Login fuer Portfolio-Bilder)
+            $app->get('/projects/{projectId}/assets/{assetId}', GetProjectAssetAction::class);
 
             // Projects — public read routes
             $app->get('/projects', GetAllProjectsAction::class);

@@ -36,6 +36,7 @@ class ProjectService
     public function __construct(
         private readonly ProjectRepository      $repository,
         private readonly ProjectAssetRepository $assetRepository,
+        private readonly ProjectAssetService    $assetService,
         private readonly ProjectTagRepository   $tagRepository,
         private readonly EnvironmentRepository  $environmentRepository,
     ) {
@@ -130,6 +131,8 @@ class ProjectService
     {
         $this->loadProjectOrFail($projectId);
 
+        // MinIO-Objekte zuerst: die DB-CASCADE entfernt nur die Asset-Zeilen.
+        $this->assetService->deleteAllForProject($projectId);
         $this->repository->delete($projectId);
 
         return ApiResult::from(
