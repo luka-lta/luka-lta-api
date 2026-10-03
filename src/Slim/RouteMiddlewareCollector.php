@@ -58,6 +58,8 @@ use LukaLtaApi\Api\LinkCollection\Action\GetDetailLinkAction;
 use LukaLtaApi\Api\Notification\Action\ListNotificationsAction;
 use LukaLtaApi\Api\Notification\Action\MarkAllNotificationsReadAction;
 use LukaLtaApi\Api\Notification\Action\MarkNotificationReadAction;
+use LukaLtaApi\Api\Project\Action\CreateProjectTagAction;
+use LukaLtaApi\Api\Project\Action\GetProjectTagsAction;
 use LukaLtaApi\Api\SelfUser\Action\GetSelfUserAction;
 use LukaLtaApi\Api\SelfUser\Action\SelfUserUpdateAction;
 use LukaLtaApi\Api\Statistics\Action\GetStatisticsAction;
@@ -261,6 +263,12 @@ class RouteMiddlewareCollector
                 $container->get(ApiKeyRepository::class),
                 'Ingest Homelab Metrics',
             ));
+
+            // Projects — Tag-Dictionary, nur Dashboard
+            $app->group('/projects/tags', function (RouteCollectorProxy $tags) {
+                $tags->get('', GetProjectTagsAction::class);
+                $tags->post('', CreateProjectTagAction::class);
+            })->add(AuthMiddleware::class);
 
             // API key management — dashboard only
             $app->group('/api-keys', function (RouteCollectorProxy $apiKeys) {
