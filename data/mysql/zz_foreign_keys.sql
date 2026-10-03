@@ -44,3 +44,12 @@ ALTER TABLE `notification_reads`
 
 ALTER TABLE `notification_reads`
     ADD CONSTRAINT `fk_notification_read_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
+
+ALTER TABLE `project_assets`
+    ADD CONSTRAINT `fk_project_asset_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`) ON DELETE CASCADE;
+
+ALTER TABLE `project_tag_assignments`
+    ADD CONSTRAINT `fk_project_tag_assignment_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`) ON DELETE CASCADE;
+
+ALTER TABLE `project_tag_assignments`
+    ADD CONSTRAINT `fk_project_tag_assignment_tag` FOREIGN KEY (`tag_id`) REFERENCES `project_tags` (`tag_id`) ON DELETE CASCADE;
