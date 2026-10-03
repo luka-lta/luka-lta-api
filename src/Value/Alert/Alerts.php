@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace LukaLtaApi\Value\Homelab;
+namespace LukaLtaApi\Value\Alert;
 
 use Countable;
 use Generator;

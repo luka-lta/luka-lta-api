@@ -2,6 +2,3 @@
 -- varchar(255); widen to TEXT to match homelab_container_logs.message.
 ALTER TABLE `homelab_container_health_checks`
     MODIFY COLUMN `message` TEXT NOT NULL;
-
-ALTER TABLE `homelab_alerts`
-    MODIFY COLUMN `description` TEXT NOT NULL;

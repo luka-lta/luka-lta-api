@@ -4,7 +4,11 @@
 declare(strict_types=1);
 
 use LukaLtaApi\App\Factory\ContainerFactory;
+use LukaLtaApi\Command\Alert\CleanupAlertsCommand;
+use LukaLtaApi\Command\Calendar\SyncCalendarCommand;
+use LukaLtaApi\Command\Homelab\CheckHomelabHeartbeatsCommand;
 use LukaLtaApi\Command\Homelab\CleanupHomelabDataCommand;
+use LukaLtaApi\Command\Weather\FetchWeatherCommand;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\CommandLoader\ContainerCommandLoader;
@@ -21,7 +25,11 @@ try {
 
     $application->setCommandLoader(
         new ContainerCommandLoader($container, [
-            'homelab:cleanup' => CleanupHomelabDataCommand::class,
+            'homelab:cleanup'          => CleanupHomelabDataCommand::class,
+            'homelab:check-heartbeats' => CheckHomelabHeartbeatsCommand::class,
+            'weather:fetch'            => FetchWeatherCommand::class,
+            'calendar:sync'            => SyncCalendarCommand::class,
+            'alerts:cleanup'           => CleanupAlertsCommand::class,
         ])
     );
 

@@ -8,7 +8,7 @@ use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Exception\ApiValidationException;
 use LukaLtaApi\Exception\ContainerNotFoundException;
 use LukaLtaApi\Exception\HostNotFoundException;
-use LukaLtaApi\Repository\HomelabAlertRepository;
+use LukaLtaApi\Repository\AlertRepository;
 use LukaLtaApi\Repository\HomelabContainerRepository;
 use LukaLtaApi\Repository\HomelabHostRepository;
 use LukaLtaApi\Repository\TopologyRepository;
@@ -29,7 +29,7 @@ class TopologyService
         private readonly TopologyRepository         $topologyRepository,
         private readonly HomelabHostRepository       $hostRepository,
         private readonly HomelabContainerRepository  $containerRepository,
-        private readonly HomelabAlertRepository      $alertRepository,
+        private readonly AlertRepository              $alertRepository,
         private readonly TopologyGraphBuilder        $graphBuilder,
     ) {
     }
@@ -41,7 +41,7 @@ class TopologyService
             $this->containerRepository->loadAll(),
             $this->topologyRepository->loadAllNodes(),
             $this->topologyRepository->loadAllEdges(),
-            $this->alertRepository->loadActive(),
+            $this->alertRepository->loadActive('homelab'),
         );
 
         return ApiResult::from(

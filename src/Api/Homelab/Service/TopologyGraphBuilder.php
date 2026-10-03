@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace LukaLtaApi\Api\Homelab\Service;
 
-use LukaLtaApi\Value\Homelab\Alerts;
+use LukaLtaApi\Value\Alert\Alerts;
 use LukaLtaApi\Value\Homelab\Containers;
 use LukaLtaApi\Value\Homelab\Hosts;
 use LukaLtaApi\Value\Homelab\TopologyEdge;
@@ -30,8 +30,8 @@ class TopologyGraphBuilder
         TopologyEdges $manualEdges,
         Alerts $activeAlerts,
     ): array {
-        $hostIdsWithAlerts      = $this->collectAffectedIds($activeAlerts, 'getHostId');
-        $containerIdsWithAlerts = $this->collectAffectedIds($activeAlerts, 'getContainerId');
+        $hostIdsWithAlerts      = $this->collectAffectedIds($activeAlerts, 'hostId');
+        $containerIdsWithAlerts = $this->collectAffectedIds($activeAlerts, 'containerId');
 
         $nodes = [
             ...$this->buildHostNodes($hosts, $hostIdsWithAlerts),
@@ -50,12 +50,11 @@ class TopologyGraphBuilder
         return ['nodes' => $nodes, 'edges' => $edges];
     }
 
-    /** @return array<string, bool> */
-    private function collectAffectedIds(Alerts $alerts, string $getter): array
+    private function collectAffectedIds(Alerts $alerts, string $contextKey): array
     {
         $ids = [];
         foreach ($alerts as $alert) {
-            $value = $alert->$getter();
+            $value = $alert->getContext()[$contextKey] ?? null;
             if ($value !== null) {
                 $ids[$value] = true;
             }
