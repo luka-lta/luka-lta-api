@@ -58,8 +58,16 @@ use LukaLtaApi\Api\LinkCollection\Action\GetDetailLinkAction;
 use LukaLtaApi\Api\Notification\Action\ListNotificationsAction;
 use LukaLtaApi\Api\Notification\Action\MarkAllNotificationsReadAction;
 use LukaLtaApi\Api\Notification\Action\MarkNotificationReadAction;
+use LukaLtaApi\Api\Project\Action\CreateProjectAction;
 use LukaLtaApi\Api\Project\Action\CreateProjectTagAction;
+use LukaLtaApi\Api\Project\Action\DeleteProjectAction;
+use LukaLtaApi\Api\Project\Action\GetAllProjectsAction;
+use LukaLtaApi\Api\Project\Action\GetManagedProjectAction;
+use LukaLtaApi\Api\Project\Action\GetManagedProjectsAction;
+use LukaLtaApi\Api\Project\Action\GetProjectAction;
 use LukaLtaApi\Api\Project\Action\GetProjectTagsAction;
+use LukaLtaApi\Api\Project\Action\ReorderProjectsAction;
+use LukaLtaApi\Api\Project\Action\UpdateProjectAction;
 use LukaLtaApi\Api\SelfUser\Action\GetSelfUserAction;
 use LukaLtaApi\Api\SelfUser\Action\SelfUserUpdateAction;
 use LukaLtaApi\Api\Statistics\Action\GetStatisticsAction;
@@ -269,6 +277,20 @@ class RouteMiddlewareCollector
                 $tags->get('', GetProjectTagsAction::class);
                 $tags->post('', CreateProjectTagAction::class);
             })->add(AuthMiddleware::class);
+
+            // Projects — geschuetzte Verwaltung (Dashboard)
+            $app->group('/projects', function (RouteCollectorProxy $projects) {
+                $projects->get('/manage', GetManagedProjectsAction::class);
+                $projects->get('/manage/{projectId}', GetManagedProjectAction::class);
+                $projects->post('', CreateProjectAction::class);
+                $projects->patch('/order', ReorderProjectsAction::class);
+                $projects->patch('/{projectId}', UpdateProjectAction::class);
+                $projects->delete('/{projectId}', DeleteProjectAction::class);
+            })->add(AuthMiddleware::class);
+
+            // Projects — public read routes
+            $app->get('/projects', GetAllProjectsAction::class);
+            $app->get('/projects/{slug}', GetProjectAction::class);
 
             // API key management — dashboard only
             $app->group('/api-keys', function (RouteCollectorProxy $apiKeys) {
