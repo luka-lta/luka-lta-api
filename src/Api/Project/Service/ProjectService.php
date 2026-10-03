@@ -84,6 +84,7 @@ class ProjectService
         $project = Project::create($data);
 
         $this->assertSlugIsFree($project->getSlug(), null);
+        $this->assertTagIdsValid($data);
 
         if (!isset($data['sortOrder'])) {
             $project->applyChanges(['sortOrder' => $this->repository->getNextSortOrder()]);
@@ -105,6 +106,7 @@ class ProjectService
         $project->applyChanges($data);
 
         $this->assertSlugIsFree($project->getSlug(), $projectId);
+        $this->assertTagIdsValid($data);
 
         $this->repository->update($project);
         $this->syncTags($projectId, $data);
@@ -186,7 +188,7 @@ class ProjectService
         throw new ProjectSlugAlreadyExistsException();
     }
 
-    private function syncTags(ProjectId $projectId, array $data): void
+    private function assertTagIdsValid(array $data): void
     {
         if (!array_key_exists('tagIds', $data)) {
             return;
@@ -203,6 +205,16 @@ class ProjectService
         }
 
         $this->tagRepository->assertTagsExist($tagIds);
+    }
+
+    private function syncTags(ProjectId $projectId, array $data): void
+    {
+        if (!array_key_exists('tagIds', $data)) {
+            return;
+        }
+
+        $tagIds = $data['tagIds'] ?? [];
+
         $this->tagRepository->detachTags($projectId);
         $this->tagRepository->attachTags($projectId, $tagIds);
     }
