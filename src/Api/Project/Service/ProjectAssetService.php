@@ -14,6 +14,7 @@ use LukaLtaApi\Value\Project\Asset\ProjectAssetType;
 use LukaLtaApi\Value\Project\ProjectId;
 use Psr\Http\Message\UploadedFileInterface;
 use Ramsey\Uuid\Uuid;
+use Throwable;
 
 class ProjectAssetService
 {
@@ -67,7 +68,15 @@ class ProjectAssetService
 
         $asset = ProjectAsset::create($projectId, $type, $objectKey, $altText, $sortOrder);
 
-        return $this->repository->create($asset);
+        try {
+            return $this->repository->create($asset);
+        } catch (Throwable $exception) {
+            // Das Objekt liegt bereits in MinIO, die Zeile fehlt: ohne diesen
+            // Rollback bliebe ein Objekt zurueck, auf das nichts mehr verweist.
+            $this->s3Repository->deleteObject($objectKey);
+
+            throw $exception;
+        }
     }
 
     public function delete(string $assetId): void
@@ -112,9 +121,19 @@ class ProjectAssetService
     private function validate(UploadedFileInterface $uploadedFile): string
     {
         if ($uploadedFile->getError() !== UPLOAD_ERR_OK) {
+            // Die meisten UPLOAD_ERR_* sind Client-Fehler (zu gross, abgebrochen,
+            // nichts geschickt) und duerfen nicht als 500 erscheinen.
+            $statusCode = match ($uploadedFile->getError()) {
+                UPLOAD_ERR_INI_SIZE,
+                UPLOAD_ERR_FORM_SIZE,
+                UPLOAD_ERR_PARTIAL,
+                UPLOAD_ERR_NO_FILE => StatusCodeInterface::STATUS_BAD_REQUEST,
+                default => StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR,
+            };
+
             throw new ProjectAssetUploadException(
                 'File upload failed with error code ' . $uploadedFile->getError(),
-                StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR,
+                $statusCode,
             );
         }
 
@@ -123,6 +142,13 @@ class ProjectAssetService
         if (!array_key_exists($mimeType, self::ALLOWED_MIME_TYPES)) {
             throw new ProjectAssetUploadException(
                 'Invalid file type. Only JPG, PNG and WebP are allowed.',
+                StatusCodeInterface::STATUS_BAD_REQUEST,
+            );
+        }
+
+        if ($uploadedFile->getSize() === null || $uploadedFile->getSize() <= 0) {
+            throw new ProjectAssetUploadException(
+                'Uploaded file is empty.',
                 StatusCodeInterface::STATUS_BAD_REQUEST,
             );
         }
