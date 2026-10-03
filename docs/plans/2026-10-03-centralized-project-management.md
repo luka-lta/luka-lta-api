@@ -526,3 +526,40 @@ Tags sind in diesem Modell ein eigenständiger, projektübergreifender Pool — 
 - **Portfolio-Frontend:** react-query wird eingeführt, Struktur analog Dashboard (I.3).
 - **Management-Darstellung:** Cards (E.3).
 - **Tags:** relationale Tabellen `project_tags` + `project_tag_assignments` (B.3), wiederverwendbarer projektübergreifender Pool, UI über KiboUI Tags inkl. "Create a Tag" (E.4), Backend-Anlage idempotent (C.1).
+
+---
+
+## Übertrag aus der Backend-Umsetzung (Stand 2026-10-04)
+
+Teil 1 (Backend) ist umgesetzt, reviewed und auf `feature/project-management`. Was danach noch offen ist:
+
+### Aktionspunkte für den Betrieb
+
+1. **Produktions-DDL.** `data/mysql/*.sql` läuft nur beim ersten Init eines leeren MySQL-Volumes. Produktion hat bereits Daten, also müssen die vier neuen `CREATE TABLE`s (`projects`, `project_assets`, `project_tags`, `project_tag_assignments`) plus die drei Foreign Keys aus `zz_foreign_keys.sql` dort **manuell** eingespielt werden. Ohne das läuft die API in Produktion nicht an. Release-Gate.
+2. **MinIO-Bucket.** Kein Code, kein Compose-Service und keine Migration legt den Bucket an (`AWS_BUCKET: 'avatars'` wird nur gelesen). In Dev existierte er nicht und musste per `mc mb` erzeugt werden. Betrifft auch Avatar-Uploads, ist also älter als dieses Feature — auf einem frischen Volume schlagen Uploads still fehl.
+3. **Upload-Limit in Produktion.** In Dev wurde `client_max_body_size 8m` plus `upload_max_filesize=5M` gesetzt, damit das 5-MiB-Limit der Anwendung überhaupt erreichbar ist. Im Repo liegt **nur** eine Development-nginx-Config, Produktion muss dieselben Werte separat bekommen — sonst kappt nginx dort weiterhin bei 1 MiB und antwortet mit einer nackten HTML-413 statt der JSON-Fehlermeldung.
+4. **ACL der bereits importierten Assets.** `uploadProjectAsset()` setzte ursprünglich `ACL: public-read`; das wurde entfernt, greift aber nur für neue Uploads. Die 20 bereits importierten Objekte bleiben direkt über den MinIO-Endpoint lesbar, bis sie neu hochgeladen oder ihre ACL out-of-band korrigiert wird. Praktisch unkritisch, solange der Endpoint nicht veröffentlicht ist.
+
+### Bewusst zurückgestellte Kleinigkeiten (für die Dashboard-Phase)
+
+- `metadata` ist schreib-, aber nicht lesbar: die Spalte wird gespeichert und geladen, aber `toArray()` gibt sie auf keiner Route aus. Fällt auf, sobald ein Metadata-Editor gebaut wird — dann entweder in die `manage`-Response aufnehmen oder die Spalte entfernen.
+- `RESERVED_SLUGS` liegt im Service, das Import-Command schreibt aber direkt über das Repository und umgeht die Prüfung. Besser in `ProjectSlug` selbst, wo sie nicht umgehbar ist.
+- Tag-Namen ohne lateinische Zeichen (z. B. `日本語`) ergeben einen leeren Slug und sind damit dauerhaft nicht anlegbar, mit einer Fehlermeldung, die die Ursache nicht nennt.
+- `tagIds` wird per `(int)` gecastet, wodurch `[[99]]` zu `1` wird und Tag 1 angehängt wird. Besser parsen statt casten.
+- Assets eines unsichtbaren Projekts bleiben über ihre Capability-URL abrufbar (der Proxy prüft Asset↔Projekt, aber nicht `is_visible`), und `Cache-Control: max-age=86400` hält sie einen Tag im Cache. In Ordnung, wenn „Unsichtbar" als Listen-Operation verstanden wird, nicht als Entzug.
+- Kein `X-Content-Type-Options: nosniff` auf dem Byte-Proxy. Die Bytes selbst werden nicht geprüft, nur der Content-Type ist auf drei Bildtypen begrenzt.
+- Tag-Sync (`detachTags` + `attachTags`) läuft nicht in einer Transaktion, ein Fehler dazwischen lässt das Projekt mit weniger Tags zurück.
+- Mehrere Fehlermeldungen schreiben Grenzwerte als Text aus (`"more than 20 tags"`, `"150 characters"`, `"5MB"`), direkt neben der Konstante, die den Wert definiert.
+- Der Asset-Upload-Rollback ruft `deleteObject()` ungeschützt auf: bei doppeltem Fehlschlag verdeckt der S3-Fehler den ursprünglichen.
+- Das Import-Command liefert immer `Command::SUCCESS`, auch wenn es eine fehlende Bilddatei nur gewarnt hat.
+
+### KiboUI-Komponenten für die Upload-UI (recherchiert, noch nicht installiert)
+
+Installiert sind bisher nur `pill`, `spinner`, `status`, `tags`.
+
+- **`image-crop`** (`npx kibo-ui add image-crop`, basiert auf react-image-crop) — bietet *"automatic image scaling and compression based on maximum file size"*, freie Aspect-Ratios und einen Circular-Mode. Gibt eine **PNG-Data-URL** zurück, die vor dem `FormData` noch in einen Blob konvertiert werden muss.
+- **`dropzone`** (`npx kibo-ui add dropzone`, basiert auf react-dropzone) — Drag & Drop, Typ-/Größen-/Anzahl-Validierung, Preview, Rejection-States. **Kein** Resizing.
+
+Kombination: `dropzone` zum Auswählen, `image-crop` zum Zuschneiden pro Asset-Typ (Logo quadratisch, Cover breit) und zum Komprimieren auf eine Zielgröße. Damit wird das Upload-Limit clientseitig praktisch irrelevant. Für fotografische Screenshots ist WebP die bessere Zielkodierung als PNG — die API akzeptiert `image/jpeg`, `image/png` und `image/webp`.
+
+Als In-Repo-Vorlage für das Tag-Feld dient `luka-lta-backend/src/feature/blog/components/editor/BlogEditorForm.tsx`: dort ist KiboUI Tags bereits genau für dieses Muster (Dictionary + Inline-Anlage) verdrahtet.
