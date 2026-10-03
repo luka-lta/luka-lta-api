@@ -31,6 +31,9 @@ class Project
         'documentationUrl' => 'documentationUrl',
     ];
 
+    /** Erlaubte Schemes fuer URL-Felder — verhindert u. a. javascript: und mailto: */
+    private const array ALLOWED_URL_SCHEMES = ['http', 'https'];
+
     private ProjectTags $tags;
 
     private ProjectAssets $assets;
@@ -223,6 +226,15 @@ class Project
 
         if (filter_var($url, FILTER_VALIDATE_URL) === false) {
             throw new ApiInvalidArgumentException(sprintf('Field %s must be a valid URL.', $fieldName), 400);
+        }
+
+        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+
+        if (!in_array($scheme, self::ALLOWED_URL_SCHEMES, true)) {
+            throw new ApiInvalidArgumentException(
+                sprintf('Field %s must use http or https.', $fieldName),
+                400,
+            );
         }
 
         return $url;

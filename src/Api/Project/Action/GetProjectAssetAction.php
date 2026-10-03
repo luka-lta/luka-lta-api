@@ -27,11 +27,7 @@ class GetProjectAssetAction extends ApiAction
     protected function execute(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $projectId = ProjectId::fromString((string) $request->getAttribute('projectId'));
-        $asset     = $this->assetService->loadAssetOrFail((string) $request->getAttribute('assetId'));
-
-        if ($asset->getProjectId()->asString() !== $projectId->asString()) {
-            throw new ProjectAssetNotFoundException();
-        }
+        $asset     = $this->assetService->loadForProjectOrFail($projectId, (string) $request->getAttribute('assetId'));
 
         $object = $this->assetService->getObjectForAsset($asset);
 

@@ -94,7 +94,6 @@ class S3Repository
                 'Key' => $objectKey,
                 'Body' => $uploadedFile->getStream()->getContents(),
                 'ContentType' => $uploadedFile->getClientMediaType(),
-                'ACL' => 'public-read',
             ]);
         } catch (AwsException $exception) {
             throw new ApiDatabaseException(

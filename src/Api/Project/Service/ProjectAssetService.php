@@ -117,6 +117,22 @@ class ProjectAssetService
         return $asset;
     }
 
+    /**
+     * Wie loadAssetOrFail(), prueft zusaetzlich, dass das Asset zum uebergebenen
+     * Projekt gehoert. Bei Mismatch 404 statt 403, damit ein falsches Paar nicht
+     * von einem nicht existierenden Asset unterscheidbar ist.
+     */
+    public function loadForProjectOrFail(ProjectId $projectId, string $assetId): ProjectAsset
+    {
+        $asset = $this->loadAssetOrFail($assetId);
+
+        if ($asset->getProjectId()->asString() !== $projectId->asString()) {
+            throw new ProjectAssetNotFoundException();
+        }
+
+        return $asset;
+    }
+
     public function getObjectForAsset(ProjectAsset $asset): ?array
     {
         return $this->s3Repository->getObject($asset->getObjectKey());
@@ -124,8 +140,12 @@ class ProjectAssetService
 
     private function deleteAsset(ProjectAsset $asset): void
     {
-        $this->s3Repository->deleteObject($asset->getObjectKey());
+        // Zeile zuerst loeschen: schlaegt das fehl, bleibt nur ein verwaistes
+        // MinIO-Objekt zurueck (harmlos). In umgekehrter Reihenfolge wuerde ein
+        // fehlgeschlagener Zeilen-Delete eine Zeile hinterlassen, die weiterhin
+        // eine URL auf ein bereits geloeschtes Objekt in toArray() ausgibt.
         $this->repository->delete($asset->getAssetId());
+        $this->s3Repository->deleteObject($asset->getObjectKey());
     }
 
     private function validate(UploadedFileInterface $uploadedFile): string

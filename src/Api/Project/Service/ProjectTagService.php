@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace LukaLtaApi\Api\Project\Service;
 
 use Fig\Http\Message\StatusCodeInterface;
+use LukaLtaApi\Exception\ProjectTagSlugConflictException;
 use LukaLtaApi\Repository\ProjectTagRepository;
 use LukaLtaApi\Value\Project\Tag\ProjectTag;
 use LukaLtaApi\Value\Project\Tag\ProjectTagName;
@@ -35,25 +36,27 @@ class ProjectTagService
      */
     public function createTag(string $name): ApiResult
     {
-        $tag = ProjectTag::create($name);
+        $existing = $this->repository->getByName(ProjectTagName::fromString($name));
 
-        $existingBySlug = $this->repository->getBySlug(ProjectTagSlug::fromName($name));
-
-        if ($existingBySlug !== null) {
+        if ($existing !== null) {
             return ApiResult::from(
-                JsonResult::from('Project tag already exists.', ['tag' => $existingBySlug->toArray()])
+                JsonResult::from('Project tag already exists.', ['tag' => $existing->toArray()])
             );
         }
 
-        $existingByName = $this->repository->getByName(ProjectTagName::fromString($name));
+        $slug = ProjectTagSlug::fromName($name);
 
-        if ($existingByName !== null) {
-            return ApiResult::from(
-                JsonResult::from('Project tag already exists.', ['tag' => $existingByName->toArray()])
+        // Der Slug verwirft Sonderzeichen, deshalb kollidieren z. B. "C", "C#" und
+        // "C++". Ein fremder Tag mit demselben Slug ist ein echter Konflikt und
+        // darf nicht als Treffer durchgehen — sonst bekaeme der Aufrufer still
+        // einen anderen Tag zurueck.
+        if ($this->repository->getBySlug($slug) !== null) {
+            throw new ProjectTagSlugConflictException(
+                sprintf('Another project tag already uses the slug "%s".', (string) $slug),
             );
         }
 
-        $created = $this->repository->create($tag);
+        $created = $this->repository->create(ProjectTag::create($name));
 
         return ApiResult::from(
             JsonResult::from('Project tag created.', ['tag' => $created->toArray()]),
