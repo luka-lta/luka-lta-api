@@ -29,14 +29,22 @@ class AlertRepository
     public function loadActive(?string $source = null, int $limit = 50): Alerts
     {
         $sql = 'SELECT ' . self::SELECT_COLUMNS . ' FROM alerts
-            WHERE resolved_at IS NULL
-              AND (:source IS NULL OR source = :source)
-            ORDER BY last_occurred_at DESC
+            WHERE resolved_at IS NULL';
+
+        if ($source !== null) {
+            $sql .= ' AND source = :source';
+        }
+
+        $sql .= ' ORDER BY last_occurred_at DESC
             LIMIT :limit';
 
         try {
             $stmt = $this->pdo->prepare($sql);
-            $stmt->bindValue('source', $source);
+
+            if ($source !== null) {
+                $stmt->bindValue('source', $source);
+            }
+
             $stmt->bindValue('limit', $limit, PDO::PARAM_INT);
             $stmt->execute();
 
