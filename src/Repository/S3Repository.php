@@ -85,4 +85,63 @@ class S3Repository
             'contentType' => $result->get('ContentType'),
         ];
     }
+
+    public function uploadProjectAsset(UploadedFileInterface $uploadedFile, string $objectKey): void
+    {
+        try {
+            $this->s3Client->putObject([
+                'Bucket' => $this->awsBucket,
+                'Key' => $objectKey,
+                'Body' => $uploadedFile->getStream()->getContents(),
+                'ContentType' => $uploadedFile->getClientMediaType(),
+            ]);
+        } catch (AwsException $exception) {
+            throw new ApiDatabaseException(
+                'AWS S3 upload error: ' . $exception->getMessage(),
+                StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR,
+                $exception
+            );
+        }
+    }
+
+    public function deleteObject(string $objectKey): void
+    {
+        try {
+            $this->s3Client->deleteObject([
+                'Bucket' => $this->awsBucket,
+                'Key' => $objectKey,
+            ]);
+        } catch (AwsException $exception) {
+            throw new ApiDatabaseException(
+                'AWS S3 delete error: ' . $exception->getMessage(),
+                StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR,
+                $exception
+            );
+        }
+    }
+
+    public function getObject(string $objectKey): ?array
+    {
+        try {
+            if (!$this->s3Client->doesObjectExist($this->awsBucket, $objectKey)) {
+                return null;
+            }
+
+            $result = $this->s3Client->getObject([
+                'Bucket' => $this->awsBucket,
+                'Key' => $objectKey,
+            ]);
+        } catch (S3Exception $exception) {
+            throw new ApiDatabaseException(
+                'AWS S3 retrieval error: ' . $exception->getMessage(),
+                StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR,
+                $exception
+            );
+        }
+
+        return [
+            'body' => (string) $result->get('Body'),
+            'contentType' => (string) $result->get('ContentType'),
+        ];
+    }
 }

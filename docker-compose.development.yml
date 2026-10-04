@@ -45,6 +45,7 @@ services:
       AWS_ENDPOINT: 'http://minio:9000'
       AWS_BUCKET: 'avatars'
       TELEGRAM_BOT_TOKEN: '123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11'
+      API_BASE_URL: 'http://localhost/api/v1'
     volumes:
       - ./:/app:rw
     networks:

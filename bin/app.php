@@ -8,6 +8,7 @@ use LukaLtaApi\Command\Alert\CleanupAlertsCommand;
 use LukaLtaApi\Command\Calendar\SyncCalendarCommand;
 use LukaLtaApi\Command\Homelab\CheckHomelabHeartbeatsCommand;
 use LukaLtaApi\Command\Homelab\CleanupHomelabDataCommand;
+use LukaLtaApi\Command\Project\ImportLegacyProjectsCommand;
 use LukaLtaApi\Command\Weather\FetchWeatherCommand;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Application;
@@ -30,6 +31,7 @@ try {
             'weather:fetch'            => FetchWeatherCommand::class,
             'calendar:sync'            => SyncCalendarCommand::class,
             'alerts:cleanup'           => CleanupAlertsCommand::class,
+            'projects:import-legacy'   => ImportLegacyProjectsCommand::class,
         ])
     );
 

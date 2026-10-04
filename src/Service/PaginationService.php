@@ -30,5 +30,4 @@ class PaginationService
             'totalPages' => $totalPages,
         ];
     }
-
 }
