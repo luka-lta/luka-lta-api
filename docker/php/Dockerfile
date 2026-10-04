@@ -17,6 +17,10 @@ RUN apk update && apk add --no-cache \
     git \
     unzip
 
+# Upload-Limits ins Image backen statt per Volume zu mounten, damit sie in
+# allen Umgebungen gelten — die nginx-Config wird genauso behandelt.
+COPY docker/php/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
+
 RUN adduser --disabled-password --no-create-home --home /app/ --gecos '' app
 WORKDIR /app/
 RUN chown -R app:app /app/ \
