@@ -5,268 +5,163 @@ declare(strict_types=1);
 namespace LukaLtaApi\Api\Homelab\Service;
 
 use LukaLtaApi\Value\Alert\Alerts;
+use LukaLtaApi\Value\Homelab\Container;
 use LukaLtaApi\Value\Homelab\Containers;
+use LukaLtaApi\Value\Homelab\Host;
 use LukaLtaApi\Value\Homelab\Hosts;
-use LukaLtaApi\Value\Homelab\TopologyEdge;
+use LukaLtaApi\Value\Homelab\NodeReference;
 use LukaLtaApi\Value\Homelab\TopologyEdges;
+use LukaLtaApi\Value\Homelab\TopologyNode;
 use LukaLtaApi\Value\Homelab\TopologyNodes;
 
 /**
- * Builds the full infrastructure graph purely from observed data (host/container
- * state, Docker network membership, Compose labels, Traefik labels) plus manually
- * curated nodes/edges. Never branches on a specific service name — node "type" and
- * "role" are free-form strings supplied by the agent/user, so new kinds of
- * infrastructure need no code changes here.
+ * Baut den Graphen ausschließlich aus kuratierten Knoten und Kanten. Es werden keine
+ * Beziehungen aus Labels oder Netzen abgeleitet — das ist Aufgabe des Reviews (Proposals).
+ * Live-Daten fließen nur über Knoten-Verweise ein: Ein Knoten, der auf einen Host oder
+ * Service zeigt, übernimmt dessen aktuellen Status.
  */
 class TopologyGraphBuilder
 {
-    /** Docker network names that are host-local plumbing, not a meaningful relation. */
-    private const IGNORED_NETWORK_NAMES = ['bridge', 'host', 'none'];
+    /** Alert-Typ des Heartbeat-Checks, der einen Host als offline markiert */
+    private const string HOST_OFFLINE_ALERT = 'host.offline';
 
     public function build(
         Hosts $hosts,
         Containers $containers,
-        TopologyNodes $manualNodes,
-        TopologyEdges $manualEdges,
+        TopologyNodes $nodes,
+        TopologyEdges $edges,
         Alerts $activeAlerts,
     ): array {
-        $hostIdsWithAlerts      = $this->collectAffectedIds($activeAlerts, 'hostId');
-        $containerIdsWithAlerts = $this->collectAffectedIds($activeAlerts, 'containerId');
+        $hostsById              = $this->indexHosts($hosts);
+        $containersByService    = $this->indexContainersByService($containers);
+        $hostAlertTypes         = $this->collectAlertTypes($activeAlerts, 'hostId');
+        $containerIdsWithAlerts = $this->collectAlertTypes($activeAlerts, 'containerId');
 
-        $nodes = [
-            ...$this->buildHostNodes($hosts, $hostIdsWithAlerts),
-            ...$this->buildContainerNodes($containers, $containerIdsWithAlerts),
-            ...iterator_to_array($manualNodes),
-        ];
+        $graphNodes = [];
+        foreach ($nodes as $node) {
+            $graphNodes[] = $this->buildNode(
+                $node,
+                $hostsById,
+                $containersByService,
+                $hostAlertTypes,
+                $containerIdsWithAlerts,
+            );
+        }
 
-        $edges = [
-            ...$this->buildHostedOnEdges($containers),
-            ...$this->buildNetworkEdges($containers),
-            ...$this->buildDependsOnEdges($containers),
-            ...$this->buildRoutesToEdges($containers),
-            ...iterator_to_array($manualEdges),
-        ];
-
-        return ['nodes' => $nodes, 'edges' => $edges];
+        return ['nodes' => $graphNodes, 'edges' => iterator_to_array($edges)];
     }
 
-    private function collectAffectedIds(Alerts $alerts, string $contextKey): array
+    private function buildNode(
+        TopologyNode $node,
+        array $hostsById,
+        array $containersByService,
+        array $hostAlertTypes,
+        array $containerIdsWithAlerts,
+    ): array {
+        $reference = $node->getReference();
+        $graphNode = $node->jsonSerialize();
+
+        if ($reference->isNone()) {
+            return $graphNode;
+        }
+
+        $hostId = $reference->getHostId()->asString();
+        $host   = $hostsById[$hostId] ?? null;
+
+        if ($reference->getType() === NodeReference::TYPE_HOST) {
+            $graphNode['status'] = $host !== null ? $this->hostStatus($hostAlertTypes[$hostId] ?? []) : 'unknown';
+            $graphNode['ref']    = [
+                ...$reference->jsonSerialize(),
+                'resolved' => $host !== null,
+                'hostName' => $host?->getName(),
+            ];
+
+            return $graphNode;
+        }
+
+        $container = $containersByService[$hostId][$reference->getServiceKey()->asString()] ?? null;
+
+        $graphNode['status'] = $container !== null
+            ? $this->containerStatus($container, isset($containerIdsWithAlerts[$container->getContainerId()]))
+            : 'unknown';
+        $graphNode['ref'] = [
+            ...$reference->jsonSerialize(),
+            'resolved'    => $container !== null,
+            'hostName'    => $host?->getName(),
+            'containerId' => $container?->getContainerId(),
+        ];
+
+        return $graphNode;
+    }
+
+    /** @return array<string, Host> */
+    private function indexHosts(Hosts $hosts): array
     {
-        $ids = [];
+        $index = [];
+        foreach ($hosts as $host) {
+            $index[$host->getHostId()] = $host;
+        }
+
+        return $index;
+    }
+
+    /**
+     * Bei mehreren Replicas eines Services gewinnt ein laufender Container, damit ein
+     * einzelner gestoppter Rest den Knoten nicht als offline markiert.
+     *
+     * @return array<string, array<string, Container>>
+     */
+    private function indexContainersByService(Containers $containers): array
+    {
+        $index = [];
+        foreach ($containers as $container) {
+            $hostId     = $container->getHostId();
+            $serviceKey = $container->getServiceKey()->asString();
+            $existing   = $index[$hostId][$serviceKey] ?? null;
+
+            if ($existing !== null && $existing->getStatus() === 'running') {
+                continue;
+            }
+
+            $index[$hostId][$serviceKey] = $container;
+        }
+
+        return $index;
+    }
+
+    /** @return array<string, array<string, true>> Kontext-ID => Alert-Typen */
+    private function collectAlertTypes(Alerts $alerts, string $contextKey): array
+    {
+        $types = [];
         foreach ($alerts as $alert) {
             $value = $alert->getContext()[$contextKey] ?? null;
             if ($value !== null) {
-                $ids[$value] = true;
+                $types[$value][$alert->getType()] = true;
             }
         }
 
-        return $ids;
+        return $types;
     }
 
-    /** @return array[] */
-    private function buildHostNodes(Hosts $hosts, array $hostIdsWithAlerts): array
+    private function hostStatus(array $alertTypes): string
     {
-        $nodes = [];
-        foreach ($hosts as $host) {
-            $nodes[] = [
-                'id'       => $host->getHostId(),
-                'type'     => $host->getNodeType(),
-                'name'     => $host->getName(),
-                'status'   => isset($hostIdsWithAlerts[$host->getHostId()]) ? 'warning' : 'healthy',
-                'metadata' => (object) [],
-                'manual'   => false,
-                'source'   => 'host',
-            ];
+        if (isset($alertTypes[self::HOST_OFFLINE_ALERT])) {
+            return 'offline';
         }
 
-        return $nodes;
+        return empty($alertTypes) ? 'healthy' : 'warning';
     }
 
-    /** @return array[] */
-    private function buildContainerNodes(Containers $containers, array $containerIdsWithAlerts): array
+    private function containerStatus(Container $container, bool $hasAlert): string
     {
-        $nodes = [];
-        foreach ($containers as $container) {
-            $nativeStatus = $this->mapContainerStatus($container->getStatus());
-            $hasAlert     = isset($containerIdsWithAlerts[$container->getContainerId()]);
-            // An alert can only escalate a healthy container to "warning" —
-            // it never downgrades an already worse native status (e.g. offline).
-            $status       = $hasAlert && $nativeStatus === 'healthy' ? 'warning' : $nativeStatus;
-            $nodes[] = [
-                'id'       => $container->getContainerId(),
-                'type'     => $container->getNodeRole() ?? 'container',
-                'name'     => $container->getName(),
-                'status'   => $status,
-                'metadata' => (object) [],
-                'manual'   => false,
-                'source'   => 'container',
-            ];
-        }
-
-        return $nodes;
-    }
-
-    private function mapContainerStatus(string $status): string
-    {
-        return match ($status) {
+        $status = match ($container->getStatus()) {
             'running' => 'healthy',
             'warning' => 'warning',
             'unhealthy', 'stopped' => 'offline',
             default => 'unknown',
         };
-    }
 
-    /** @return TopologyEdge[] */
-    private function buildHostedOnEdges(Containers $containers): array
-    {
-        $edges = [];
-        foreach ($containers as $container) {
-            $edges[] = TopologyEdge::computed(
-                'container',
-                $container->getContainerId(),
-                'host',
-                $container->getHostId(),
-                'hosted_on',
-            );
-        }
-
-        return $edges;
-    }
-
-    /** @return TopologyEdge[] */
-    private function buildNetworkEdges(Containers $containers): array
-    {
-        $containerList = iterator_to_array($containers);
-        $edges         = [];
-        $seenPairs     = [];
-
-        foreach ($containerList as $i => $a) {
-            foreach ($containerList as $j => $b) {
-                if ($j <= $i || $a->getHostId() !== $b->getHostId()) {
-                    continue;
-                }
-
-                $sharedNetworks = array_diff(
-                    array_intersect($a->getNetworks(), $b->getNetworks()),
-                    self::IGNORED_NETWORK_NAMES,
-                );
-
-                if (empty($sharedNetworks)) {
-                    continue;
-                }
-
-                $pairKey = $a->getContainerId() < $b->getContainerId()
-                    ? "{$a->getContainerId()}|{$b->getContainerId()}"
-                    : "{$b->getContainerId()}|{$a->getContainerId()}";
-
-                if (isset($seenPairs[$pairKey])) {
-                    continue;
-                }
-                $seenPairs[$pairKey] = true;
-
-                $edges[] = TopologyEdge::computed(
-                    'container',
-                    $a->getContainerId(),
-                    'container',
-                    $b->getContainerId(),
-                    'connects_to',
-                    ['networks' => array_values($sharedNetworks)],
-                );
-            }
-        }
-
-        return $edges;
-    }
-
-    /** @return TopologyEdge[] */
-    private function buildDependsOnEdges(Containers $containers): array
-    {
-        $byComposeKey = [];
-        foreach ($containers as $container) {
-            $labels  = $container->getLabels();
-            $project = $labels['com.docker.compose.project'] ?? null;
-            $service = $labels['com.docker.compose.service'] ?? null;
-
-            if ($project !== null && $service !== null) {
-                $byComposeKey["{$project}::{$service}"] = $container;
-            }
-        }
-
-        $edges = [];
-        foreach ($containers as $container) {
-            $labels     = $container->getLabels();
-            $project    = $labels['com.docker.compose.project'] ?? null;
-            $dependsOn  = $labels['com.docker.compose.depends_on'] ?? null;
-
-            if ($project === null || $dependsOn === null || $dependsOn === '') {
-                continue;
-            }
-
-            foreach (explode(',', $dependsOn) as $dependencyService) {
-                $dependencyService = trim(explode(':', $dependencyService)[0]);
-                $target             = $byComposeKey["{$project}::{$dependencyService}"] ?? null;
-
-                if ($target !== null) {
-                    $edges[] = TopologyEdge::computed(
-                        'container',
-                        $container->getContainerId(),
-                        'container',
-                        $target->getContainerId(),
-                        'depends_on',
-                    );
-                }
-            }
-        }
-
-        return $edges;
-    }
-
-    /** @return TopologyEdge[] */
-    private function buildRoutesToEdges(Containers $containers): array
-    {
-        $reverseProxies = [];
-        $routed         = [];
-
-        foreach ($containers as $container) {
-            if ($container->getNodeRole() === 'reverse-proxy') {
-                $reverseProxies[] = $container;
-            }
-
-            $rule = $this->findTraefikRule($container->getLabels());
-            if ($rule !== null) {
-                $routed[] = ['container' => $container, 'rule' => $rule];
-            }
-        }
-
-        $edges = [];
-        foreach ($reverseProxies as $proxy) {
-            foreach ($routed as $entry) {
-                if ($entry['container']->getContainerId() === $proxy->getContainerId()) {
-                    continue;
-                }
-
-                $edges[] = TopologyEdge::computed(
-                    'container',
-                    $proxy->getContainerId(),
-                    'container',
-                    $entry['container']->getContainerId(),
-                    'routes_to',
-                    ['rule' => $entry['rule']],
-                );
-            }
-        }
-
-        return $edges;
-    }
-
-    private function findTraefikRule(array $labels): ?string
-    {
-        foreach ($labels as $key => $value) {
-            if (str_starts_with($key, 'traefik.http.routers.') && str_ends_with($key, '.rule')) {
-                return $value;
-            }
-        }
-
-        return null;
+        // Ein Alert eskaliert nur "healthy" zu "warning", ein schlechterer Status bleibt.
+        return $hasAlert && $status === 'healthy' ? 'warning' : $status;
     }
 }

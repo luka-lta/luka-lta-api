@@ -25,6 +25,7 @@ class Container implements JsonSerializable
         private readonly string             $containerId,
         private readonly string             $hostId,
         private readonly string             $name,
+        private readonly ServiceKey         $serviceKey,
         private readonly string             $image,
         private readonly string             $status,
         private readonly string             $healthStatus,
@@ -41,7 +42,6 @@ class Container implements JsonSerializable
         private readonly array              $environment,
         private readonly array              $networks,
         private readonly array              $labels,
-        private readonly ?string            $nodeRole,
         private readonly DateTimeImmutable   $updatedAt,
     ) {
         $this->cpuHistory    = MetricSeries::from();
@@ -54,6 +54,7 @@ class Container implements JsonSerializable
             $row['container_id'],
             $row['host_id'],
             $row['name'],
+            ServiceKey::fromString($row['service_key']),
             $row['image'],
             $row['status'],
             $row['health_status'],
@@ -70,7 +71,6 @@ class Container implements JsonSerializable
             $row['environment'] !== null ? json_decode($row['environment'], true) : [],
             $row['networks'] !== null ? json_decode($row['networks'], true) : [],
             $row['labels'] !== null ? json_decode($row['labels'], true) : [],
-            $row['node_role'] ?? null,
             new DateTimeImmutable($row['updated_at']),
         );
     }
@@ -105,9 +105,24 @@ class Container implements JsonSerializable
         return $this->labels;
     }
 
-    public function getNodeRole(): ?string
+    public function getServiceKey(): ServiceKey
     {
-        return $this->nodeRole;
+        return $this->serviceKey;
+    }
+
+    public function getImage(): string
+    {
+        return $this->image;
+    }
+
+    public function getPorts(): array
+    {
+        return $this->ports;
+    }
+
+    public function getEnvironment(): array
+    {
+        return $this->environment;
     }
 
     public function setCpuHistory(MetricSeries $cpuHistory): void
@@ -152,6 +167,7 @@ class Container implements JsonSerializable
         return [
             'id'                 => $this->containerId,
             'name'               => $this->name,
+            'serviceKey'         => $this->serviceKey,
             'image'              => $this->image,
             'status'             => $this->status,
             'healthStatus'       => $this->healthStatus,
@@ -169,7 +185,6 @@ class Container implements JsonSerializable
             'environment'        => (object) $this->environment,
             'networks'           => $this->networks,
             'labels'             => (object) $this->labels,
-            'nodeRole'           => $this->nodeRole,
             'cpuHistory'         => $this->cpuHistory,
             'memoryHistory'      => $this->memoryHistory,
             'restartHistory'     => $this->restartHistory,

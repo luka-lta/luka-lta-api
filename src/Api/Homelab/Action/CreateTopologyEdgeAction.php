@@ -21,9 +21,7 @@ class CreateTopologyEdgeAction extends ApiAction
     protected function execute(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $this->requestValidator->validate($request, [
-            'sourceType' => ['required' => true, 'location' => 'body'],
             'sourceId'   => ['required' => true, 'location' => 'body'],
-            'targetType' => ['required' => true, 'location' => 'body'],
             'targetId'   => ['required' => true, 'location' => 'body'],
             'relation'   => ['required' => true, 'location' => 'body'],
             'metadata'   => ['required' => false, 'location' => 'body'],

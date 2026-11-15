@@ -6,58 +6,51 @@ namespace LukaLtaApi\Api\Homelab\Service;
 
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Exception\ApiValidationException;
-use LukaLtaApi\Exception\ContainerNotFoundException;
-use LukaLtaApi\Exception\HostNotFoundException;
 use LukaLtaApi\Repository\AlertRepository;
 use LukaLtaApi\Repository\HomelabContainerRepository;
 use LukaLtaApi\Repository\HomelabHostRepository;
 use LukaLtaApi\Repository\TopologyRepository;
-use LukaLtaApi\Value\Homelab\ContainerId;
-use LukaLtaApi\Value\Homelab\HostId;
-use LukaLtaApi\Value\Homelab\TopologyEdge;
-use LukaLtaApi\Value\Homelab\TopologyNode;
+use LukaLtaApi\Value\Homelab\NodeReference;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
 
 class TopologyService
 {
-    private const VALID_NODE_STATUSES = ['healthy', 'warning', 'offline', 'unknown'];
-    private const VALID_EDGE_TYPES    = ['host', 'container', 'node'];
-    private const VALID_RELATIONS     = ['routes_to', 'depends_on', 'connects_to', 'hosted_on', 'exposes'];
-
     public function __construct(
         private readonly TopologyRepository         $topologyRepository,
-        private readonly HomelabHostRepository       $hostRepository,
-        private readonly HomelabContainerRepository  $containerRepository,
-        private readonly AlertRepository              $alertRepository,
-        private readonly TopologyGraphBuilder        $graphBuilder,
+        private readonly HomelabHostRepository      $hostRepository,
+        private readonly HomelabContainerRepository $containerRepository,
+        private readonly AlertRepository            $alertRepository,
+        private readonly TopologyGraphBuilder       $graphBuilder,
+        private readonly TopologyEditor             $editor,
     ) {
     }
 
-    public function getGraph(): ApiResult
+    public function loadGraph(): array
     {
-        $graph = $this->graphBuilder->build(
+        return $this->graphBuilder->build(
             $this->hostRepository->loadAll(),
             $this->containerRepository->loadAll(),
             $this->topologyRepository->loadAllNodes(),
             $this->topologyRepository->loadAllEdges(),
             $this->alertRepository->loadActive('homelab'),
         );
+    }
 
-        return ApiResult::from(
-            JsonResult::from('Topology graph fetched.', $graph)
-        );
+    public function getGraph(): ApiResult
+    {
+        return ApiResult::from(JsonResult::from('Topology graph fetched.', $this->loadGraph()));
     }
 
     public function createNode(array $data): ApiResult
     {
-        $status = $data['status'] ?? 'unknown';
-        if (!in_array($status, self::VALID_NODE_STATUSES, true)) {
-            throw new ApiValidationException('Invalid node status.', 400);
-        }
-
-        $node = TopologyNode::create($data['type'], $data['name'], $status, $data['metadata'] ?? []);
-        $this->topologyRepository->createNode($node);
+        $node = $this->editor->addNode(
+            (string) $data['type'],
+            (string) $data['name'],
+            (string) ($data['status'] ?? 'unknown'),
+            NodeReference::fromArray($this->optionalArray($data, 'ref')),
+            $this->optionalArray($data, 'metadata') ?? [],
+        );
 
         return ApiResult::from(
             JsonResult::from('Topology node created.', ['node' => $node]),
@@ -65,35 +58,34 @@ class TopologyService
         );
     }
 
+    public function updateNode(string $nodeId, array $data): ApiResult
+    {
+        $node = $this->editor->updateNode(
+            $nodeId,
+            isset($data['type']) ? (string) $data['type'] : null,
+            isset($data['name']) ? (string) $data['name'] : null,
+            isset($data['status']) ? (string) $data['status'] : null,
+            $this->optionalArray($data, 'metadata'),
+        );
+
+        return ApiResult::from(JsonResult::from('Topology node updated.', ['node' => $node]));
+    }
+
     public function deleteNode(string $nodeId): ApiResult
     {
-        $this->topologyRepository->deleteNode($nodeId);
+        $this->editor->removeNode($nodeId);
 
         return ApiResult::from(JsonResult::from('Topology node deleted.'), StatusCodeInterface::STATUS_NO_CONTENT);
     }
 
     public function createEdge(array $data): ApiResult
     {
-        $sourceTypeValid = in_array($data['sourceType'], self::VALID_EDGE_TYPES, true);
-        $targetTypeValid = in_array($data['targetType'], self::VALID_EDGE_TYPES, true);
-
-        if (!$sourceTypeValid || !$targetTypeValid) {
-            throw new ApiValidationException('Invalid edge endpoint type.', 400);
-        }
-
-        if (!in_array($data['relation'], self::VALID_RELATIONS, true)) {
-            throw new ApiValidationException('Invalid edge relation.', 400);
-        }
-
-        $edge = TopologyEdge::create(
-            $data['sourceType'],
-            $data['sourceId'],
-            $data['targetType'],
-            $data['targetId'],
-            $data['relation'],
-            $data['metadata'] ?? [],
+        $edge = $this->editor->addEdge(
+            (string) $data['sourceId'],
+            (string) $data['targetId'],
+            (string) $data['relation'],
+            $this->optionalArray($data, 'metadata') ?? [],
         );
-        $this->topologyRepository->createEdge($edge);
 
         return ApiResult::from(
             JsonResult::from('Topology edge created.', ['edge' => $edge]),
@@ -103,30 +95,18 @@ class TopologyService
 
     public function deleteEdge(string $edgeId): ApiResult
     {
-        $this->topologyRepository->deleteEdge($edgeId);
+        $this->editor->removeEdge($edgeId);
 
         return ApiResult::from(JsonResult::from('Topology edge deleted.'), StatusCodeInterface::STATUS_NO_CONTENT);
     }
 
-    public function updateHostNodeType(HostId $hostId, string $nodeType): ApiResult
+    private function optionalArray(array $data, string $key): ?array
     {
-        if ($this->hostRepository->loadHost($hostId) === null) {
-            throw new HostNotFoundException();
+        $value = $data[$key] ?? null;
+        if ($value !== null && !is_array($value)) {
+            throw new ApiValidationException("Field '{$key}' must be an object", 400);
         }
 
-        $this->hostRepository->updateNodeType($hostId, $nodeType);
-
-        return ApiResult::from(JsonResult::from('Host node type updated.'));
-    }
-
-    public function updateContainerNodeRole(ContainerId $containerId, ?string $nodeRole): ApiResult
-    {
-        if ($this->containerRepository->loadContainer($containerId) === null) {
-            throw new ContainerNotFoundException();
-        }
-
-        $this->containerRepository->updateNodeRole($containerId, $nodeRole);
-
-        return ApiResult::from(JsonResult::from('Container node role updated.'));
+        return $value;
     }
 }

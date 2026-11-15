@@ -7,6 +7,7 @@ namespace LukaLtaApi\Repository\Traits;
 use LukaLtaApi\Exception\ApiDatabaseException;
 use PDO;
 use PDOException;
+use Throwable;
 
 trait TransactionTrait
 {
@@ -22,6 +23,10 @@ trait TransactionTrait
         } catch (PDOException $e) {
             $pdo->rollBack();
             throw new ApiDatabaseException($e->getMessage(), (int) $e->getCode(), $e);
+        } catch (Throwable $e) {
+            // Auch fachliche Fehler dürfen keine offene Transaktion auf der geteilten Verbindung hinterlassen.
+            $pdo->rollBack();
+            throw $e;
         }
     }
 }

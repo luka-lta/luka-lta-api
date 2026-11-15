@@ -19,7 +19,6 @@ class HomelabHostRepository
         SELECT
             host_id,
             name,
-            node_type,
             cpu_usage_percent,
             memory_used_gb,
             memory_total_gb,
@@ -110,11 +109,11 @@ class HomelabHostRepository
     {
         $sql = <<<SQL
             INSERT INTO homelab_hosts (
-                host_id, name, node_type, cpu_usage_percent, memory_used_gb, memory_total_gb,
+                host_id, name, cpu_usage_percent, memory_used_gb, memory_total_gb,
                 disk_used_gb, disk_total_gb, load_average_1, load_average_5, load_average_15,
                 temperature_celsius, uptime_seconds
             ) VALUES (
-                :host_id, :name, :node_type, :cpu_usage_percent, :memory_used_gb, :memory_total_gb,
+                :host_id, :name, :cpu_usage_percent, :memory_used_gb, :memory_total_gb,
                 :disk_used_gb, :disk_total_gb, :load_average_1, :load_average_5, :load_average_15,
                 :temperature_celsius, :uptime_seconds
             )
@@ -137,7 +136,6 @@ class HomelabHostRepository
             $stmt->execute([
                 'host_id'             => $hostId->asString(),
                 'name'                => $data['name'],
-                'node_type'           => $data['nodeType'] ?? 'server',
                 'cpu_usage_percent'   => $data['cpuUsagePercent'],
                 'memory_used_gb'      => $data['memoryUsedGb'],
                 'memory_total_gb'     => $data['memoryTotalGb'],
@@ -151,18 +149,6 @@ class HomelabHostRepository
             ]);
         } catch (PDOException $exception) {
             throw new ApiDatabaseException('Failed to store host.', previous: $exception);
-        }
-    }
-
-    public function updateNodeType(HostId $hostId, string $nodeType): void
-    {
-        $sql = 'UPDATE homelab_hosts SET node_type = :node_type WHERE host_id = :host_id';
-
-        try {
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->execute(['node_type' => $nodeType, 'host_id' => $hostId->asString()]);
-        } catch (PDOException $exception) {
-            throw new ApiDatabaseException('Failed to update host node type.', previous: $exception);
         }
     }
 

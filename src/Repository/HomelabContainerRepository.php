@@ -15,6 +15,7 @@ use LukaLtaApi\Value\Homelab\LogLine;
 use LukaLtaApi\Value\Homelab\MetricPoint;
 use LukaLtaApi\Value\Homelab\MetricSeries;
 use LukaLtaApi\Value\Homelab\RestartEvent;
+use LukaLtaApi\Value\Homelab\ServiceKey;
 use PDO;
 use PDOException;
 
@@ -25,6 +26,7 @@ class HomelabContainerRepository
             container_id,
             host_id,
             name,
+            service_key,
             image,
             status,
             health_status,
@@ -41,7 +43,6 @@ class HomelabContainerRepository
             environment,
             networks,
             labels,
-            node_role,
             updated_at
         FROM homelab_containers
     SQL;
@@ -105,6 +106,26 @@ class HomelabContainerRepository
         }
 
         return Container::fromDatabase($row);
+    }
+
+    public function hasService(HostId $hostId, ServiceKey $serviceKey): bool
+    {
+        $sql = <<<SQL
+            SELECT 1
+            FROM homelab_containers
+            WHERE host_id = :host_id
+              AND service_key = :service_key
+            LIMIT 1
+        SQL;
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute(['host_id' => $hostId->asString(), 'service_key' => $serviceKey->asString()]);
+
+            return $stmt->fetchColumn() !== false;
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException('Failed to check service', previous: $exception);
+        }
     }
 
     public function loadMetrics(ContainerId $containerId, string $metricType, int $sinceMinutes): MetricSeries
@@ -222,17 +243,18 @@ class HomelabContainerRepository
     {
         $sql = <<<SQL
             INSERT INTO homelab_containers (
-                container_id, host_id, name, image, status, health_status, started_at,
+                container_id, host_id, name, service_key, image, status, health_status, started_at,
                 cpu_usage_percent, memory_used_mb, memory_limit_mb, network_in_mbps, network_out_mbps,
-                restart_count, last_health_check_at, ports, volumes, environment, networks, labels, node_role
+                restart_count, last_health_check_at, ports, volumes, environment, networks, labels
             ) VALUES (
-                :container_id, :host_id, :name, :image, :status, :health_status, :started_at,
+                :container_id, :host_id, :name, :service_key, :image, :status, :health_status, :started_at,
                 :cpu_usage_percent, :memory_used_mb, :memory_limit_mb, :network_in_mbps, :network_out_mbps,
-                :restart_count, :last_health_check_at, :ports, :volumes, :environment, :networks, :labels, :node_role
+                :restart_count, :last_health_check_at, :ports, :volumes, :environment, :networks, :labels
             )
             ON DUPLICATE KEY UPDATE
                 host_id               = VALUES(host_id),
                 name                  = VALUES(name),
+                service_key           = VALUES(service_key),
                 image                 = VALUES(image),
                 status                = VALUES(status),
                 health_status         = VALUES(health_status),
@@ -257,6 +279,7 @@ class HomelabContainerRepository
                 'container_id'         => $containerId->asString(),
                 'host_id'              => $hostId->asString(),
                 'name'                 => $data['name'],
+                'service_key'          => ServiceKey::fromLabels($data['labels'] ?? [], $data['name'])->asString(),
                 'image'                => $data['image'],
                 'status'               => $data['status'],
                 'health_status'        => $data['healthStatus'],
@@ -273,22 +296,9 @@ class HomelabContainerRepository
                 'environment'          => json_encode($data['environment'] ?? [], JSON_THROW_ON_ERROR),
                 'networks'             => json_encode($data['networks'] ?? [], JSON_THROW_ON_ERROR),
                 'labels'               => json_encode($data['labels'] ?? [], JSON_THROW_ON_ERROR),
-                'node_role'            => $data['nodeRole'] ?? null,
             ]);
         } catch (PDOException $exception) {
             throw new ApiDatabaseException('Failed to store container.', previous: $exception);
-        }
-    }
-
-    public function updateNodeRole(ContainerId $containerId, ?string $nodeRole): void
-    {
-        $sql = 'UPDATE homelab_containers SET node_role = :node_role WHERE container_id = :container_id';
-
-        try {
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->execute(['node_role' => $nodeRole, 'container_id' => $containerId->asString()]);
-        } catch (PDOException $exception) {
-            throw new ApiDatabaseException('Failed to update container node role.', previous: $exception);
         }
     }
 
