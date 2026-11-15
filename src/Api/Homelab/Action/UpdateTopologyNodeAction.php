@@ -6,11 +6,12 @@ namespace LukaLtaApi\Api\Homelab\Action;
 
 use LukaLtaApi\Api\ApiAction;
 use LukaLtaApi\Api\Homelab\Service\TopologyService;
-use LukaLtaApi\Value\Homelab\ContainerId;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-class UpdateContainerRoleAction extends ApiAction
+// Usage: curl -X PATCH /api/v1/homelab/topology/nodes/<nodeId> --header 'Authorization: <jwt>' \
+//   --header 'Origin: <origin>' --data '{"type":"database","name":"MySQL"}'
+class UpdateTopologyNodeAction extends ApiAction
 {
     public function __construct(
         private readonly TopologyService $service,
@@ -19,9 +20,8 @@ class UpdateContainerRoleAction extends ApiAction
 
     protected function execute(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $containerId = ContainerId::fromString($request->getAttribute('containerId'));
-        $body        = $request->getParsedBody();
-
-        return $this->service->updateContainerNodeRole($containerId, $body['nodeRole'] ?? null)->getResponse($response);
+        return $this->service
+            ->updateNode($request->getAttribute('nodeId'), (array) ($request->getParsedBody() ?? []))
+            ->getResponse($response);
     }
 }

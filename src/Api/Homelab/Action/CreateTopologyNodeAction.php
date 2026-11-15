@@ -10,6 +10,8 @@ use LukaLtaApi\Api\RequestValidator;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
+// Usage: curl -X POST /api/v1/homelab/topology/nodes --header 'Authorization: <jwt>' --header 'Origin: <origin>' \
+//   --data '{"type":"reverse-proxy","name":"Traefik","ref":{"type":"service","hostId":"<host>","serviceKey":"traefik::traefik"}}'
 class CreateTopologyNodeAction extends ApiAction
 {
     public function __construct(
@@ -24,6 +26,7 @@ class CreateTopologyNodeAction extends ApiAction
             'type'     => ['required' => true, 'location' => 'body'],
             'name'     => ['required' => true, 'location' => 'body'],
             'status'   => ['required' => false, 'location' => 'body'],
+            'ref'      => ['required' => false, 'location' => 'body'],
             'metadata' => ['required' => false, 'location' => 'body'],
         ]);
 

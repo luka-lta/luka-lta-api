@@ -12,7 +12,6 @@ class Host implements JsonSerializable
     private function __construct(
         private readonly string             $hostId,
         private readonly string             $name,
-        private readonly string             $nodeType,
         private readonly float              $cpuUsagePercent,
         private readonly float              $memoryUsedGb,
         private readonly float              $memoryTotalGb,
@@ -32,7 +31,6 @@ class Host implements JsonSerializable
         return new self(
             $row['host_id'],
             $row['name'],
-            $row['node_type'],
             (float) $row['cpu_usage_percent'],
             (float) $row['memory_used_gb'],
             (float) $row['memory_total_gb'],
@@ -55,11 +53,6 @@ class Host implements JsonSerializable
     public function getName(): string
     {
         return $this->name;
-    }
-
-    public function getNodeType(): string
-    {
-        return $this->nodeType;
     }
 
     public function getUpdatedAt(): DateTimeImmutable
@@ -90,7 +83,6 @@ class Host implements JsonSerializable
         return [
             'id'                  => $this->hostId,
             'name'                => $this->name,
-            'nodeType'            => $this->nodeType,
             'cpuUsagePercent'     => $this->cpuUsagePercent,
             'memoryUsagePercent'  => $this->getMemoryUsagePercent(),
             'memoryUsedGb'        => $this->memoryUsedGb,

@@ -36,14 +36,18 @@ use LukaLtaApi\Api\Homelab\Action\GetContainerAction;
 use LukaLtaApi\Api\Homelab\Action\GetContainerMetricsAction;
 use LukaLtaApi\Api\Homelab\Action\GetHostMetricsAction;
 use LukaLtaApi\Api\Homelab\Action\GetTopologyAction;
+use LukaLtaApi\Api\Homelab\Action\HomelabMcpAction;
 use LukaLtaApi\Api\Homelab\Action\IngestContainerMetricsAction;
 use LukaLtaApi\Api\Homelab\Action\IngestHostMetricsAction;
 use LukaLtaApi\Api\Homelab\Action\ListAlertsAction;
 use LukaLtaApi\Api\Homelab\Action\ListContainersAction;
 use LukaLtaApi\Api\Homelab\Action\ListEventsAction;
 use LukaLtaApi\Api\Homelab\Action\ListHostsAction;
-use LukaLtaApi\Api\Homelab\Action\UpdateContainerRoleAction;
-use LukaLtaApi\Api\Homelab\Action\UpdateHostNodeTypeAction;
+use LukaLtaApi\Api\Homelab\Action\UpdateTopologyNodeAction;
+use LukaLtaApi\Api\Homelab\Action\ListTopologyProposalsAction;
+use LukaLtaApi\Api\Homelab\Action\GetTopologyProposalAction;
+use LukaLtaApi\Api\Homelab\Action\ApplyTopologyProposalAction;
+use LukaLtaApi\Api\Homelab\Action\RejectTopologyProposalAction;
 use LukaLtaApi\Api\Weather\Action\GetWeatherDetailAction;
 use LukaLtaApi\Api\Weather\Action\GetWeatherLocationAction;
 use LukaLtaApi\Api\Weather\Action\GetWeatherSummaryAction;
@@ -232,14 +236,17 @@ class RouteMiddlewareCollector
                 $homelab->get('/containers/{containerId}/metrics', GetContainerMetricsAction::class);
                 $homelab->get('/alerts', ListAlertsAction::class);
                 $homelab->get('/events', ListEventsAction::class);
-                $homelab->patch('/hosts/{hostId}', UpdateHostNodeTypeAction::class);
-                $homelab->patch('/containers/{containerId}/role', UpdateContainerRoleAction::class);
 
                 $homelab->get('/topology', GetTopologyAction::class);
                 $homelab->post('/topology/nodes', CreateTopologyNodeAction::class);
+                $homelab->patch('/topology/nodes/{nodeId}', UpdateTopologyNodeAction::class);
                 $homelab->delete('/topology/nodes/{nodeId}', DeleteTopologyNodeAction::class);
                 $homelab->post('/topology/edges', CreateTopologyEdgeAction::class);
                 $homelab->delete('/topology/edges/{edgeId}', DeleteTopologyEdgeAction::class);
+                $homelab->get('/topology/proposals', ListTopologyProposalsAction::class);
+                $homelab->get('/topology/proposals/{proposalId}', GetTopologyProposalAction::class);
+                $homelab->post('/topology/proposals/{proposalId}/apply', ApplyTopologyProposalAction::class);
+                $homelab->post('/topology/proposals/{proposalId}/reject', RejectTopologyProposalAction::class);
             })->add(AuthMiddleware::class);
 
             // Weather — dashboard widget routes
@@ -274,6 +281,13 @@ class RouteMiddlewareCollector
                 $container->get(ApiKeyRepository::class),
                 'Ingest Homelab Metrics',
             ));
+
+            // Homelab — MCP-Endpoint für Topologie-Vorschläge (Claude), API-Key-authentifiziert
+            $app->map(['GET', 'POST', 'DELETE'], '/homelab/mcp', HomelabMcpAction::class)
+                ->add(new ApiKeyPermissionMiddleware(
+                    $container->get(ApiKeyRepository::class),
+                    'Propose Homelab Topology',
+                ));
 
             // Projects — Tag-Dictionary, nur Dashboard
             $app->group('/projects/tags', function (RouteCollectorProxy $tags) {
