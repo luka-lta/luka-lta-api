@@ -62,6 +62,11 @@ use LukaLtaApi\Api\LinkCollection\Action\GetDetailLinkAction;
 use LukaLtaApi\Api\Notification\Action\ListNotificationsAction;
 use LukaLtaApi\Api\Notification\Action\MarkAllNotificationsReadAction;
 use LukaLtaApi\Api\Notification\Action\MarkNotificationReadAction;
+use LukaLtaApi\Api\Customer\Action\ArchiveCustomerAction;
+use LukaLtaApi\Api\Customer\Action\CreateCustomerAction;
+use LukaLtaApi\Api\Customer\Action\GetCustomerAction;
+use LukaLtaApi\Api\Customer\Action\ListCustomersAction;
+use LukaLtaApi\Api\Customer\Action\UpdateCustomerAction;
 use LukaLtaApi\Api\Project\Action\CreateProjectAction;
 use LukaLtaApi\Api\Project\Action\CreateProjectTagAction;
 use LukaLtaApi\Api\Project\Action\DeleteProjectAction;
@@ -305,6 +310,15 @@ class RouteMiddlewareCollector
                 $projects->delete('/{projectId}/assets/{assetId}', DeleteProjectAssetAction::class);
                 $projects->patch('/{projectId}', UpdateProjectAction::class);
                 $projects->delete('/{projectId}', DeleteProjectAction::class);
+            })->add(AuthMiddleware::class);
+
+            // Business — Kunden fuer Angebote und Rechnungen (Dashboard)
+            $app->group('/customers', function (RouteCollectorProxy $customers) {
+                $customers->get('', ListCustomersAction::class);
+                $customers->post('', CreateCustomerAction::class);
+                $customers->get('/{customerId}', GetCustomerAction::class);
+                $customers->patch('/{customerId}', UpdateCustomerAction::class);
+                $customers->post('/{customerId}/archive', ArchiveCustomerAction::class);
             })->add(AuthMiddleware::class);
 
             // Projects — oeffentlicher Byte-Proxy (kein Login fuer Portfolio-Bilder)
