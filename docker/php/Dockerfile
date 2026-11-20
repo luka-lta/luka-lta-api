@@ -13,6 +13,11 @@ RUN apk add --no-cache autoconf g++ make && \
     pecl install redis && \
     docker-php-ext-enable redis
 
+# gd wird von mPDF (PDF-Erzeugung fuer Angebote/Rechnungen) verlangt.
+RUN apk add --no-cache libpng-dev libjpeg-turbo-dev freetype-dev && \
+    docker-php-ext-configure gd --with-freetype --with-jpeg && \
+    docker-php-ext-install gd
+
 RUN apk update && apk add --no-cache \
     git \
     unzip
