@@ -74,6 +74,11 @@ class BusinessDocumentStateException extends ApiException
         return new self('Offer already has a final invoice');
     }
 
+    public static function numberTaken(string $documentNumber, ?Throwable $previous = null): self
+    {
+        return new self(sprintf('Document number %s is already taken', $documentNumber), $previous);
+    }
+
     public static function customerArchived(): self
     {
         return new self('Customer is archived');

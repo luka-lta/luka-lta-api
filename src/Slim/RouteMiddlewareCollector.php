@@ -76,6 +76,7 @@ use LukaLtaApi\Api\Invoice\Action\DeleteInvoiceAction;
 use LukaLtaApi\Api\Invoice\Action\FinalizeInvoiceAction;
 use LukaLtaApi\Api\Invoice\Action\GetInvoiceAction;
 use LukaLtaApi\Api\Invoice\Action\GetInvoicePdfAction;
+use LukaLtaApi\Api\Invoice\Action\ImportInvoiceAction;
 use LukaLtaApi\Api\Invoice\Action\ListInvoicesAction;
 use LukaLtaApi\Api\Invoice\Action\MarkInvoicePaidAction;
 use LukaLtaApi\Api\Invoice\Action\UnmarkInvoicePaidAction;
@@ -358,10 +359,12 @@ class RouteMiddlewareCollector
                 $offers->post('/{offerId}/invoices', CreateInvoiceFromOfferAction::class);
             })->add(AuthMiddleware::class);
 
-            // Business — Rechnungen: Entwurf, Festschreiben mit Nummernkreis und PDF, Zahlung, Storno (Dashboard)
+            // Business — Rechnungen: Entwurf, Festschreiben mit Nummernkreis und PDF, Zahlung, Storno, Import
             $app->group('/invoices', function (RouteCollectorProxy $invoices) {
                 $invoices->get('', ListInvoicesAction::class);
                 $invoices->post('', CreateInvoiceAction::class);
+                // Statisches Segment vor den {invoiceId}-Routen
+                $invoices->post('/import', ImportInvoiceAction::class);
                 $invoices->get('/{invoiceId}', GetInvoiceAction::class);
                 $invoices->patch('/{invoiceId}', UpdateInvoiceAction::class);
                 $invoices->delete('/{invoiceId}', DeleteInvoiceAction::class);

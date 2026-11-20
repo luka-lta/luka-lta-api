@@ -7,6 +7,7 @@ namespace LukaLtaApi\Repository;
 use DateTimeImmutable;
 use JsonException;
 use LukaLtaApi\Exception\ApiDatabaseException;
+use LukaLtaApi\Exception\BusinessDocumentStateException;
 use LukaLtaApi\Repository\Traits\TransactionTrait;
 use LukaLtaApi\Value\Business\BusinessClock;
 use LukaLtaApi\Value\Business\CustomerId;
@@ -31,6 +32,9 @@ use Ramsey\Uuid\Uuid;
 class BusinessInvoiceRepository
 {
     use TransactionTrait;
+
+    /** MySQL-Fehlercode für die Verletzung eines Unique-Index (ER_DUP_ENTRY) */
+    private const int MYSQL_DUPLICATE_KEY = 1062;
 
     /** Anzeigename aus dem Kundenstamm; nach dem Festschreiben gewinnt der Snapshot (siehe Invoice::fromDatabase) */
     private const string INVOICE_SELECT = <<<SQL
@@ -323,6 +327,100 @@ class BusinessInvoiceRepository
         // Status wechselt immer von draft auf open/issued, daher ist genau eine Zeile betroffen
         if ($stmt->rowCount() !== 1) {
             throw new ApiDatabaseException('Invoice was not a draft while finalizing it');
+        }
+    }
+
+    /**
+     * Ist die Nummer bereits vergeben? Der Aufrufer hält die Sperre auf der Sequenzzeile des Jahres (alle Wege,
+     * die eine Nummer setzen, sperren sie vorher) und hat davor nicht konsistent gelesen, daher sieht dieses
+     * Lesen jede bis zur Sperre committete Nummer.
+     */
+    public function isInvoiceNumberTaken(DocumentNumber $invoiceNumber): bool
+    {
+        $sql = 'SELECT 1 FROM business_invoices i WHERE i.invoice_number = :invoice_number LIMIT 1';
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute(['invoice_number' => $invoiceNumber->asString()]);
+            $isTaken = $stmt->fetchColumn() !== false;
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException('Failed to check invoice number', previous: $exception);
+        }
+
+        return $isTaken;
+    }
+
+    /**
+     * Legt eine importierte Bestandsrechnung direkt im Endzustand an (Nummer, Status open/paid, Fälligkeit,
+     * Kunden-Snapshot, is_imported); ohne Positionen und vorerst ohne PDF-Key (siehe setPdfObjectKey).
+     * Eine doppelte Nummer (Unique-Index) wird als 409 gemeldet.
+     */
+    public function createImported(Invoice $invoice): void
+    {
+        $sql = <<<SQL
+            INSERT INTO business_invoices
+                (invoice_id, invoice_number, kind, status, customer_id, invoice_date, service_date,
+                 payment_term_days, due_date, subtotal_cents, deposit_deduction_cents, total_cents, paid_at,
+                 is_imported, customer_snapshot)
+            VALUES
+                (:invoice_id, :invoice_number, :kind, :status, :customer_id, :invoice_date, :service_date,
+                 :payment_term_days, :due_date, :subtotal_cents, :deposit_deduction_cents, :total_cents, :paid_at,
+                 1, :customer_snapshot)
+        SQL;
+        $invoiceNumber = $invoice->getInvoiceNumber();
+        $customerSnapshot = $invoice->getCustomerSnapshot();
+        if ($invoiceNumber === null || $customerSnapshot === null || !$invoice->isImported()) {
+            throw new ApiDatabaseException('Imported invoice requires a number and a customer snapshot');
+        }
+        $row = $invoice->toDatabaseRow();
+
+        try {
+            $this->pdo->prepare($sql)->execute([
+                'invoice_id' => $row['invoice_id'],
+                'invoice_number' => $invoiceNumber->asString(),
+                'kind' => $row['kind'],
+                'status' => $invoice->getStatus()->value,
+                'customer_id' => $row['customer_id'],
+                'invoice_date' => $row['invoice_date'],
+                'service_date' => $row['service_date'],
+                'payment_term_days' => $row['payment_term_days'],
+                'due_date' => $invoice->getDueDate()->format('Y-m-d'),
+                'subtotal_cents' => $row['subtotal_cents'],
+                'deposit_deduction_cents' => $row['deposit_deduction_cents'],
+                'total_cents' => $row['total_cents'],
+                'paid_at' => $invoice->getPaidAt(),
+                'customer_snapshot' => json_encode($customerSnapshot->toArray(), JSON_THROW_ON_ERROR),
+            ]);
+        } catch (PDOException $exception) {
+            if (($exception->errorInfo[1] ?? null) === self::MYSQL_DUPLICATE_KEY) {
+                throw BusinessDocumentStateException::numberTaken($invoiceNumber->asString(), $exception);
+            }
+
+            throw new ApiDatabaseException('Failed to import invoice', previous: $exception);
+        } catch (JsonException $exception) {
+            throw new ApiDatabaseException('Failed to import invoice', previous: $exception);
+        }
+    }
+
+    /** PDF-Key einer importierten Rechnung nachtragen (Upload erst nach dem Insert, in derselben Transaktion) */
+    public function setPdfObjectKey(InvoiceId $invoiceId, string $pdfObjectKey): void
+    {
+        $sql = <<<SQL
+            UPDATE business_invoices
+            SET pdf_object_key = :pdf_object_key
+            WHERE invoice_id = :invoice_id AND is_imported = 1 AND pdf_object_key IS NULL
+        SQL;
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute(['invoice_id' => $invoiceId->asString(), 'pdf_object_key' => $pdfObjectKey]);
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException('Failed to store invoice PDF key', previous: $exception);
+        }
+
+        // Der Key wechselt von NULL auf einen Wert, daher ist genau eine Zeile betroffen
+        if ($stmt->rowCount() !== 1) {
+            throw new ApiDatabaseException('Imported invoice is missing while storing its PDF key');
         }
     }
 

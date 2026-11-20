@@ -283,6 +283,67 @@ class Invoice implements JsonSerializable
         );
     }
 
+    /**
+     * Außerhalb des Systems ausgestellte Bestandsrechnung: normale Rechnung ohne Positionen, bereits mit Nummer,
+     * Fälligkeit und Kunden-Snapshot; das hochgeladene Original ist das PDF (Key setzt der Aufrufer danach).
+     * Fachliche Prüfungen (Daten, Nummernjahr, Eindeutigkeit) macht der Aufrufer.
+     */
+    public static function imported(
+        Customer $customer,
+        DocumentNumber $invoiceNumber,
+        InvoiceStatus $status,
+        DateTimeImmutable $invoiceDate,
+        ?DateTimeImmutable $serviceDate,
+        int $paymentTermDays,
+        DateTimeImmutable $dueDate,
+        Money $total,
+        ?DateTimeImmutable $paidAt,
+    ): self {
+        if ($status !== InvoiceStatus::Open && $status !== InvoiceStatus::Paid) {
+            throw new ApiValidationException('status must be open or paid', 400);
+        }
+        if (($status === InvoiceStatus::Paid) !== ($paidAt !== null)) {
+            throw new ApiValidationException('paidAt must be set exactly for paid invoices', 400);
+        }
+        if ($total->asCents() <= 0) {
+            throw new ApiValidationException('totalCents must be positive', 400);
+        }
+
+        $customerSnapshot = PostalAddressSnapshot::fromCustomer($customer);
+
+        return new self(
+            InvoiceId::generate(),
+            $invoiceNumber,
+            InvoiceKind::Standard,
+            $status,
+            $customer->getCustomerId(),
+            $customerSnapshot->getDisplayName(),
+            null,
+            null,
+            null,
+            null,
+            null,
+            $invoiceDate,
+            $serviceDate,
+            null,
+            null,
+            $paymentTermDays,
+            $dueDate,
+            null,
+            null,
+            LineItems::from(),
+            $total,
+            Money::fromCents(0),
+            $total,
+            $paidAt?->format(self::DATE_FORMAT),
+            true,
+            $customerSnapshot,
+            null,
+            null,
+            null,
+        );
+    }
+
     /** @param array<string, mixed> $row inkl. Join-Spalten aus BusinessInvoiceRepository */
     public static function fromDatabase(array $row, LineItems $items): self
     {

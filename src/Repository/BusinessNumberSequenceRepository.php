@@ -29,6 +29,32 @@ class BusinessNumberSequenceRepository
      */
     public function allocateNext(DocumentPrefix $prefix, int $year): DocumentNumber
     {
+        $next = $this->lockSequence($prefix, $year) + 1;
+        $update = <<<SQL
+            UPDATE business_number_sequences
+            SET `last_value` = :last_value
+            WHERE prefix = :prefix AND `year` = :year
+        SQL;
+
+        try {
+            $this->pdo->prepare($update)->execute([
+                'last_value' => $next,
+                'prefix' => $prefix->value,
+                'year' => $year,
+            ]);
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException('Failed to allocate document number', previous: $exception);
+        }
+
+        return DocumentNumber::from($prefix, $year, $next);
+    }
+
+    /**
+     * Legt die Sequenzzeile bei Bedarf an, sperrt sie bis zum Ende der Transaktion (FOR UPDATE) und liefert den
+     * aktuellen Zählerstand. Vergabe und Import desselben Kreises und Jahres laufen dadurch nacheinander.
+     */
+    public function lockSequence(DocumentPrefix $prefix, int $year): int
+    {
         $this->assertInTransaction();
 
         $ensureRow = <<<SQL
@@ -42,11 +68,6 @@ class BusinessNumberSequenceRepository
             WHERE s.prefix = :prefix AND s.`year` = :year
             FOR UPDATE
         SQL;
-        $update = <<<SQL
-            UPDATE business_number_sequences
-            SET `last_value` = :last_value
-            WHERE prefix = :prefix AND `year` = :year
-        SQL;
         $key = ['prefix' => $prefix->value, 'year' => $year];
 
         try {
@@ -54,17 +75,15 @@ class BusinessNumberSequenceRepository
             $stmt = $this->pdo->prepare($select);
             $stmt->execute($key);
             $lastValue = $stmt->fetchColumn();
-            if ($lastValue === false) {
-                throw new ApiDatabaseException('Number sequence row is missing');
-            }
-
-            $next = (int) $lastValue + 1;
-            $this->pdo->prepare($update)->execute(['last_value' => $next] + $key);
         } catch (PDOException $exception) {
-            throw new ApiDatabaseException('Failed to allocate document number', previous: $exception);
+            throw new ApiDatabaseException('Failed to lock number sequence', previous: $exception);
         }
 
-        return DocumentNumber::from($prefix, $year, $next);
+        if ($lastValue === false) {
+            throw new ApiDatabaseException('Number sequence row is missing');
+        }
+
+        return (int) $lastValue;
     }
 
     /** Hebt den Zählerstand an (z.B. nach einem Import), senkt ihn aber nie */
