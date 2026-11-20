@@ -116,14 +116,22 @@ class BusinessPdfRenderer
             $bankLines[] = 'BIC ' . $escape($bic);
         }
 
-        $company = '<b>' . $escape($issuer['companyName'] ?? null) . '</b><br>' . $address;
+        $owner = $escape($issuer['ownerName'] ?? null);
+        $company = '<b>' . $escape($issuer['companyName'] ?? null) . '</b><br>'
+            . ($owner === '' ? '' : 'Inhaber: ' . $owner . '<br>')
+            . $address;
+        $contactLines = array_filter(
+            [$escape($issuer['email'] ?? null), $escape($issuer['phone'] ?? null)],
+            static fn (string $line): bool => $line !== '',
+        );
         $tax = 'Steuernummer<br>' . $escape($issuer['taxNumber'] ?? null);
 
         return '<div style="border-top: 0.3mm solid #999999; font-size: 7pt; color: #444444; padding-top: 2mm;">'
             . '<table width="100%" style="font-size: 7pt; color: #444444;"><tr>'
-            . '<td width="38%" valign="top">' . $company . '</td>'
-            . '<td width="22%" valign="top">' . $tax . '</td>'
-            . '<td width="40%" valign="top">' . implode('<br>', $bankLines) . '</td>'
+            . '<td width="31%" valign="top">' . $company . '</td>'
+            . '<td width="23%" valign="top">' . implode('<br>', $contactLines) . '</td>'
+            . '<td width="17%" valign="top">' . $tax . '</td>'
+            . '<td width="29%" valign="top">' . implode('<br>', $bankLines) . '</td>'
             . '</tr></table>'
             . '<div style="text-align: right;">Seite {PAGENO} / {nbpg}</div>'
             . '</div>';

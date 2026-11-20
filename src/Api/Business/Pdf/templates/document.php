@@ -14,6 +14,7 @@ $addressLines = is_array($issuer['addressLines'] ?? null) ? $issuer['addressLine
 $senderLine = implode(' · ', array_filter(
     array_map(static fn (mixed $part): string => is_string($part) ? $part : '', [
         $issuer['companyName'] ?? null,
+        is_string($issuer['ownerName'] ?? null) && $issuer['ownerName'] !== '' ? 'Inh. ' . $issuer['ownerName'] : null,
         ...$addressLines,
     ]),
     static fn (string $part): bool => $part !== '',
