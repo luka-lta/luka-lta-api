@@ -70,6 +70,15 @@ use LukaLtaApi\Api\Customer\Action\CreateCustomerAction;
 use LukaLtaApi\Api\Customer\Action\GetCustomerAction;
 use LukaLtaApi\Api\Customer\Action\ListCustomersAction;
 use LukaLtaApi\Api\Customer\Action\UpdateCustomerAction;
+use LukaLtaApi\Api\Offer\Action\CreateOfferAction;
+use LukaLtaApi\Api\Offer\Action\DeleteOfferAction;
+use LukaLtaApi\Api\Offer\Action\DuplicateOfferAction;
+use LukaLtaApi\Api\Offer\Action\GetOfferAction;
+use LukaLtaApi\Api\Offer\Action\GetOfferPdfAction;
+use LukaLtaApi\Api\Offer\Action\ListOffersAction;
+use LukaLtaApi\Api\Offer\Action\SendOfferAction;
+use LukaLtaApi\Api\Offer\Action\SetOfferStatusAction;
+use LukaLtaApi\Api\Offer\Action\UpdateOfferAction;
 use LukaLtaApi\Api\Project\Action\CreateProjectAction;
 use LukaLtaApi\Api\Project\Action\CreateProjectTagAction;
 use LukaLtaApi\Api\Project\Action\DeleteProjectAction;
@@ -322,6 +331,19 @@ class RouteMiddlewareCollector
                 $customers->get('/{customerId}', GetCustomerAction::class);
                 $customers->patch('/{customerId}', UpdateCustomerAction::class);
                 $customers->post('/{customerId}/archive', ArchiveCustomerAction::class);
+            })->add(AuthMiddleware::class);
+
+            // Business — Angebote mit Nummernkreis und PDF (Dashboard)
+            $app->group('/offers', function (RouteCollectorProxy $offers) {
+                $offers->get('', ListOffersAction::class);
+                $offers->post('', CreateOfferAction::class);
+                $offers->get('/{offerId}', GetOfferAction::class);
+                $offers->patch('/{offerId}', UpdateOfferAction::class);
+                $offers->delete('/{offerId}', DeleteOfferAction::class);
+                $offers->post('/{offerId}/send', SendOfferAction::class);
+                $offers->post('/{offerId}/status', SetOfferStatusAction::class);
+                $offers->post('/{offerId}/duplicate', DuplicateOfferAction::class);
+                $offers->get('/{offerId}/pdf', GetOfferPdfAction::class);
             })->add(AuthMiddleware::class);
 
             // Business — Firmendaten und privates Logo (Dashboard)

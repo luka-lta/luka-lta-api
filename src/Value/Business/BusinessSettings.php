@@ -124,6 +124,11 @@ class BusinessSettings implements JsonSerializable
         return $this->defaultPaymentTermDays;
     }
 
+    public function getFooterText(): ?string
+    {
+        return $this->footerText;
+    }
+
     public function withLogoObjectKey(?string $logoObjectKey): self
     {
         $copy = $this;
