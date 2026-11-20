@@ -102,7 +102,7 @@ class InvoiceFinalizer
             $issuerSnapshot,
             $this->documentStorage->loadLogoBytes($settings),
         ));
-        $pdfObjectKey = self::PDF_KEY_PREFIX . $invoiceId->asString() . '.pdf';
+        $pdfObjectKey = $this->documentStorage->createPdfObjectKey(self::PDF_KEY_PREFIX, $invoiceId->asString());
         $this->documentStorage->storePdf($pdfObjectKey, $pdf);
         $uploads->record($pdfObjectKey);
 

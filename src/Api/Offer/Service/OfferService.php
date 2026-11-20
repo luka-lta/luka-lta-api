@@ -124,7 +124,7 @@ class OfferService
         $settings = $this->settingsService->loadCompleteOrFail();
         $this->assertDraft($this->loadOfferOrFail($offerId)->getStatus());
         $logoBytes = $this->documentStorage->loadLogoBytes($settings);
-        $pdfObjectKey = self::PDF_KEY_PREFIX . $offerId->asString() . '.pdf';
+        $pdfObjectKey = $this->documentStorage->createPdfObjectKey(self::PDF_KEY_PREFIX, $offerId->asString());
         $isUploaded = false;
 
         try {

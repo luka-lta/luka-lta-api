@@ -29,6 +29,31 @@ class BusinessDocumentStateException extends ApiException
         return new self('Offer has not been accepted');
     }
 
+    public static function notOpen(): self
+    {
+        return new self('Invoice is not open');
+    }
+
+    public static function notPaid(): self
+    {
+        return new self('Invoice is not paid');
+    }
+
+    public static function notCancellable(): self
+    {
+        return new self('Only open or paid invoices can be cancelled');
+    }
+
+    public static function cancellationNotCancellable(): self
+    {
+        return new self('A cancellation invoice cannot be cancelled');
+    }
+
+    public static function depositReferencedByFinal(): self
+    {
+        return new self('Deposit invoice is referenced by a final invoice');
+    }
+
     public static function customerArchived(): self
     {
         return new self('Customer is archived');

@@ -85,7 +85,9 @@ class InvoicePdfDocumentFactory
             return null;
         }
 
-        $label = 'Abzüglich Anzahlung';
+        // Die Vorlage druckt den Abzug negiert. Beim Storno einer Schlussrechnung ist der gespeicherte Abzug
+        // negativ und erscheint daher positiv: Zwischensumme −X, Abzug +D, Gesamtbetrag −(X − D)
+        $label = $invoice->getKind()->isCancellation() ? 'Storno Abzug Anzahlung' : 'Abzüglich Anzahlung';
         $depositNumber = $invoice->getDepositInvoiceNumber();
         $depositDate = $invoice->getDepositInvoiceDate();
         if ($depositNumber !== null && $depositDate !== null) {

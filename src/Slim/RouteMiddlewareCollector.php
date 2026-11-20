@@ -70,12 +70,15 @@ use LukaLtaApi\Api\Customer\Action\CreateCustomerAction;
 use LukaLtaApi\Api\Customer\Action\GetCustomerAction;
 use LukaLtaApi\Api\Customer\Action\ListCustomersAction;
 use LukaLtaApi\Api\Customer\Action\UpdateCustomerAction;
+use LukaLtaApi\Api\Invoice\Action\CancelInvoiceAction;
 use LukaLtaApi\Api\Invoice\Action\CreateInvoiceAction;
 use LukaLtaApi\Api\Invoice\Action\DeleteInvoiceAction;
 use LukaLtaApi\Api\Invoice\Action\FinalizeInvoiceAction;
 use LukaLtaApi\Api\Invoice\Action\GetInvoiceAction;
 use LukaLtaApi\Api\Invoice\Action\GetInvoicePdfAction;
 use LukaLtaApi\Api\Invoice\Action\ListInvoicesAction;
+use LukaLtaApi\Api\Invoice\Action\MarkInvoicePaidAction;
+use LukaLtaApi\Api\Invoice\Action\UnmarkInvoicePaidAction;
 use LukaLtaApi\Api\Invoice\Action\UpdateInvoiceAction;
 use LukaLtaApi\Api\Offer\Action\CreateOfferAction;
 use LukaLtaApi\Api\Offer\Action\DeleteOfferAction;
@@ -353,7 +356,7 @@ class RouteMiddlewareCollector
                 $offers->get('/{offerId}/pdf', GetOfferPdfAction::class);
             })->add(AuthMiddleware::class);
 
-            // Business — Rechnungen: Entwurf, Festschreiben mit Nummernkreis und PDF (Dashboard)
+            // Business — Rechnungen: Entwurf, Festschreiben mit Nummernkreis und PDF, Zahlung, Storno (Dashboard)
             $app->group('/invoices', function (RouteCollectorProxy $invoices) {
                 $invoices->get('', ListInvoicesAction::class);
                 $invoices->post('', CreateInvoiceAction::class);
@@ -362,6 +365,9 @@ class RouteMiddlewareCollector
                 $invoices->delete('/{invoiceId}', DeleteInvoiceAction::class);
                 $invoices->post('/{invoiceId}/finalize', FinalizeInvoiceAction::class);
                 $invoices->get('/{invoiceId}/pdf', GetInvoicePdfAction::class);
+                $invoices->post('/{invoiceId}/payment', MarkInvoicePaidAction::class);
+                $invoices->delete('/{invoiceId}/payment', UnmarkInvoicePaidAction::class);
+                $invoices->post('/{invoiceId}/cancel', CancelInvoiceAction::class);
             })->add(AuthMiddleware::class);
 
             // Business — Firmendaten und privates Logo (Dashboard)

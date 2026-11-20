@@ -242,6 +242,12 @@ class BusinessInvoiceRepository
         SQL;
         $row = array_intersect_key($invoice->toDatabaseRow(), array_flip(self::UPDATABLE_COLUMNS));
 
+        // Vor dem Ersetzen der Positionen sicherstellen, dass die Zeile (noch) ein Entwurf ist. rowCount() des
+        // UPDATE taugt dafür nicht: MySQL zählt nur tatsächlich geänderte Zeilen, ein PATCH ohne Änderung ergäbe 0.
+        if ($this->lockInvoiceStatus($invoice->getInvoiceId()) !== InvoiceStatus::Draft) {
+            throw new ApiDatabaseException('Invoice was not a draft while updating it');
+        }
+
         try {
             $this->pdo->prepare($sql)->execute($row);
             $this->pdo->prepare('DELETE FROM business_invoice_items WHERE invoice_id = :invoice_id')
@@ -312,6 +318,94 @@ class BusinessInvoiceRepository
         if ($stmt->rowCount() !== 1) {
             throw new ApiDatabaseException('Invoice was not a draft while finalizing it');
         }
+    }
+
+    /**
+     * Bezahlt markieren (paidAt gesetzt: open → paid) oder Zahlung zurücknehmen (null: paid → open).
+     * Der Aufrufer hält die Zeilensperre und hat den Status geprüft; der Statuswechsel garantiert rowCount 1.
+     *
+     * @param ?string $paidAt Y-m-d
+     */
+    public function setPaid(InvoiceId $invoiceId, ?string $paidAt): void
+    {
+        $sql = $paidAt !== null
+            ? "UPDATE business_invoices SET status = 'paid', paid_at = :paid_at "
+                . "WHERE invoice_id = :invoice_id AND status = 'open'"
+            : "UPDATE business_invoices SET status = 'open', paid_at = NULL "
+                . "WHERE invoice_id = :invoice_id AND status = 'paid'";
+        $params = ['invoice_id' => $invoiceId->asString()];
+        if ($paidAt !== null) {
+            $params['paid_at'] = $paidAt;
+        }
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException('Failed to update invoice payment', previous: $exception);
+        }
+
+        if ($stmt->rowCount() !== 1) {
+            throw new ApiDatabaseException('Invoice status changed while updating its payment');
+        }
+    }
+
+    /**
+     * Statuswechsel nur ausgehend vom erwarteten Status (z.B. open/paid → cancelled); paid_at bleibt unberührt.
+     * Der Aufrufer hält die Zeilensperre; da sich der Status ändert, ist genau eine Zeile betroffen.
+     */
+    public function setStatus(InvoiceId $invoiceId, InvoiceStatus $expectedStatus, InvoiceStatus $newStatus): void
+    {
+        if ($expectedStatus === $newStatus) {
+            throw new ApiDatabaseException('Invoice status must change');
+        }
+
+        $sql = <<<SQL
+            UPDATE business_invoices
+            SET status = :new_status
+            WHERE invoice_id = :invoice_id AND status = :expected_status
+        SQL;
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([
+                'invoice_id' => $invoiceId->asString(),
+                'expected_status' => $expectedStatus->value,
+                'new_status' => $newStatus->value,
+            ]);
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException('Failed to update invoice status', previous: $exception);
+        }
+
+        if ($stmt->rowCount() !== 1) {
+            throw new ApiDatabaseException('Invoice status changed while updating it');
+        }
+    }
+
+    /**
+     * Gibt es eine festgeschriebene, nicht stornierte Schlussrechnung, die diese Anzahlung abzieht?
+     * Dann darf die Anzahlung weder storniert noch auf unbezahlt zurückgesetzt werden.
+     */
+    public function hasActiveFinalInvoiceForDeposit(InvoiceId $depositInvoiceId): bool
+    {
+        $sql = <<<SQL
+            SELECT 1
+            FROM business_invoices f
+            WHERE f.deposit_invoice_id = :deposit_invoice_id
+                AND f.kind = 'final'
+                AND f.status NOT IN ('draft', 'cancelled')
+            LIMIT 1
+        SQL;
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute(['deposit_invoice_id' => $depositInvoiceId->asString()]);
+            $isReferenced = $stmt->fetchColumn() !== false;
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException('Failed to check final invoices', previous: $exception);
+        }
+
+        return $isReferenced;
     }
 
     private function insertItems(Invoice $invoice): void

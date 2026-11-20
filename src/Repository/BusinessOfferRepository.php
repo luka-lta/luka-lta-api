@@ -196,6 +196,12 @@ class BusinessOfferRepository
             WHERE offer_id = :offer_id AND status = 'draft'
         SQL;
 
+        // Vor dem Ersetzen der Positionen sicherstellen, dass die Zeile (noch) ein Entwurf ist. rowCount() des
+        // UPDATE taugt dafür nicht: MySQL zählt nur tatsächlich geänderte Zeilen, ein PATCH ohne Änderung ergäbe 0.
+        if ($this->lockOfferStatus($offer->getOfferId()) !== OfferStatus::Draft) {
+            throw new ApiDatabaseException('Offer was not a draft while updating it');
+        }
+
         try {
             $this->pdo->prepare($sql)->execute($offer->toDatabaseRow());
             $this->pdo->prepare('DELETE FROM business_offer_items WHERE offer_id = :offer_id')

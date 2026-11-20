@@ -18,6 +18,12 @@ class Invoice implements JsonSerializable
 
     private const string DATE_FORMAT = DocumentFieldParser::DATE_FORMAT;
 
+    /** Datumsformat in Texten auf dem Beleg */
+    private const string DISPLAY_DATE_FORMAT = 'd.m.Y';
+
+    /** Einheit der Sammelposition beim Storno einer importierten Rechnung */
+    private const string IMPORTED_CANCELLATION_UNIT = 'pausch.';
+
     /** @param ?array<string, mixed> $issuerSnapshot */
     private function __construct(
         private readonly InvoiceId $invoiceId,
@@ -122,6 +128,75 @@ class Invoice implements JsonSerializable
             $subtotal,
             Money::fromCents(0),
             $subtotal,
+            null,
+            false,
+            null,
+            null,
+            null,
+            null,
+        );
+    }
+
+    /**
+     * Entwurf der Stornorechnung zu einer festgeschriebenen Rechnung. Spiegelt das Original exakt: gleicher
+     * Kunde, Leistungsdatum/-zeitraum, Zahlungsziel, Angebots- und Anzahlungsbezug, Positionen mit negativem
+     * Einzelpreis, Zwischensumme, Anzahlungsabzug und Gesamtbetrag jeweils negiert (Storno einer
+     * Schlussrechnung = −Restbetrag). Importierte Rechnungen haben keine Positionen: dann eine Sammelposition
+     * "Storno zu Rechnung <Nummer>" über den negierten Gesamtbetrag. Ob storniert werden darf, prüft der Aufrufer.
+     */
+    public static function cancellationOf(self $original, DateTimeImmutable $today): self
+    {
+        $originalNumber = $original->invoiceNumber;
+        if ($originalNumber === null) {
+            throw new ApiValidationException('Only finalized invoices can be cancelled', 400);
+        }
+
+        $items = $original->items->negated();
+        $subtotal = $original->subtotal->negate();
+        $depositDeduction = $original->depositDeduction->negate();
+        $total = $original->total->negate();
+        if ($original->isImported || count($original->items) === 0) {
+            $items = LineItems::from(LineItem::create(
+                1,
+                sprintf('Storno zu Rechnung %s', $originalNumber->asString()),
+                Quantity::fromDecimalString('1'),
+                self::IMPORTED_CANCELLATION_UNIT,
+                $total,
+            ));
+            $subtotal = $total;
+            $depositDeduction = Money::fromCents(0);
+        }
+
+        return new self(
+            InvoiceId::generate(),
+            null,
+            InvoiceKind::Cancellation,
+            InvoiceStatus::Draft,
+            $original->customerId,
+            $original->customerName,
+            $original->offerId,
+            $original->offerNumber,
+            $original->depositInvoiceId,
+            $original->depositInvoiceNumber,
+            $original->depositInvoiceDate,
+            $original->invoiceId,
+            $originalNumber->asString(),
+            $today,
+            $original->serviceDate,
+            $original->servicePeriodStart,
+            $original->servicePeriodEnd,
+            $original->paymentTermDays,
+            null,
+            sprintf(
+                'Hiermit wird die Rechnung %s vom %s vollständig storniert.',
+                $originalNumber->asString(),
+                $original->invoiceDate->format(self::DISPLAY_DATE_FORMAT),
+            ),
+            null,
+            $items,
+            $subtotal,
+            $depositDeduction,
+            $total,
             null,
             false,
             null,

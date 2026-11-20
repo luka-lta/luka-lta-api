@@ -8,6 +8,7 @@ use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Api\Business\Pdf\BusinessPdfRenderer;
 use LukaLtaApi\Api\Business\Service\BusinessCustomerLookup;
 use LukaLtaApi\Api\Business\Service\BusinessDocumentStorage;
+use LukaLtaApi\Api\Business\Service\PendingPdfUploads;
 use LukaLtaApi\Api\BusinessSettings\Service\BusinessSettingsService;
 use LukaLtaApi\Exception\ApiValidationException;
 use LukaLtaApi\Exception\BusinessDocumentStateException;
@@ -18,6 +19,7 @@ use LukaLtaApi\Repository\BusinessOfferRepository;
 use LukaLtaApi\Repository\BusinessSettingsRepository;
 use LukaLtaApi\Value\Business\BusinessClock;
 use LukaLtaApi\Value\Business\CustomerId;
+use LukaLtaApi\Value\Business\DocumentFieldParser;
 use LukaLtaApi\Value\Business\Invoice;
 use LukaLtaApi\Value\Business\InvoiceId;
 use LukaLtaApi\Value\Business\InvoiceKind;
@@ -29,6 +31,7 @@ use LukaLtaApi\Value\Business\PdfFile;
 use LukaLtaApi\Value\Business\PostalAddressSnapshot;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
+use Throwable;
 
 class InvoiceService
 {
@@ -147,6 +150,102 @@ class InvoiceService
     }
 
     /**
+     * open → paid. Zahlungsdatum optional (Standard: heute, deutscher Kalendertag), nicht in der Zukunft und
+     * nicht vor dem Rechnungsdatum. Stornos (issued) haben keinen Zahlungsstatus.
+     *
+     * @param array<string, mixed> $data
+     */
+    public function markPaid(InvoiceId $invoiceId, array $data): ApiResult
+    {
+        $today = BusinessClock::today()->format(DocumentFieldParser::DATE_FORMAT);
+        $paidAt = DocumentFieldParser::optionalDate($data, 'paidAt')?->format(DocumentFieldParser::DATE_FORMAT)
+            ?? $today;
+        if ($paidAt > $today) {
+            throw new ApiValidationException('paidAt must not be in the future', 400);
+        }
+
+        $this->repository->executeInTransaction(function () use ($invoiceId, $paidAt): void {
+            $status = $this->repository->lockInvoiceStatus($invoiceId);
+            if ($status === null) {
+                throw new BusinessInvoiceNotFoundException();
+            }
+            if ($status !== InvoiceStatus::Open) {
+                throw BusinessDocumentStateException::notOpen();
+            }
+
+            $invoiceDate = $this->loadInvoiceOrFail($invoiceId)->getInvoiceDate();
+            if ($paidAt < $invoiceDate->format(DocumentFieldParser::DATE_FORMAT)) {
+                throw new ApiValidationException('paidAt must not be before invoiceDate', 400);
+            }
+
+            $this->repository->setPaid($invoiceId, $paidAt);
+        });
+
+        return $this->getInvoice($invoiceId);
+    }
+
+    /** paid → open. Nicht für eine Anzahlung, die eine festgeschriebene Schlussrechnung bereits abzieht */
+    public function unmarkPaid(InvoiceId $invoiceId): ApiResult
+    {
+        $this->repository->executeInTransaction(function () use ($invoiceId): void {
+            $status = $this->repository->lockInvoiceStatus($invoiceId);
+            if ($status === null) {
+                throw new BusinessInvoiceNotFoundException();
+            }
+            if ($status !== InvoiceStatus::Paid) {
+                throw BusinessDocumentStateException::notPaid();
+            }
+            $this->assertDepositNotReferenced($this->loadInvoiceOrFail($invoiceId));
+
+            $this->repository->setPaid($invoiceId, null);
+        });
+
+        return $this->getInvoice($invoiceId);
+    }
+
+    /**
+     * Storniert eine offene oder bezahlte Rechnung: legt die Stornorechnung an, schreibt sie fest (eigene
+     * RE-Nummer, PDF) und setzt das Original auf cancelled (paid_at bleibt) — alles in einer Transaktion.
+     * Sperrreihenfolge wie beim Festschreiben: Original, dann Storno, dann Nummernkreis.
+     */
+    public function cancel(InvoiceId $invoiceId): ApiResult
+    {
+        $uploads = new PendingPdfUploads();
+
+        try {
+            $cancellation = $this->repository->executeInTransaction(
+                function () use ($invoiceId, $uploads): Invoice {
+                    $status = $this->repository->lockInvoiceStatus($invoiceId);
+                    if ($status === null) {
+                        throw new BusinessInvoiceNotFoundException();
+                    }
+                    // Erst unter der Sperre laden: ein paralleles Storno oder Bezahlen ist dann bereits committet
+                    $original = $this->loadInvoiceOrFail($invoiceId);
+                    $this->assertCancellable($original);
+
+                    $draft = Invoice::cancellationOf($original, BusinessClock::today());
+                    $this->repository->create($draft);
+                    $cancellation = $this->finalizer->finalizeInOpenTransaction($draft->getInvoiceId(), $uploads);
+                    $this->repository->setStatus($invoiceId, $original->getStatus(), InvoiceStatus::Cancelled);
+
+                    return $cancellation;
+                },
+            );
+        } catch (Throwable $exception) {
+            // Greift auch, wenn erst der Commit scheitert
+            $this->documentStorage->discardPendingUploads($uploads);
+
+            throw $exception;
+        }
+
+        return $this->invoiceResult(
+            'Invoice cancelled',
+            $this->loadInvoiceOrFail($cancellation->getInvoiceId()),
+            StatusCodeInterface::STATUS_CREATED,
+        );
+    }
+
+    /**
      * Festgeschrieben: das gespeicherte PDF. Entwurf: Vorschau mit Wasserzeichen aus aktuellen Kunden- und
      * Firmendaten, wird nicht gespeichert.
      */
@@ -211,6 +310,29 @@ class InvoiceService
         }
 
         return $offer;
+    }
+
+    private function assertCancellable(Invoice $invoice): void
+    {
+        if ($invoice->getKind()->isCancellation()) {
+            throw BusinessDocumentStateException::cancellationNotCancellable();
+        }
+        $status = $invoice->getStatus();
+        if ($status !== InvoiceStatus::Open && $status !== InvoiceStatus::Paid) {
+            throw BusinessDocumentStateException::notCancellable();
+        }
+        $this->assertDepositNotReferenced($invoice);
+    }
+
+    /** Eine Anzahlung, die eine festgeschriebene, nicht stornierte Schlussrechnung abzieht, bleibt unverändert */
+    private function assertDepositNotReferenced(Invoice $invoice): void
+    {
+        if ($invoice->getKind() !== InvoiceKind::Deposit) {
+            return;
+        }
+        if ($this->repository->hasActiveFinalInvoiceForDeposit($invoice->getInvoiceId())) {
+            throw BusinessDocumentStateException::depositReferencedByFinal();
+        }
     }
 
     private function assertDraft(?InvoiceStatus $status): void
