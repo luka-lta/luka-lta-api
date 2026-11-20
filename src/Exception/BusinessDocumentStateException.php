@@ -54,6 +54,26 @@ class BusinessDocumentStateException extends ApiException
         return new self('Deposit invoice is referenced by a final invoice');
     }
 
+    public static function depositNotFinalized(): self
+    {
+        return new self('Deposit invoice is not finalized');
+    }
+
+    public static function depositUnpaid(string $depositInvoiceNumber): self
+    {
+        return new self(sprintf('Deposit invoice %s is not paid', $depositInvoiceNumber));
+    }
+
+    public static function depositExists(): self
+    {
+        return new self('Offer already has a deposit invoice');
+    }
+
+    public static function finalInvoiceExists(): self
+    {
+        return new self('Offer already has a final invoice');
+    }
+
     public static function customerArchived(): self
     {
         return new self('Customer is archived');

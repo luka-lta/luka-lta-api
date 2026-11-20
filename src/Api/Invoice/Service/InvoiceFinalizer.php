@@ -18,6 +18,7 @@ use LukaLtaApi\Repository\BusinessNumberSequenceRepository;
 use LukaLtaApi\Value\Business\DocumentPrefix;
 use LukaLtaApi\Value\Business\Invoice;
 use LukaLtaApi\Value\Business\InvoiceId;
+use LukaLtaApi\Value\Business\InvoiceKind;
 use LukaLtaApi\Value\Business\InvoiceStatus;
 use LukaLtaApi\Value\Business\PostalAddressSnapshot;
 use Throwable;
@@ -83,6 +84,8 @@ class InvoiceFinalizer
         // Erst nach der Sperre laden: ein paralleles PATCH kann nicht mehr dazwischen committen,
         // PDF, Snapshot und Nummernjahr entsprechen also genau der festgeschriebenen Zeile
         $invoice = $this->loadInvoiceOrFail($invoiceId);
+        // Sperre durch die Anzahlung zuerst melden, sie ist der grundlegendere Hinderungsgrund
+        $invoice = $this->applyDepositDeduction($invoice);
         $this->assertServiceDate($invoice);
 
         $settings = $this->settingsService->loadCompleteOrFail();
@@ -117,6 +120,43 @@ class InvoiceFinalizer
         );
 
         return $this->loadInvoiceOrFail($invoiceId);
+    }
+
+    /**
+     * Schlussrechnung: Anzahlung sperren und den Abzug nach ihrem aktuellen Stand festlegen. Entwurf oder
+     * offen → 409 (Sperre), storniert → kein Abzug, bezahlt → Abzug = Gesamtbetrag der Anzahlung.
+     *
+     * Sperrreihenfolge: Schlussrechnung → Anzahlung → Nummernkreis. Bezahlen, Zurücksetzen und Stornieren der
+     * Anzahlung sperren zuerst die Anzahlung und lesen die Schlussrechnung nur (ohne Sperre), daher kein Zyklus.
+     * Die Anzahlung wird sperrend gelesen und damit in ihrem zuletzt committeten Stand, nicht aus dem Snapshot.
+     */
+    private function applyDepositDeduction(Invoice $invoice): Invoice
+    {
+        $depositInvoiceId = $invoice->getDepositInvoiceId();
+        if ($invoice->getKind() !== InvoiceKind::Final || $depositInvoiceId === null) {
+            return $invoice;
+        }
+
+        $deposit = $this->repository->lockDepositInvoice($depositInvoiceId);
+        if ($deposit === null) {
+            throw new ApiDatabaseException('Deposit invoice of a final invoice is missing');
+        }
+        $blocker = $deposit->getFinalizeBlocker();
+        if ($blocker !== null) {
+            throw $blocker;
+        }
+
+        $invoice = $invoice->withDeposit($deposit);
+        if ($invoice->getTotal()->isNegative()) {
+            throw new ApiValidationException('Deposit deduction must not exceed the subtotal', 400);
+        }
+        $this->repository->updateDepositDeduction(
+            $invoice->getInvoiceId(),
+            $invoice->getDepositDeduction(),
+            $invoice->getTotal(),
+        );
+
+        return $invoice;
     }
 
     /** Pflichtangabe nach § 14 UStG; Stornos erben das Leistungsdatum vom Original, das fehlen kann (Import) */

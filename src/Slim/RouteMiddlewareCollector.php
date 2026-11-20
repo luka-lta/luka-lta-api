@@ -80,6 +80,7 @@ use LukaLtaApi\Api\Invoice\Action\ListInvoicesAction;
 use LukaLtaApi\Api\Invoice\Action\MarkInvoicePaidAction;
 use LukaLtaApi\Api\Invoice\Action\UnmarkInvoicePaidAction;
 use LukaLtaApi\Api\Invoice\Action\UpdateInvoiceAction;
+use LukaLtaApi\Api\Offer\Action\CreateInvoiceFromOfferAction;
 use LukaLtaApi\Api\Offer\Action\CreateOfferAction;
 use LukaLtaApi\Api\Offer\Action\DeleteOfferAction;
 use LukaLtaApi\Api\Offer\Action\DuplicateOfferAction;
@@ -354,6 +355,7 @@ class RouteMiddlewareCollector
                 $offers->post('/{offerId}/status', SetOfferStatusAction::class);
                 $offers->post('/{offerId}/duplicate', DuplicateOfferAction::class);
                 $offers->get('/{offerId}/pdf', GetOfferPdfAction::class);
+                $offers->post('/{offerId}/invoices', CreateInvoiceFromOfferAction::class);
             })->add(AuthMiddleware::class);
 
             // Business — Rechnungen: Entwurf, Festschreiben mit Nummernkreis und PDF, Zahlung, Storno (Dashboard)

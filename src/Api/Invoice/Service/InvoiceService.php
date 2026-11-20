@@ -18,16 +18,20 @@ use LukaLtaApi\Repository\BusinessInvoiceRepository;
 use LukaLtaApi\Repository\BusinessOfferRepository;
 use LukaLtaApi\Repository\BusinessSettingsRepository;
 use LukaLtaApi\Value\Business\BusinessClock;
+use LukaLtaApi\Value\Business\Customer;
 use LukaLtaApi\Value\Business\CustomerId;
+use LukaLtaApi\Value\Business\DepositInvoiceState;
 use LukaLtaApi\Value\Business\DocumentFieldParser;
 use LukaLtaApi\Value\Business\Invoice;
 use LukaLtaApi\Value\Business\InvoiceId;
 use LukaLtaApi\Value\Business\InvoiceKind;
 use LukaLtaApi\Value\Business\InvoiceStatus;
+use LukaLtaApi\Value\Business\Money;
 use LukaLtaApi\Value\Business\Offer;
 use LukaLtaApi\Value\Business\OfferId;
 use LukaLtaApi\Value\Business\OfferStatus;
 use LukaLtaApi\Value\Business\PdfFile;
+use LukaLtaApi\Value\Business\Percentage;
 use LukaLtaApi\Value\Business\PostalAddressSnapshot;
 use LukaLtaApi\Value\Result\ApiResult;
 use LukaLtaApi\Value\Result\JsonResult;
@@ -104,6 +108,73 @@ class InvoiceService
         );
     }
 
+    /**
+     * Rechnungsentwurf aus einem angenommenen Angebot: normale Rechnung, Anzahlung (Betrag in Cent oder
+     * Prozent der Angebotssumme) oder Schlussrechnung. Das Angebot bleibt während der Prüfung auf bestehende
+     * Anzahlung/Schlussrechnung gesperrt, damit parallele Requests keine Doppelten anlegen.
+     *
+     * @param array<string, mixed> $data
+     */
+    public function createFromOffer(OfferId $offerId, array $data): ApiResult
+    {
+        $kind = $this->parseOfferInvoiceKind($data['kind'] ?? null);
+        $depositShare = $kind === InvoiceKind::Deposit ? $this->parseDepositShare($data) : null;
+        if ($kind !== InvoiceKind::Deposit && (isset($data['amountCents']) || isset($data['percent']))) {
+            throw new ApiValidationException('amountCents and percent are only allowed for kind deposit', 400);
+        }
+
+        $invoice = $this->repository->executeInTransaction(
+            function () use ($offerId, $kind, $depositShare): Invoice {
+                // Erste Anweisung der Transaktion: alle folgenden Lesezugriffe sehen den Stand nach der Sperre
+                $status = $this->offerRepository->lockOfferStatus($offerId);
+                if ($status === null) {
+                    throw new BusinessOfferNotFoundException();
+                }
+                if ($status !== OfferStatus::Accepted) {
+                    throw BusinessDocumentStateException::notAccepted();
+                }
+                $offer = $this->offerRepository->loadOffer($offerId);
+                if ($offer === null) {
+                    throw new BusinessOfferNotFoundException();
+                }
+                $customer = $this->customerLookup->loadActiveCustomerOrFail($offer->getCustomerId());
+                $settings = $this->settingsRepository->loadSettings();
+                $closingText = $settings?->getFooterText();
+                $paymentTermDays = $settings?->getDefaultPaymentTermDays() ?? Invoice::FALLBACK_PAYMENT_TERM_DAYS;
+                $today = BusinessClock::today();
+
+                $invoice = match ($kind) {
+                    InvoiceKind::Deposit => $this->buildDeposit(
+                        $offer,
+                        $customer,
+                        $depositShare,
+                        $closingText,
+                        $paymentTermDays,
+                    ),
+                    InvoiceKind::Final => $this->buildFinal($offer, $customer, $closingText, $paymentTermDays),
+                    default => Invoice::fromOffer(
+                        $offer,
+                        $customer,
+                        InvoiceKind::Standard,
+                        null,
+                        $closingText,
+                        $paymentTermDays,
+                        $today,
+                    ),
+                };
+                $this->repository->create($invoice);
+
+                return $invoice;
+            },
+        );
+
+        return $this->invoiceResult(
+            'Invoice created',
+            $this->loadInvoiceOrFail($invoice->getInvoiceId()),
+            StatusCodeInterface::STATUS_CREATED,
+        );
+    }
+
     /** @param array<string, mixed> $data nur die zu ändernden Felder */
     public function updateInvoice(InvoiceId $invoiceId, array $data): ApiResult
     {
@@ -138,6 +209,10 @@ class InvoiceService
 
         $this->repository->executeInTransaction(function () use ($invoiceId): void {
             $this->assertDraft($this->repository->lockInvoiceStatus($invoiceId));
+            // Ein Schlussrechnungs-Entwurf verweist per Fremdschlüssel auf die Anzahlung
+            if ($this->repository->isDepositReferenced($invoiceId)) {
+                throw BusinessDocumentStateException::depositReferencedByFinal();
+            }
             $this->repository->delete($invoiceId);
         });
 
@@ -310,6 +385,92 @@ class InvoiceService
         }
 
         return $offer;
+    }
+
+    private function parseOfferInvoiceKind(mixed $kind): InvoiceKind
+    {
+        $parsedKind = is_string($kind) ? InvoiceKind::tryFrom($kind) : null;
+        if ($parsedKind === null || $parsedKind->isCancellation()) {
+            throw new ApiValidationException('kind must be standard, deposit or final', 400);
+        }
+
+        return $parsedKind;
+    }
+
+    /**
+     * Genau eins von amountCents (int) oder percent (Zahl, höchstens 3 Nachkommastellen).
+     *
+     * @param array<string, mixed> $data
+     */
+    private function parseDepositShare(array $data): Money|Percentage
+    {
+        $amountCents = $data['amountCents'] ?? null;
+        $percent = $data['percent'] ?? null;
+        if (($amountCents === null) === ($percent === null)) {
+            throw new ApiValidationException('Exactly one of amountCents or percent is required', 400);
+        }
+        if ($percent !== null) {
+            return Percentage::fromJsonNumber($percent);
+        }
+        if (!is_int($amountCents)) {
+            throw new ApiValidationException('amountCents must be an integer', 400);
+        }
+
+        return Money::fromCents($amountCents);
+    }
+
+    /** Höchstens eine nicht stornierte Anzahlung; nicht mehr, sobald eine Schlussrechnung existiert */
+    private function buildDeposit(
+        Offer $offer,
+        Customer $customer,
+        Money|Percentage|null $depositShare,
+        ?string $closingText,
+        int $paymentTermDays,
+    ): Invoice {
+        if ($depositShare === null) {
+            throw new ApiValidationException('Exactly one of amountCents or percent is required', 400);
+        }
+        if ($this->repository->loadActiveDepositForOffer($offer->getOfferId()) !== null) {
+            throw BusinessDocumentStateException::depositExists();
+        }
+        // Eine bestehende Schlussrechnung würde die neue Anzahlung nie abziehen
+        if ($this->repository->hasActiveFinalInvoiceForOffer($offer->getOfferId())) {
+            throw BusinessDocumentStateException::finalInvoiceExists();
+        }
+
+        $amount = $depositShare instanceof Percentage ? $depositShare->applyTo($offer->getTotal()) : $depositShare;
+
+        return Invoice::depositForOffer(
+            $offer,
+            $customer,
+            $amount,
+            $closingText,
+            $paymentTermDays,
+            BusinessClock::today(),
+        );
+    }
+
+    /** Höchstens eine nicht stornierte Schlussrechnung; verweist auf die aktive Anzahlung (auch Entwurf) */
+    private function buildFinal(
+        Offer $offer,
+        Customer $customer,
+        ?string $closingText,
+        int $paymentTermDays,
+    ): Invoice {
+        if ($this->repository->hasActiveFinalInvoiceForOffer($offer->getOfferId())) {
+            throw BusinessDocumentStateException::finalInvoiceExists();
+        }
+        $deposit = $this->repository->loadActiveDepositForOffer($offer->getOfferId());
+
+        return Invoice::fromOffer(
+            $offer,
+            $customer,
+            InvoiceKind::Final,
+            $deposit !== null ? DepositInvoiceState::fromInvoice($deposit) : null,
+            $closingText,
+            $paymentTermDays,
+            BusinessClock::today(),
+        );
     }
 
     private function assertCancellable(Invoice $invoice): void

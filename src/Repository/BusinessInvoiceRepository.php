@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace LukaLtaApi\Repository;
 
+use DateTimeImmutable;
 use JsonException;
 use LukaLtaApi\Exception\ApiDatabaseException;
 use LukaLtaApi\Repository\Traits\TransactionTrait;
 use LukaLtaApi\Value\Business\BusinessClock;
 use LukaLtaApi\Value\Business\CustomerId;
+use LukaLtaApi\Value\Business\DepositInvoiceState;
 use LukaLtaApi\Value\Business\DocumentNumber;
 use LukaLtaApi\Value\Business\Invoice;
 use LukaLtaApi\Value\Business\InvoiceId;
@@ -16,6 +18,8 @@ use LukaLtaApi\Value\Business\Invoices;
 use LukaLtaApi\Value\Business\InvoiceStatus;
 use LukaLtaApi\Value\Business\LineItem;
 use LukaLtaApi\Value\Business\LineItems;
+use LukaLtaApi\Value\Business\Money;
+use LukaLtaApi\Value\Business\OfferId;
 use PDO;
 use PDOException;
 use Ramsey\Uuid\Uuid;
@@ -60,6 +64,8 @@ class BusinessInvoiceRepository
             o.offer_number,
             di.invoice_number AS deposit_invoice_number,
             di.invoice_date AS deposit_invoice_date,
+            di.status AS deposit_invoice_status,
+            di.total_cents AS deposit_invoice_total_cents,
             ci.invoice_number AS cancels_invoice_number
         FROM business_invoices i
         JOIN business_customers c ON c.customer_id = i.customer_id
@@ -406,6 +412,140 @@ class BusinessInvoiceRepository
         }
 
         return $isReferenced;
+    }
+
+    /**
+     * Aktive Anzahlungsrechnung eines Angebots: Art deposit, jeder Status außer cancelled (also auch Entwurf).
+     * Stornos übernehmen offer_id ihres Originals, daher der Filter auf die Art.
+     */
+    public function loadActiveDepositForOffer(OfferId $offerId): ?Invoice
+    {
+        $sql = <<<SQL
+            SELECT d.invoice_id
+            FROM business_invoices d
+            WHERE d.offer_id = :offer_id
+                AND d.kind = 'deposit'
+                AND d.status <> 'cancelled'
+            ORDER BY d.created_at DESC
+            LIMIT 1
+        SQL;
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute(['offer_id' => $offerId->asString()]);
+            $depositInvoiceId = $stmt->fetchColumn();
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException('Failed to fetch deposit invoice', previous: $exception);
+        }
+
+        if ($depositInvoiceId === false) {
+            return null;
+        }
+
+        return $this->loadInvoice(InvoiceId::fromString((string) $depositInvoiceId));
+    }
+
+    /** Gibt es zum Angebot eine nicht stornierte Schlussrechnung (auch Entwurf)? */
+    public function hasActiveFinalInvoiceForOffer(OfferId $offerId): bool
+    {
+        $sql = <<<SQL
+            SELECT 1
+            FROM business_invoices f
+            WHERE f.offer_id = :offer_id
+                AND f.kind = 'final'
+                AND f.status <> 'cancelled'
+            LIMIT 1
+        SQL;
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute(['offer_id' => $offerId->asString()]);
+            $hasFinalInvoice = $stmt->fetchColumn() !== false;
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException('Failed to check final invoices', previous: $exception);
+        }
+
+        return $hasFinalInvoice;
+    }
+
+    /** Verweist irgendeine Rechnung (z.B. ein Schlussrechnungs-Entwurf) auf diese Anzahlung? */
+    public function isDepositReferenced(InvoiceId $depositInvoiceId): bool
+    {
+        $sql = <<<SQL
+            SELECT 1
+            FROM business_invoices f
+            WHERE f.deposit_invoice_id = :deposit_invoice_id
+            LIMIT 1
+        SQL;
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute(['deposit_invoice_id' => $depositInvoiceId->asString()]);
+            $isReferenced = $stmt->fetchColumn() !== false;
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException('Failed to check deposit references', previous: $exception);
+        }
+
+        return $isReferenced;
+    }
+
+    /**
+     * Sperrt die Zeile der Anzahlung (FOR UPDATE) und liest ihren aktuellen Stand. Als sperrendes Lesen
+     * sieht es den zuletzt committeten Stand, nicht den Snapshot der Transaktion — entscheidend, wenn
+     * parallel bezahlt, zurückgesetzt oder storniert wird.
+     */
+    public function lockDepositInvoice(InvoiceId $depositInvoiceId): ?DepositInvoiceState
+    {
+        $sql = <<<SQL
+            SELECT d.invoice_id, d.status, d.invoice_number, d.invoice_date, d.total_cents
+            FROM business_invoices d
+            WHERE d.invoice_id = :invoice_id AND d.kind = 'deposit'
+            FOR UPDATE
+        SQL;
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute(['invoice_id' => $depositInvoiceId->asString()]);
+            $row = $stmt->fetch();
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException('Failed to lock deposit invoice', previous: $exception);
+        }
+
+        if ($row === false) {
+            return null;
+        }
+
+        return DepositInvoiceState::create(
+            InvoiceId::fromString((string) $row['invoice_id']),
+            InvoiceStatus::from((string) $row['status']),
+            $row['invoice_number'],
+            new DateTimeImmutable((string) $row['invoice_date']),
+            Money::fromCents((int) $row['total_cents']),
+        );
+    }
+
+    /**
+     * Schreibt Anzahlungsabzug und Gesamtbetrag eines Entwurfs. Der Aufrufer hält die Zeilensperre; ohne
+     * Änderung meldet MySQL 0 Zeilen, daher keine rowCount-Prüfung (markFinalized prüft danach den Status).
+     */
+    public function updateDepositDeduction(InvoiceId $invoiceId, Money $depositDeduction, Money $total): void
+    {
+        $sql = <<<SQL
+            UPDATE business_invoices
+            SET deposit_deduction_cents = :deposit_deduction_cents,
+                total_cents = :total_cents
+            WHERE invoice_id = :invoice_id AND status = 'draft'
+        SQL;
+
+        try {
+            $this->pdo->prepare($sql)->execute([
+                'invoice_id' => $invoiceId->asString(),
+                'deposit_deduction_cents' => $depositDeduction->asCents(),
+                'total_cents' => $total->asCents(),
+            ]);
+        } catch (PDOException $exception) {
+            throw new ApiDatabaseException('Failed to update deposit deduction', previous: $exception);
+        }
     }
 
     private function insertItems(Invoice $invoice): void

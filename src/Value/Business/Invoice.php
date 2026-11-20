@@ -21,8 +21,8 @@ class Invoice implements JsonSerializable
     /** Datumsformat in Texten auf dem Beleg */
     private const string DISPLAY_DATE_FORMAT = 'd.m.Y';
 
-    /** Einheit der Sammelposition beim Storno einer importierten Rechnung */
-    private const string IMPORTED_CANCELLATION_UNIT = 'pausch.';
+    /** Einheit von Pauschal-Positionen (Anzahlung, Storno einer importierten Rechnung) */
+    private const string LUMP_SUM_UNIT = 'pausch.';
 
     /** @param ?array<string, mixed> $issuerSnapshot */
     private function __construct(
@@ -34,9 +34,7 @@ class Invoice implements JsonSerializable
         private readonly string $customerName,
         private readonly ?OfferId $offerId,
         private readonly ?string $offerNumber,
-        private readonly ?InvoiceId $depositInvoiceId,
-        private readonly ?string $depositInvoiceNumber,
-        private readonly ?DateTimeImmutable $depositInvoiceDate,
+        private readonly ?DepositInvoiceState $deposit,
         private readonly ?InvoiceId $cancelsInvoiceId,
         private readonly ?string $cancelsInvoiceNumber,
         private readonly DateTimeImmutable $invoiceDate,
@@ -114,8 +112,6 @@ class Invoice implements JsonSerializable
             null,
             null,
             null,
-            null,
-            null,
             DocumentFieldParser::optionalDate($data, 'invoiceDate') ?? $today,
             DocumentFieldParser::optionalDate($data, 'serviceDate'),
             DocumentFieldParser::optionalDate($data, 'servicePeriodStart'),
@@ -134,6 +130,89 @@ class Invoice implements JsonSerializable
             null,
             null,
             null,
+        );
+    }
+
+    /**
+     * Entwurf einer normalen Rechnung oder Schlussrechnung aus einem angenommenen Angebot: übernimmt Kunde
+     * und Positionen. Die Schlussrechnung verweist auf die aktive Anzahlung (falls vorhanden) und zieht sie
+     * vorläufig ab; maßgeblich ist der Abzug beim Festschreiben. Angebot und Kunde prüft der Aufrufer.
+     */
+    public static function fromOffer(
+        Offer $offer,
+        Customer $customer,
+        InvoiceKind $kind,
+        ?DepositInvoiceState $deposit,
+        ?string $defaultClosingText,
+        int $defaultPaymentTermDays,
+        DateTimeImmutable $today,
+    ): self {
+        if ($kind !== InvoiceKind::Standard && $kind !== InvoiceKind::Final) {
+            throw new ApiValidationException('kind must be standard or final', 400);
+        }
+        if ($kind !== InvoiceKind::Final && $deposit !== null) {
+            throw new ApiValidationException('Only a final invoice can reference a deposit invoice', 400);
+        }
+
+        $subtotal = $offer->getItems()->getTotal();
+        $depositDeduction = $deposit?->getDeduction() ?? Money::fromCents(0);
+
+        return self::draftForOffer(
+            $offer,
+            $customer,
+            $kind,
+            $deposit,
+            $offer->getItems(),
+            $subtotal,
+            $depositDeduction,
+            $defaultClosingText,
+            $defaultPaymentTermDays,
+            $today,
+        );
+    }
+
+    /**
+     * Entwurf einer Anzahlungsrechnung zu einem angenommenen Angebot: eine Pauschal-Position über den Betrag,
+     * der größer als 0 und kleiner als die Angebotssumme sein muss.
+     */
+    public static function depositForOffer(
+        Offer $offer,
+        Customer $customer,
+        Money $amount,
+        ?string $defaultClosingText,
+        int $defaultPaymentTermDays,
+        DateTimeImmutable $today,
+    ): self {
+        $offerNumber = $offer->getOfferNumber();
+        if ($offerNumber === null) {
+            throw new ApiValidationException('Offer has no number', 400);
+        }
+        if ($amount->asCents() <= 0 || $amount->asCents() >= $offer->getTotal()->asCents()) {
+            throw new ApiValidationException(
+                'Deposit amount must be greater than 0 and less than the offer total',
+                400,
+            );
+        }
+
+        $items = LineItems::from(LineItem::create(
+            1,
+            sprintf('Anzahlung zu Angebot %s', $offerNumber->asString()),
+            Quantity::fromDecimalString('1'),
+            self::LUMP_SUM_UNIT,
+            $amount,
+        ));
+
+        return self::draftForOffer(
+            $offer,
+            $customer,
+            InvoiceKind::Deposit,
+            null,
+            $items,
+            $items->getTotal(),
+            Money::fromCents(0),
+            $defaultClosingText,
+            $defaultPaymentTermDays,
+            $today,
         );
     }
 
@@ -160,7 +239,7 @@ class Invoice implements JsonSerializable
                 1,
                 sprintf('Storno zu Rechnung %s', $originalNumber->asString()),
                 Quantity::fromDecimalString('1'),
-                self::IMPORTED_CANCELLATION_UNIT,
+                self::LUMP_SUM_UNIT,
                 $total,
             ));
             $subtotal = $total;
@@ -176,9 +255,7 @@ class Invoice implements JsonSerializable
             $original->customerName,
             $original->offerId,
             $original->offerNumber,
-            $original->depositInvoiceId,
-            $original->depositInvoiceNumber,
-            $original->depositInvoiceDate,
+            $original->deposit,
             $original->invoiceId,
             $originalNumber->asString(),
             $today,
@@ -214,19 +291,29 @@ class Invoice implements JsonSerializable
         $invoiceNumber = $row['invoice_number'] !== null
             ? DocumentNumber::parse((string) $row['invoice_number'], DocumentPrefix::Invoice)
             : null;
+        $kind = InvoiceKind::from((string) $row['kind']);
+        $status = InvoiceStatus::from((string) $row['status']);
+        $deposit = self::depositFromDatabase($row);
+        $subtotal = Money::fromCents((int) $row['subtotal_cents']);
+        $depositDeduction = Money::fromCents((int) $row['deposit_deduction_cents']);
+        $total = Money::fromCents((int) $row['total_cents']);
+        // Entwurf einer Schlussrechnung: Abzug nach aktuellem Stand der Anzahlung anzeigen; festgeschrieben
+        // wird der Abzug erst beim Festschreiben (InvoiceFinalizer)
+        if ($kind === InvoiceKind::Final && $status === InvoiceStatus::Draft && $deposit !== null) {
+            $depositDeduction = $deposit->getDeduction();
+            $total = $subtotal->subtract($depositDeduction);
+        }
 
         return new self(
             InvoiceId::fromString((string) $row['invoice_id']),
             $invoiceNumber,
-            InvoiceKind::from((string) $row['kind']),
-            InvoiceStatus::from((string) $row['status']),
+            $kind,
+            $status,
             CustomerId::fromString((string) $row['customer_id']),
             $snapshot?->getDisplayName() ?? (string) $row['customer_display_name'],
             $row['offer_id'] !== null ? OfferId::fromString((string) $row['offer_id']) : null,
             $row['offer_number'],
-            $row['deposit_invoice_id'] !== null ? InvoiceId::fromString((string) $row['deposit_invoice_id']) : null,
-            $row['deposit_invoice_number'],
-            self::dateFromDatabase($row['deposit_invoice_date']),
+            $deposit,
             $row['cancels_invoice_id'] !== null ? InvoiceId::fromString((string) $row['cancels_invoice_id']) : null,
             $row['cancels_invoice_number'],
             new DateTimeImmutable((string) $row['invoice_date']),
@@ -238,9 +325,9 @@ class Invoice implements JsonSerializable
             $row['intro_text'],
             $row['closing_text'],
             $items,
-            Money::fromCents((int) $row['subtotal_cents']),
-            Money::fromCents((int) $row['deposit_deduction_cents']),
-            Money::fromCents((int) $row['total_cents']),
+            $subtotal,
+            $depositDeduction,
+            $total,
             $row['paid_at'],
             (bool) $row['is_imported'],
             $snapshot,
@@ -290,9 +377,7 @@ class Invoice implements JsonSerializable
             $customer->getDisplayName(),
             $this->offerId,
             $this->offerNumber,
-            $this->depositInvoiceId,
-            $this->depositInvoiceNumber,
-            $this->depositInvoiceDate,
+            $this->deposit,
             $this->cancelsInvoiceId,
             $this->cancelsInvoiceNumber,
             array_key_exists('invoiceDate', $data)
@@ -320,6 +405,47 @@ class Invoice implements JsonSerializable
             null,
             null,
             null,
+            $this->createdAt,
+        );
+    }
+
+    /**
+     * Abzug nach dem (gesperrt gelesenen) Stand der Anzahlung neu berechnen: Gesamt = Zwischensumme − Abzug.
+     * Nummer und Datum der Anzahlung für das PDF kommen ebenfalls aus diesem Stand.
+     */
+    public function withDeposit(DepositInvoiceState $deposit): self
+    {
+        $depositDeduction = $deposit->getDeduction();
+
+        return new self(
+            $this->invoiceId,
+            $this->invoiceNumber,
+            $this->kind,
+            $this->status,
+            $this->customerId,
+            $this->customerName,
+            $this->offerId,
+            $this->offerNumber,
+            $deposit,
+            $this->cancelsInvoiceId,
+            $this->cancelsInvoiceNumber,
+            $this->invoiceDate,
+            $this->serviceDate,
+            $this->servicePeriodStart,
+            $this->servicePeriodEnd,
+            $this->paymentTermDays,
+            $this->storedDueDate,
+            $this->introText,
+            $this->closingText,
+            $this->items,
+            $this->subtotal,
+            $depositDeduction,
+            $this->subtotal->subtract($depositDeduction),
+            $this->paidAt,
+            $this->isImported,
+            $this->customerSnapshot,
+            $this->issuerSnapshot,
+            $this->pdfObjectKey,
             $this->createdAt,
         );
     }
@@ -371,17 +497,30 @@ class Invoice implements JsonSerializable
 
     public function getDepositInvoiceId(): ?InvoiceId
     {
-        return $this->depositInvoiceId;
+        return $this->deposit?->getInvoiceId();
     }
 
     public function getDepositInvoiceNumber(): ?string
     {
-        return $this->depositInvoiceNumber;
+        return $this->deposit?->getInvoiceNumber();
     }
 
     public function getDepositInvoiceDate(): ?DateTimeImmutable
     {
-        return $this->depositInvoiceDate;
+        return $this->deposit?->getInvoiceDate();
+    }
+
+    /**
+     * Sperre einer Schlussrechnung im Entwurf, solange die verknüpfte Anzahlung Entwurf oder offen ist.
+     * Dieselbe Meldung liefert das Festschreiben als 409.
+     */
+    public function getLockReason(): ?string
+    {
+        if ($this->kind !== InvoiceKind::Final || !$this->isDraft()) {
+            return null;
+        }
+
+        return $this->deposit?->getFinalizeBlocker()?->getMessage();
     }
 
     public function getCancelsInvoiceId(): ?InvoiceId
@@ -512,7 +651,7 @@ class Invoice implements JsonSerializable
             'kind' => $this->kind->value,
             'customer_id' => $this->customerId->asString(),
             'offer_id' => $this->offerId?->asString(),
-            'deposit_invoice_id' => $this->depositInvoiceId?->asString(),
+            'deposit_invoice_id' => $this->deposit?->getInvoiceId()->asString(),
             'cancels_invoice_id' => $this->cancelsInvoiceId?->asString(),
             'invoice_date' => $this->invoiceDate->format(self::DATE_FORMAT),
             'service_date' => $this->serviceDate?->format(self::DATE_FORMAT),
@@ -530,6 +669,8 @@ class Invoice implements JsonSerializable
     /** @return array<string, mixed> */
     public function toArray(): array
     {
+        $lockReason = $this->getLockReason();
+
         return [
             'invoiceId' => $this->invoiceId->asString(),
             'invoiceNumber' => $this->invoiceNumber?->asString(),
@@ -539,8 +680,8 @@ class Invoice implements JsonSerializable
             'customerName' => $this->customerName,
             'offerId' => $this->offerId?->asString(),
             'offerNumber' => $this->offerNumber,
-            'depositInvoiceId' => $this->depositInvoiceId?->asString(),
-            'depositInvoiceNumber' => $this->depositInvoiceNumber,
+            'depositInvoiceId' => $this->getDepositInvoiceId()?->asString(),
+            'depositInvoiceNumber' => $this->getDepositInvoiceNumber(),
             'cancelsInvoiceId' => $this->cancelsInvoiceId?->asString(),
             'cancelsInvoiceNumber' => $this->cancelsInvoiceNumber,
             'invoiceDate' => $this->invoiceDate->format(self::DATE_FORMAT),
@@ -559,9 +700,8 @@ class Invoice implements JsonSerializable
             'paidAt' => $this->paidAt,
             'isImported' => $this->isImported,
             'isOverdue' => $this->isOverdue(BusinessClock::today()),
-            // Sperre der Schlussrechnung (unbezahlte Anzahlung) folgt mit den Rechnungen aus Angeboten
-            'isLocked' => false,
-            'lockReason' => null,
+            'isLocked' => $lockReason !== null,
+            'lockReason' => $lockReason,
             'hasPdf' => $this->hasPdf(),
             'createdAt' => $this->createdAt,
         ];
@@ -571,6 +711,51 @@ class Invoice implements JsonSerializable
     public function jsonSerialize(): array
     {
         return $this->toArray();
+    }
+
+    private static function draftForOffer(
+        Offer $offer,
+        Customer $customer,
+        InvoiceKind $kind,
+        ?DepositInvoiceState $deposit,
+        LineItems $items,
+        Money $subtotal,
+        Money $depositDeduction,
+        ?string $closingText,
+        int $paymentTermDays,
+        DateTimeImmutable $today,
+    ): self {
+        return new self(
+            InvoiceId::generate(),
+            null,
+            $kind,
+            InvoiceStatus::Draft,
+            $customer->getCustomerId(),
+            $customer->getDisplayName(),
+            $offer->getOfferId(),
+            $offer->getOfferNumber()?->asString(),
+            $deposit,
+            null,
+            null,
+            $today,
+            null,
+            null,
+            null,
+            $paymentTermDays,
+            null,
+            null,
+            $closingText,
+            $items,
+            $subtotal,
+            $depositDeduction,
+            $subtotal->subtract($depositDeduction),
+            null,
+            false,
+            null,
+            null,
+            null,
+            null,
+        );
     }
 
     /** @param array<string, mixed> $data */
@@ -591,6 +776,22 @@ class Invoice implements JsonSerializable
         }
 
         return $value;
+    }
+
+    /** @param array<string, mixed> $row Join-Spalten deposit_invoice_* aus BusinessInvoiceRepository */
+    private static function depositFromDatabase(array $row): ?DepositInvoiceState
+    {
+        if ($row['deposit_invoice_id'] === null || $row['deposit_invoice_status'] === null) {
+            return null;
+        }
+
+        return DepositInvoiceState::create(
+            InvoiceId::fromString((string) $row['deposit_invoice_id']),
+            InvoiceStatus::from((string) $row['deposit_invoice_status']),
+            $row['deposit_invoice_number'],
+            self::dateFromDatabase($row['deposit_invoice_date']),
+            Money::fromCents((int) $row['deposit_invoice_total_cents']),
+        );
     }
 
     private static function dateFromDatabase(mixed $value): ?DateTimeImmutable
