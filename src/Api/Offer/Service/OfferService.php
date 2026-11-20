@@ -18,6 +18,7 @@ use LukaLtaApi\Repository\BusinessNumberSequenceRepository;
 use LukaLtaApi\Repository\BusinessOfferRepository;
 use LukaLtaApi\Repository\BusinessSettingsRepository;
 use LukaLtaApi\Repository\S3Repository;
+use LukaLtaApi\Value\Business\BusinessClock;
 use LukaLtaApi\Value\Business\BusinessSettings;
 use LukaLtaApi\Value\Business\Customer;
 use LukaLtaApi\Value\Business\CustomerId;
@@ -127,17 +128,19 @@ class OfferService
     public function send(OfferId $offerId): ApiResult
     {
         $settings = $this->settingsService->loadCompleteOrFail();
-        $offer = $this->loadOfferOrFail($offerId);
-        $this->assertDraft($offer->getStatus());
-        $customer = $this->loadCustomerOrFail($offer->getCustomerId());
+        $this->assertDraft($this->loadOfferOrFail($offerId)->getStatus());
         $logoBytes = $this->loadLogoBytes($settings);
         $pdfObjectKey = self::PDF_KEY_PREFIX . $offerId->asString() . '.pdf';
         $isUploaded = false;
 
         try {
             $this->repository->executeInTransaction(
-                function () use ($offer, $settings, $customer, $logoBytes, $pdfObjectKey, &$isUploaded): void {
-                    $this->assertDraft($this->repository->lockOfferStatus($offer->getOfferId()));
+                function () use ($offerId, $settings, $logoBytes, $pdfObjectKey, &$isUploaded): void {
+                    $this->assertDraft($this->repository->lockOfferStatus($offerId));
+                    // Erst nach der Sperre laden: ein paralleles PATCH kann nicht mehr dazwischen committen,
+                    // PDF, Snapshot und Nummernjahr entsprechen also genau der festgeschriebenen Zeile
+                    $offer = $this->loadOfferOrFail($offerId);
+                    $customer = $this->loadCustomerOrFail($offer->getCustomerId());
 
                     $year = (int) $offer->getOfferDate()->format('Y');
                     $offerNumber = $this->sequenceRepository->allocateNext(DocumentPrefix::Offer, $year);
@@ -261,7 +264,6 @@ class OfferService
             $offerNumber?->asString(),
             $offer->getOfferDate(),
             [
-                ['label' => 'Angebotsdatum', 'value' => $offer->getOfferDate()->format(self::DISPLAY_DATE_FORMAT)],
                 ['label' => 'Gültig bis', 'value' => $offer->getValidUntil()->format(self::DISPLAY_DATE_FORMAT)],
             ],
             $issuerSnapshot,
@@ -354,6 +356,6 @@ class OfferService
 
     private function today(): DateTimeImmutable
     {
-        return new DateTimeImmutable('today');
+        return BusinessClock::today();
     }
 }

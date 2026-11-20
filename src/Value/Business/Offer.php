@@ -39,7 +39,8 @@ class Offer implements JsonSerializable
         private readonly ?string $finalInvoiceId,
         private readonly ?string $createdAt,
     ) {
-        if ($validUntil < $offerDate) {
+        // Kalendertage vergleichen, nicht Zeitpunkte: die Daten können aus unterschiedlichen Zeitzonen stammen
+        if ($validUntil->format(self::DATE_FORMAT) < $offerDate->format(self::DATE_FORMAT)) {
             throw new ApiValidationException('validUntil must not be before offerDate', 400);
         }
     }
