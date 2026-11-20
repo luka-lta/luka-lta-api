@@ -70,6 +70,13 @@ use LukaLtaApi\Api\Customer\Action\CreateCustomerAction;
 use LukaLtaApi\Api\Customer\Action\GetCustomerAction;
 use LukaLtaApi\Api\Customer\Action\ListCustomersAction;
 use LukaLtaApi\Api\Customer\Action\UpdateCustomerAction;
+use LukaLtaApi\Api\Invoice\Action\CreateInvoiceAction;
+use LukaLtaApi\Api\Invoice\Action\DeleteInvoiceAction;
+use LukaLtaApi\Api\Invoice\Action\FinalizeInvoiceAction;
+use LukaLtaApi\Api\Invoice\Action\GetInvoiceAction;
+use LukaLtaApi\Api\Invoice\Action\GetInvoicePdfAction;
+use LukaLtaApi\Api\Invoice\Action\ListInvoicesAction;
+use LukaLtaApi\Api\Invoice\Action\UpdateInvoiceAction;
 use LukaLtaApi\Api\Offer\Action\CreateOfferAction;
 use LukaLtaApi\Api\Offer\Action\DeleteOfferAction;
 use LukaLtaApi\Api\Offer\Action\DuplicateOfferAction;
@@ -344,6 +351,17 @@ class RouteMiddlewareCollector
                 $offers->post('/{offerId}/status', SetOfferStatusAction::class);
                 $offers->post('/{offerId}/duplicate', DuplicateOfferAction::class);
                 $offers->get('/{offerId}/pdf', GetOfferPdfAction::class);
+            })->add(AuthMiddleware::class);
+
+            // Business — Rechnungen: Entwurf, Festschreiben mit Nummernkreis und PDF (Dashboard)
+            $app->group('/invoices', function (RouteCollectorProxy $invoices) {
+                $invoices->get('', ListInvoicesAction::class);
+                $invoices->post('', CreateInvoiceAction::class);
+                $invoices->get('/{invoiceId}', GetInvoiceAction::class);
+                $invoices->patch('/{invoiceId}', UpdateInvoiceAction::class);
+                $invoices->delete('/{invoiceId}', DeleteInvoiceAction::class);
+                $invoices->post('/{invoiceId}/finalize', FinalizeInvoiceAction::class);
+                $invoices->get('/{invoiceId}/pdf', GetInvoicePdfAction::class);
             })->add(AuthMiddleware::class);
 
             // Business — Firmendaten und privates Logo (Dashboard)

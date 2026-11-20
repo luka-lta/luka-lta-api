@@ -7,20 +7,15 @@ namespace LukaLtaApi\Api\Offer\Service;
 use DateTimeImmutable;
 use Fig\Http\Message\StatusCodeInterface;
 use LukaLtaApi\Api\Business\Pdf\BusinessPdfRenderer;
+use LukaLtaApi\Api\Business\Service\BusinessCustomerLookup;
+use LukaLtaApi\Api\Business\Service\BusinessDocumentStorage;
 use LukaLtaApi\Api\BusinessSettings\Service\BusinessSettingsService;
-use LukaLtaApi\Exception\ApiException;
-use LukaLtaApi\Exception\ApiValidationException;
-use LukaLtaApi\Exception\BusinessCustomerNotFoundException;
 use LukaLtaApi\Exception\BusinessDocumentStateException;
 use LukaLtaApi\Exception\BusinessOfferNotFoundException;
-use LukaLtaApi\Repository\BusinessCustomerRepository;
 use LukaLtaApi\Repository\BusinessNumberSequenceRepository;
 use LukaLtaApi\Repository\BusinessOfferRepository;
 use LukaLtaApi\Repository\BusinessSettingsRepository;
-use LukaLtaApi\Repository\S3Repository;
 use LukaLtaApi\Value\Business\BusinessClock;
-use LukaLtaApi\Value\Business\BusinessSettings;
-use LukaLtaApi\Value\Business\Customer;
 use LukaLtaApi\Value\Business\CustomerId;
 use LukaLtaApi\Value\Business\DocumentNumber;
 use LukaLtaApi\Value\Business\DocumentPrefix;
@@ -38,18 +33,17 @@ class OfferService
 {
     private const string PDF_TITLE = 'Angebot';
     private const string PDF_KEY_PREFIX = 'business/offers/';
-    private const string PDF_CONTENT_TYPE = 'application/pdf';
     private const string DRAFT_FILE_NAME = 'Angebot-Entwurf.pdf';
     private const string DISPLAY_DATE_FORMAT = 'd.m.Y';
 
     public function __construct(
         private readonly BusinessOfferRepository $repository,
         private readonly BusinessNumberSequenceRepository $sequenceRepository,
-        private readonly BusinessCustomerRepository $customerRepository,
+        private readonly BusinessCustomerLookup $customerLookup,
         private readonly BusinessSettingsRepository $settingsRepository,
         private readonly BusinessSettingsService $settingsService,
         private readonly BusinessPdfRenderer $pdfRenderer,
-        private readonly S3Repository $s3Repository,
+        private readonly BusinessDocumentStorage $documentStorage,
     ) {
     }
 
@@ -68,7 +62,7 @@ class OfferService
     /** @param array<string, mixed> $data */
     public function createOffer(array $data): ApiResult
     {
-        $customer = $this->loadActiveCustomerOrFail($this->parseCustomerId($data));
+        $customer = $this->customerLookup->loadActiveCustomerOrFail($this->customerLookup->parseCustomerId($data));
         // Firmendaten dürfen beim Entwurf noch fehlen, dann gibt es eben keinen Standard-Schlusstext
         $defaultClosingText = $this->settingsRepository->loadSettings()?->getFooterText();
         $offer = Offer::fromRequest($data, $customer, $defaultClosingText, $this->today());
@@ -94,10 +88,10 @@ class OfferService
             unset($merged['validUntil']);
         }
 
-        $customerId = $this->parseCustomerId($merged);
+        $customerId = $this->customerLookup->parseCustomerId($merged);
         $customer = $customerId->asString() === $existing->getCustomerId()->asString()
-            ? $this->loadCustomerOrFail($customerId)
-            : $this->loadActiveCustomerOrFail($customerId);
+            ? $this->customerLookup->loadCustomerOrFail($customerId)
+            : $this->customerLookup->loadActiveCustomerOrFail($customerId);
         $offer = Offer::fromRequest($merged, $customer, null, $this->today(), $offerId);
 
         $this->repository->executeInTransaction(function () use ($offer): void {
@@ -129,7 +123,7 @@ class OfferService
     {
         $settings = $this->settingsService->loadCompleteOrFail();
         $this->assertDraft($this->loadOfferOrFail($offerId)->getStatus());
-        $logoBytes = $this->loadLogoBytes($settings);
+        $logoBytes = $this->documentStorage->loadLogoBytes($settings);
         $pdfObjectKey = self::PDF_KEY_PREFIX . $offerId->asString() . '.pdf';
         $isUploaded = false;
 
@@ -140,7 +134,7 @@ class OfferService
                     // Erst nach der Sperre laden: ein paralleles PATCH kann nicht mehr dazwischen committen,
                     // PDF, Snapshot und Nummernjahr entsprechen also genau der festgeschriebenen Zeile
                     $offer = $this->loadOfferOrFail($offerId);
-                    $customer = $this->loadCustomerOrFail($offer->getCustomerId());
+                    $customer = $this->customerLookup->loadCustomerOrFail($offer->getCustomerId());
 
                     $year = (int) $offer->getOfferDate()->format('Y');
                     $offerNumber = $this->sequenceRepository->allocateNext(DocumentPrefix::Offer, $year);
@@ -150,7 +144,7 @@ class OfferService
                     $pdf = $this->pdfRenderer->render(
                         $this->buildPdfDocument($offer, $offerNumber, $customerSnapshot, $issuerSnapshot, $logoBytes),
                     );
-                    $this->s3Repository->putPrivateObject($pdfObjectKey, $pdf, self::PDF_CONTENT_TYPE);
+                    $this->documentStorage->storePdf($pdfObjectKey, $pdf);
                     $isUploaded = true;
 
                     $this->repository->markSent(
@@ -165,7 +159,7 @@ class OfferService
         } catch (Throwable $exception) {
             // Greift auch, wenn erst der Commit scheitert
             if ($isUploaded) {
-                $this->deleteUploadedPdf($pdfObjectKey);
+                $this->documentStorage->deleteUploadedPdf($pdfObjectKey);
             }
 
             throw $exception;
@@ -191,7 +185,7 @@ class OfferService
     public function duplicate(OfferId $offerId): ApiResult
     {
         $source = $this->loadOfferOrFail($offerId);
-        $customer = $this->loadActiveCustomerOrFail($source->getCustomerId());
+        $customer = $this->customerLookup->loadActiveCustomerOrFail($source->getCustomerId());
         $copy = $source->duplicateAsDraft($customer, $this->today());
 
         $this->repository->executeInTransaction(fn() => $this->repository->create($copy));
@@ -215,13 +209,13 @@ class OfferService
         }
 
         $settings = $this->settingsService->loadCompleteOrFail();
-        $customer = $this->loadCustomerOrFail($offer->getCustomerId());
+        $customer = $this->customerLookup->loadCustomerOrFail($offer->getCustomerId());
         $document = $this->buildPdfDocument(
             $offer,
             null,
             PostalAddressSnapshot::fromCustomer($customer),
             $settings->toSnapshot(),
-            $this->loadLogoBytes($settings),
+            $this->documentStorage->loadLogoBytes($settings),
         );
 
         return PdfFile::from(self::DRAFT_FILE_NAME, $this->pdfRenderer->render($document));
@@ -241,12 +235,12 @@ class OfferService
     {
         $objectKey = $offer->getPdfObjectKey();
         $offerNumber = $offer->getOfferNumber();
-        $object = $objectKey !== null ? $this->s3Repository->getObject($objectKey) : null;
-        if ($object === null || $offerNumber === null) {
+        $body = $this->documentStorage->loadPdf($objectKey);
+        if ($body === null || $offerNumber === null) {
             throw new BusinessOfferNotFoundException('Offer PDF not found');
         }
 
-        return PdfFile::from($offerNumber->asString() . '.pdf', $object['body']);
+        return PdfFile::from($offerNumber->asString() . '.pdf', $body);
     }
 
     /** @param array<string, mixed> $issuerSnapshot */
@@ -279,32 +273,6 @@ class OfferService
         );
     }
 
-    /** Das Logo ist rein optisch: fehlt es im Speicher oder ist dieser nicht erreichbar, ohne Logo rendern */
-    private function loadLogoBytes(BusinessSettings $settings): ?string
-    {
-        $logoObjectKey = $settings->getLogoObjectKey();
-        if ($logoObjectKey === null) {
-            return null;
-        }
-
-        try {
-            return $this->s3Repository->getObject($logoObjectKey)['body'] ?? null;
-        } catch (ApiException) {
-            return null;
-        }
-    }
-
-    private function deleteUploadedPdf(string $objectKey): void
-    {
-        try {
-            $this->s3Repository->deleteObject($objectKey);
-        } catch (Throwable) {
-            // Der ursprüngliche Fehler hat Vorrang. Ein verwaistes Objekt ist harmlos: es gehört zu einem
-            // Entwurf und wird beim nächsten erfolgreichen Senden unter demselben Key überschrieben.
-            return;
-        }
-    }
-
     private function assertDraft(?OfferStatus $status): void
     {
         if ($status === null) {
@@ -313,37 +281,6 @@ class OfferService
         if ($status !== OfferStatus::Draft) {
             throw BusinessDocumentStateException::notDraft();
         }
-    }
-
-    /** @param array<string, mixed> $data */
-    private function parseCustomerId(array $data): CustomerId
-    {
-        $customerId = $data['customerId'] ?? null;
-        if (!is_string($customerId)) {
-            throw new ApiValidationException('customerId is required', 400);
-        }
-
-        return CustomerId::fromString($customerId);
-    }
-
-    private function loadCustomerOrFail(CustomerId $customerId): Customer
-    {
-        $customer = $this->customerRepository->loadCustomer($customerId);
-        if ($customer === null) {
-            throw new BusinessCustomerNotFoundException();
-        }
-
-        return $customer;
-    }
-
-    private function loadActiveCustomerOrFail(CustomerId $customerId): Customer
-    {
-        $customer = $this->loadCustomerOrFail($customerId);
-        if ($customer->isArchived()) {
-            throw BusinessDocumentStateException::customerArchived();
-        }
-
-        return $customer;
     }
 
     private function offerResult(
