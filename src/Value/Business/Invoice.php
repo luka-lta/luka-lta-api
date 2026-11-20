@@ -221,12 +221,13 @@ class Invoice implements JsonSerializable
      * Kunde, Leistungsdatum/-zeitraum, Zahlungsziel, Angebots- und Anzahlungsbezug, Positionen mit negativem
      * Einzelpreis, Zwischensumme, Anzahlungsabzug und Gesamtbetrag jeweils negiert (Storno einer
      * Schlussrechnung = −Restbetrag). Importierte Rechnungen haben keine Positionen: dann eine Sammelposition
-     * "Storno zu Rechnung <Nummer>" über den negierten Gesamtbetrag. Ob storniert werden darf, prüft der Aufrufer.
+     * "Storno zu Rechnung <Nummer>" über den negierten Gesamtbetrag. Empfänger ist der Kunden-Snapshot des
+     * Originals, nicht der aktuelle Kundenstamm. Ob storniert werden darf, prüft der Aufrufer.
      */
     public static function cancellationOf(self $original, DateTimeImmutable $today): self
     {
         $originalNumber = $original->invoiceNumber;
-        if ($originalNumber === null) {
+        if ($originalNumber === null || $original->customerSnapshot === null) {
             throw new ApiValidationException('Only finalized invoices can be cancelled', 400);
         }
 
@@ -276,7 +277,7 @@ class Invoice implements JsonSerializable
             $total,
             null,
             false,
-            null,
+            $original->customerSnapshot,
             null,
             null,
             null,
@@ -401,11 +402,16 @@ class Invoice implements JsonSerializable
     /**
      * Wendet die Felder eines PATCH-Requests auf einen Entwurf an. Art, Verknüpfungen und Anzahlungsabzug
      * bleiben unverändert. Wird ein Leistungsdatum gesetzt, entfällt ein bisheriger Zeitraum und umgekehrt.
+     * Die Pauschal-Position einer Anzahlung ist fest: ihr Betrag wurde beim Anlegen gegen das Angebot geprüft.
      *
      * @param array<string, mixed> $data nur die zu ändernden Felder
      */
     public function withRequestChanges(array $data, Customer $customer): self
     {
+        if ($this->kind === InvoiceKind::Deposit && array_key_exists('items', $data)) {
+            throw new ApiValidationException('Deposit items cannot be changed', 400);
+        }
+
         $isServiceDateSent = ($data['serviceDate'] ?? null) !== null;
         $isPeriodSent = ($data['servicePeriodStart'] ?? null) !== null || ($data['servicePeriodEnd'] ?? null) !== null;
 

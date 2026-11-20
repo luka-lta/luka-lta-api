@@ -210,22 +210,34 @@ class BusinessInvoiceRepository
         return $status !== false ? InvoiceStatus::from((string) $status) : null;
     }
 
+    /**
+     * Legt einen Entwurf an. Ein Kunden-Snapshot steht nur beim Storno-Entwurf schon fest (der des Originals),
+     * sonst setzt ihn erst markFinalized.
+     */
     public function create(Invoice $invoice): void
     {
         $sql = <<<SQL
             INSERT INTO business_invoices
                 (invoice_id, kind, status, customer_id, offer_id, deposit_invoice_id, cancels_invoice_id,
                  invoice_date, service_date, service_period_start, service_period_end, payment_term_days,
-                 intro_text, closing_text, subtotal_cents, deposit_deduction_cents, total_cents)
+                 intro_text, closing_text, subtotal_cents, deposit_deduction_cents, total_cents, customer_snapshot)
             VALUES
                 (:invoice_id, :kind, 'draft', :customer_id, :offer_id, :deposit_invoice_id, :cancels_invoice_id,
                  :invoice_date, :service_date, :service_period_start, :service_period_end, :payment_term_days,
-                 :intro_text, :closing_text, :subtotal_cents, :deposit_deduction_cents, :total_cents)
+                 :intro_text, :closing_text, :subtotal_cents, :deposit_deduction_cents, :total_cents,
+                 :customer_snapshot)
         SQL;
+        $customerSnapshot = $invoice->getCustomerSnapshot();
 
         try {
-            $this->pdo->prepare($sql)->execute($invoice->toDatabaseRow());
+            $this->pdo->prepare($sql)->execute($invoice->toDatabaseRow() + [
+                'customer_snapshot' => $customerSnapshot !== null
+                    ? json_encode($customerSnapshot->toArray(), JSON_THROW_ON_ERROR)
+                    : null,
+            ]);
         } catch (PDOException $exception) {
+            throw new ApiDatabaseException('Failed to create invoice', previous: $exception);
+        } catch (JsonException $exception) {
             throw new ApiDatabaseException('Failed to create invoice', previous: $exception);
         }
 
@@ -253,7 +265,8 @@ class BusinessInvoiceRepository
         $row = array_intersect_key($invoice->toDatabaseRow(), array_flip(self::UPDATABLE_COLUMNS));
 
         // Vor dem Ersetzen der Positionen sicherstellen, dass die Zeile (noch) ein Entwurf ist. rowCount() des
-        // UPDATE taugt dafür nicht: MySQL zählt nur tatsächlich geänderte Zeilen, ein PATCH ohne Änderung ergäbe 0.
+        // UPDATE taugt dafür nicht: MySQL zählt nur tatsächlich geänderte Zeilen, ein PATCH ohne Änderung
+        // ergäbe 0.
         if ($this->lockInvoiceStatus($invoice->getInvoiceId()) !== InvoiceStatus::Draft) {
             throw new ApiDatabaseException('Invoice was not a draft while updating it');
         }

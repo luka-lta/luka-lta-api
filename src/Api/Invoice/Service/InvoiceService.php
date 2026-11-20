@@ -281,15 +281,25 @@ class InvoiceService
     /**
      * Storniert eine offene oder bezahlte Rechnung: legt die Stornorechnung an, schreibt sie fest (eigene
      * RE-Nummer, PDF) und setzt das Original auf cancelled (paid_at bleibt) — alles in einer Transaktion.
-     * Sperrreihenfolge wie beim Festschreiben: Original, dann Storno, dann Nummernkreis.
+     *
+     * Sperrreihenfolge: verknüpftes Angebot (falls vorhanden), dann Original, dann Storno, dann Nummernkreis.
+     * Das Angebot kommt zuerst wie beim Anlegen aus dem Angebot (Angebot sperren, dann Rechnung mit Verweis auf
+     * die Anzahlung einfügen). Sonst könnten "Schlussrechnung anlegen" und "Anzahlung stornieren" sich gegenseitig
+     * blockieren: der Fremdschlüssel-Check beim Einfügen sperrt jeweils die Zeile, die der andere schon hält.
      */
     public function cancel(InvoiceId $invoiceId): ApiResult
     {
+        // Außerhalb der Transaktion lesen: ein Lesen darin würde den Snapshot vor den Sperren festlegen. Der
+        // Angebotsbezug ändert sich nach dem Anlegen nicht mehr.
+        $offerId = $this->loadInvoiceOrFail($invoiceId)->getOfferId();
         $uploads = new PendingPdfUploads();
 
         try {
             $cancellation = $this->repository->executeInTransaction(
-                function () use ($invoiceId, $uploads): Invoice {
+                function () use ($invoiceId, $offerId, $uploads): Invoice {
+                    if ($offerId !== null) {
+                        $this->offerRepository->lockOfferStatus($offerId);
+                    }
                     $status = $this->repository->lockInvoiceStatus($invoiceId);
                     if ($status === null) {
                         throw new BusinessInvoiceNotFoundException();

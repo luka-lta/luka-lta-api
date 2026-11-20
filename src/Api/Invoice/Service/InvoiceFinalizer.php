@@ -15,6 +15,7 @@ use LukaLtaApi\Exception\BusinessDocumentStateException;
 use LukaLtaApi\Exception\BusinessInvoiceNotFoundException;
 use LukaLtaApi\Repository\BusinessInvoiceRepository;
 use LukaLtaApi\Repository\BusinessNumberSequenceRepository;
+use LukaLtaApi\Value\Business\BusinessClock;
 use LukaLtaApi\Value\Business\DocumentPrefix;
 use LukaLtaApi\Value\Business\Invoice;
 use LukaLtaApi\Value\Business\InvoiceId;
@@ -87,14 +88,14 @@ class InvoiceFinalizer
         // Sperre durch die Anzahlung zuerst melden, sie ist der grundlegendere Hinderungsgrund
         $invoice = $this->applyDepositDeduction($invoice);
         $this->assertServiceDate($invoice);
+        $this->assertIssuable($invoice);
 
         $settings = $this->settingsService->loadCompleteOrFail();
-        $customer = $this->customerLookup->loadCustomerOrFail($invoice->getCustomerId());
+        $customerSnapshot = $this->loadCustomerSnapshot($invoice);
 
         $year = (int) $invoice->getInvoiceDate()->format('Y');
         $invoiceNumber = $this->sequenceRepository->allocateNext(DocumentPrefix::Invoice, $year);
         $dueDate = $invoice->getDueDate();
-        $customerSnapshot = PostalAddressSnapshot::fromCustomer($customer);
         $issuerSnapshot = $settings->toSnapshot();
 
         $pdf = $this->pdfRenderer->render($this->pdfDocumentFactory->create(
@@ -126,8 +127,9 @@ class InvoiceFinalizer
      * Schlussrechnung: Anzahlung sperren und den Abzug nach ihrem aktuellen Stand festlegen. Entwurf oder
      * offen → 409 (Sperre), storniert → kein Abzug, bezahlt → Abzug = Gesamtbetrag der Anzahlung.
      *
-     * Sperrreihenfolge: Schlussrechnung → Anzahlung → Nummernkreis. Bezahlen, Zurücksetzen und Stornieren der
-     * Anzahlung sperren zuerst die Anzahlung und lesen die Schlussrechnung nur (ohne Sperre), daher kein Zyklus.
+     * Sperrreihenfolge: Schlussrechnung → Anzahlung → Nummernkreis. Bezahlen und Zurücksetzen der Anzahlung
+     * sperren zuerst die Anzahlung, Stornieren zuerst das Angebot und dann die Anzahlung (siehe
+     * InvoiceService::cancel); alle lesen die Schlussrechnung nur (ohne Sperre), daher kein Zyklus.
      * Die Anzahlung wird sperrend gelesen und damit in ihrem zuletzt committeten Stand, nicht aus dem Snapshot.
      */
     private function applyDepositDeduction(Invoice $invoice): Invoice
@@ -167,6 +169,39 @@ class InvoiceFinalizer
         }
 
         throw new ApiValidationException('serviceDate or servicePeriodStart/servicePeriodEnd is required', 400);
+    }
+
+    /**
+     * Rechnungsdatum im laufenden Jahr und nicht in der Zukunft, Gesamtbetrag positiv. Nicht für Stornos: deren
+     * Datum setzt das System (heute), ihr Betrag ist das negierte Original.
+     */
+    private function assertIssuable(Invoice $invoice): void
+    {
+        if ($invoice->getKind()->isCancellation()) {
+            return;
+        }
+
+        BusinessClock::assertIssuableDate($invoice->getInvoiceDate(), DocumentPrefix::Invoice);
+        if ($invoice->getTotal()->asCents() <= 0) {
+            throw new ApiValidationException('Invoice total must be positive', 400);
+        }
+    }
+
+    /** Storno: Empfänger wie auf dem Original (Snapshot aus cancellationOf), sonst aktueller Kundenstamm */
+    private function loadCustomerSnapshot(Invoice $invoice): PostalAddressSnapshot
+    {
+        if (!$invoice->getKind()->isCancellation()) {
+            $customer = $this->customerLookup->loadCustomerOrFail($invoice->getCustomerId());
+
+            return PostalAddressSnapshot::fromCustomer($customer);
+        }
+
+        $snapshot = $invoice->getCustomerSnapshot();
+        if ($snapshot === null) {
+            throw new ApiDatabaseException('Cancellation invoice has no customer snapshot');
+        }
+
+        return $snapshot;
     }
 
     private function assertDraft(?InvoiceStatus $status): void

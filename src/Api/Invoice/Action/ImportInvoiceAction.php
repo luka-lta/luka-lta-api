@@ -14,6 +14,7 @@ use Psr\Http\Message\ServerRequestInterface;
 //        --form 'file=@<rechnung.pdf>' --form 'customerId=<uuid>' --form 'invoiceNumber=RE-2026-0001'
 //        --form 'invoiceDate=2026-11-02' --form 'dueDate=2026-11-16' --form 'totalCents=120000'
 //        --form 'status=paid' --form 'paidAt=2026-11-10' --form 'serviceDate=2026-10-30'
+//        [--form 'allowNumberJump=1']  (1|true: Nummer darf über der nächsten freien liegen, sonst 409)
 class ImportInvoiceAction extends ApiAction
 {
     public function __construct(

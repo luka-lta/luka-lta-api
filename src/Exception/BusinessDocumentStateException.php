@@ -79,6 +79,12 @@ class BusinessDocumentStateException extends ApiException
         return new self(sprintf('Document number %s is already taken', $documentNumber), $previous);
     }
 
+    /** Import einer Nummer oberhalb der nächsten freien, ohne dass der Sprung ausdrücklich erlaubt wurde */
+    public static function numberJump(string $expectedNextNumber): self
+    {
+        return new self(sprintf('Invoice number skips numbers, next free number is %s', $expectedNextNumber));
+    }
+
     public static function customerArchived(): self
     {
         return new self('Customer is archived');

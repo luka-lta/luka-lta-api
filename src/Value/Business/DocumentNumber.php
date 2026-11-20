@@ -13,6 +13,9 @@ class DocumentNumber implements Stringable, JsonSerializable
     /** Mindestanzahl Stellen des Zählers (führende Nullen) */
     private const int SEQUENCE_PADDING = 4;
 
+    /** Höchster zulässiger Zählerstand je Kreis und Jahr (verhindert Sprünge auf absurde Nummern) */
+    private const int MAX_SEQUENCE = 999999;
+
     private function __construct(
         private readonly DocumentPrefix $prefix,
         private readonly int $year,
@@ -20,6 +23,12 @@ class DocumentNumber implements Stringable, JsonSerializable
     ) {
         if ($sequence < 1) {
             throw new ApiValidationException('Document sequence must be positive', 400);
+        }
+        if ($sequence > self::MAX_SEQUENCE) {
+            throw new ApiValidationException(
+                sprintf('Document sequence must not exceed %d', self::MAX_SEQUENCE),
+                400,
+            );
         }
         if ($year < 1000 || $year > 9999) {
             throw new ApiValidationException('Document year must have 4 digits', 400);

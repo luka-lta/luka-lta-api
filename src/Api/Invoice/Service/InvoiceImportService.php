@@ -32,7 +32,8 @@ use Throwable;
 /**
  * Import einer außerhalb des Systems ausgestellten Rechnung samt Original-PDF. Die Nummer wird manuell
  * übernommen; liegt sie über dem Zählerstand ihres Jahres, wird der RE-Kreis darauf angehoben, damit die
- * Nummerierung lückenlos weiterläuft.
+ * Nummerierung lückenlos weiterläuft. Eine Nummer jenseits der nächsten freien (Lücke im Kreis) wird nur mit
+ * allowNumberJump übernommen, sonst 409 mit der nächsten freien Nummer.
  */
 class InvoiceImportService
 {
@@ -50,6 +51,9 @@ class InvoiceImportService
     private const int MAX_PAYMENT_TERM_DAYS = 365;
 
     private const string DATE_FORMAT = DocumentFieldParser::DATE_FORMAT;
+
+    /** Multipart-Werte, mit denen allowNumberJump als gesetzt gilt */
+    private const array ALLOW_NUMBER_JUMP_VALUES = ['1', 'true'];
 
     public function __construct(
         private readonly BusinessInvoiceRepository $repository,
@@ -80,6 +84,7 @@ class InvoiceImportService
             throw new ApiValidationException('dueDate is required for open invoices', 400);
         }
         $pdf = $this->readPdf($file, $invoiceNumber);
+        $isNumberJumpAllowed = in_array($data['allowNumberJump'] ?? null, self::ALLOW_NUMBER_JUMP_VALUES, true);
 
         // Archivierte Kunden sind erlaubt: eine Altrechnung kann an einen früheren Kunden gegangen sein
         $customer = $this->customerLookup->loadCustomerOrFail($this->customerLookup->parseCustomerId($data));
@@ -104,7 +109,7 @@ class InvoiceImportService
         $uploads = new PendingPdfUploads();
         try {
             $this->repository->executeInTransaction(
-                fn() => $this->storeImport($invoice, $invoiceNumber, $pdf, $uploads),
+                fn() => $this->storeImport($invoice, $invoiceNumber, $isNumberJumpAllowed, $pdf, $uploads),
             );
         } catch (Throwable $exception) {
             // Greift auch, wenn erst der Commit scheitert
@@ -127,16 +132,25 @@ class InvoiceImportService
     /**
      * Läuft in der offenen Transaktion. Sperrt zuerst die Sequenzzeile des Jahres: Festschreiben und Import
      * desselben Jahres laufen dadurch nacheinander, die Eindeutigkeitsprüfung danach sieht jede vergebene Nummer.
+     * Der gesperrte Zählerstand entscheidet auch, ob die Nummer Lücken im Kreis erzeugen würde.
      */
     private function storeImport(
         Invoice $invoice,
         DocumentNumber $invoiceNumber,
+        bool $isNumberJumpAllowed,
         PdfFile $pdf,
         PendingPdfUploads $uploads,
     ): void {
-        $this->sequenceRepository->lockSequence(DocumentPrefix::Invoice, $invoiceNumber->getYear());
+        $year = $invoiceNumber->getYear();
+        $lastValue = $this->sequenceRepository->lockSequence(DocumentPrefix::Invoice, $year);
         if ($this->repository->isInvoiceNumberTaken($invoiceNumber)) {
             throw BusinessDocumentStateException::numberTaken($invoiceNumber->asString());
+        }
+        $nextSequence = $lastValue + 1;
+        if ($invoiceNumber->getSequence() > $nextSequence && !$isNumberJumpAllowed) {
+            throw BusinessDocumentStateException::numberJump(
+                DocumentNumber::from(DocumentPrefix::Invoice, $year, $nextSequence)->asString(),
+            );
         }
 
         $this->repository->createImported($invoice);
@@ -147,11 +161,7 @@ class InvoiceImportService
         $uploads->record($pdfObjectKey);
         $this->repository->setPdfObjectKey($invoiceId, $pdfObjectKey);
 
-        $this->sequenceRepository->raiseTo(
-            DocumentPrefix::Invoice,
-            $invoiceNumber->getYear(),
-            $invoiceNumber->getSequence(),
-        );
+        $this->sequenceRepository->raiseTo(DocumentPrefix::Invoice, $year, $invoiceNumber->getSequence());
     }
 
     /** Format RE-JJJJ-NNNN in kanonischer Schreibweise; das Jahr muss dem Rechnungsdatum entsprechen */

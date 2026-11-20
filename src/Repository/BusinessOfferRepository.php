@@ -197,7 +197,8 @@ class BusinessOfferRepository
         SQL;
 
         // Vor dem Ersetzen der Positionen sicherstellen, dass die Zeile (noch) ein Entwurf ist. rowCount() des
-        // UPDATE taugt dafür nicht: MySQL zählt nur tatsächlich geänderte Zeilen, ein PATCH ohne Änderung ergäbe 0.
+        // UPDATE taugt dafür nicht: MySQL zählt nur tatsächlich geänderte Zeilen, ein PATCH ohne Änderung
+        // ergäbe 0.
         if ($this->lockOfferStatus($offer->getOfferId()) !== OfferStatus::Draft) {
             throw new ApiDatabaseException('Offer was not a draft while updating it');
         }

@@ -134,6 +134,7 @@ class OfferService
                     // Erst nach der Sperre laden: ein paralleles PATCH kann nicht mehr dazwischen committen,
                     // PDF, Snapshot und Nummernjahr entsprechen also genau der festgeschriebenen Zeile
                     $offer = $this->loadOfferOrFail($offerId);
+                    BusinessClock::assertIssuableDate($offer->getOfferDate(), DocumentPrefix::Offer);
                     $customer = $this->customerLookup->loadCustomerOrFail($offer->getCustomerId());
 
                     $year = (int) $offer->getOfferDate()->format('Y');
