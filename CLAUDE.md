@@ -110,8 +110,9 @@ Antworten via `ApiResult::from(ResultInterface, $status)->getResponse($response)
 - Zeitstempel gehen als SQL-UTC ohne Zonen-Marker raus (`yyyy-MM-dd HH:mm:ss`). Clients parsen
   das als UTC — Format nicht einseitig ändern.
 - **Business-Dateien**: MinIO-Prefix `business/` ist **privat** (nie public-read). PDFs je Versuch unter
-  `business/{offers,invoices}/<id>/<uuid>.pdf`, ausgeliefert nur über authentifizierte API-Routen.
-- **Festgeschriebene Angebote/Rechnungen sind unveränderlich** — erlaubt sind nur Zahlungsstatus und Storno.
+  `business/{offers,invoices}/<id>/<uuid>.pdf`, das Firmenlogo unter `business/logo.<ext>`; ausgeliefert nur über authentifizierte API-Routen.
+- **Festgeschriebene Dokumente sind unveränderlich**: bei Rechnungen nur Zahlungsstatus und Storno, bei Angeboten nur
+  der Übergang gesendet → angenommen/abgelehnt.
 - **Nummernvergabe** über `business_number_sequences` mit `SELECT … FOR UPDATE` in der Transaktion des Aufrufers —
   nie außerhalb einer Transaktion vergeben.
 - **Geschäftliches „heute“** nur über `BusinessClock` (Europe/Berlin); der Container läuft in UTC.
