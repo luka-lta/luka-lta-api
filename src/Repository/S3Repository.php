@@ -104,6 +104,25 @@ class S3Repository
         }
     }
 
+    /** Legt ein Objekt bewusst ohne ACL ab: es erbt die Bucket-Policy und wird nicht öffentlich lesbar gesetzt */
+    public function putPrivateObject(string $objectKey, string $body, string $contentType): void
+    {
+        try {
+            $this->s3Client->putObject([
+                'Bucket' => $this->awsBucket,
+                'Key' => $objectKey,
+                'Body' => $body,
+                'ContentType' => $contentType,
+            ]);
+        } catch (AwsException $exception) {
+            throw new ApiDatabaseException(
+                'AWS S3 upload error: ' . $exception->getMessage(),
+                StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR,
+                $exception
+            );
+        }
+    }
+
     public function deleteObject(string $objectKey): void
     {
         try {

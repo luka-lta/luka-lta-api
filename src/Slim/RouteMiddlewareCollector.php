@@ -62,6 +62,9 @@ use LukaLtaApi\Api\LinkCollection\Action\GetDetailLinkAction;
 use LukaLtaApi\Api\Notification\Action\ListNotificationsAction;
 use LukaLtaApi\Api\Notification\Action\MarkAllNotificationsReadAction;
 use LukaLtaApi\Api\Notification\Action\MarkNotificationReadAction;
+use LukaLtaApi\Api\BusinessSettings\Action\GetBusinessSettingsAction;
+use LukaLtaApi\Api\BusinessSettings\Action\UpdateBusinessSettingsAction;
+use LukaLtaApi\Api\BusinessSettings\Action\UploadBusinessLogoAction;
 use LukaLtaApi\Api\Customer\Action\ArchiveCustomerAction;
 use LukaLtaApi\Api\Customer\Action\CreateCustomerAction;
 use LukaLtaApi\Api\Customer\Action\GetCustomerAction;
@@ -319,6 +322,13 @@ class RouteMiddlewareCollector
                 $customers->get('/{customerId}', GetCustomerAction::class);
                 $customers->patch('/{customerId}', UpdateCustomerAction::class);
                 $customers->post('/{customerId}/archive', ArchiveCustomerAction::class);
+            })->add(AuthMiddleware::class);
+
+            // Business — Firmendaten und privates Logo (Dashboard)
+            $app->group('/business/settings', function (RouteCollectorProxy $settings) {
+                $settings->get('', GetBusinessSettingsAction::class);
+                $settings->put('', UpdateBusinessSettingsAction::class);
+                $settings->post('/logo', UploadBusinessLogoAction::class);
             })->add(AuthMiddleware::class);
 
             // Projects — oeffentlicher Byte-Proxy (kein Login fuer Portfolio-Bilder)
