@@ -28,7 +28,7 @@ class LineItems implements Countable, IteratorAggregate, JsonSerializable
     }
 
     /**
-     * Erwartet pro Eintrag: description, quantity, unit (optional), unitPrice (Euro als String).
+     * Erwartet pro Eintrag: description, quantity (String), unit (optional), unitPriceCents (int).
      * Positionen werden in Eingabereihenfolge ab 1 nummeriert.
      *
      * @param array<mixed> $items
@@ -94,23 +94,23 @@ class LineItems implements Countable, IteratorAggregate, JsonSerializable
         $description = $item['description'] ?? null;
         $quantity = $item['quantity'] ?? null;
         $unit = $item['unit'] ?? '';
-        $unitPrice = $item['unitPrice'] ?? null;
+        $unitPriceCents = $item['unitPriceCents'] ?? null;
         if (!is_string($description) || !is_string($unit)) {
             throw new ApiValidationException('Line item description and unit must be strings', 400);
         }
-        if (!is_string($quantity) && !is_int($quantity)) {
-            throw new ApiValidationException('Line item quantity must be a string or integer', 400);
+        if (!is_string($quantity)) {
+            throw new ApiValidationException('Line item quantity must be a string', 400);
         }
-        if (!is_string($unitPrice) && !is_int($unitPrice)) {
-            throw new ApiValidationException('Line item unitPrice must be a string or integer', 400);
+        if (!is_int($unitPriceCents)) {
+            throw new ApiValidationException('Line item unitPriceCents must be an integer', 400);
         }
 
         return LineItem::create(
             $position,
             $description,
-            Quantity::fromDecimalString((string)$quantity),
+            Quantity::fromDecimalString($quantity),
             $unit,
-            Money::fromEuroString((string)$unitPrice),
+            Money::fromCents($unitPriceCents),
         );
     }
 }

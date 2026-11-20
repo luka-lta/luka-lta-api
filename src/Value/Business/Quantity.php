@@ -46,6 +46,12 @@ class Quantity implements JsonSerializable
         return $this->hundredths;
     }
 
+    /** Maschinenlesbares Format mit Punkt ohne überflüssige Nullen, z.B. "1.5" oder "2" */
+    public function asDecimalString(): string
+    {
+        return str_replace(',', '.', $this->format());
+    }
+
     /** Deutsches Format ohne überflüssige Nullen, z.B. "1,5" oder "2" */
     public function format(): string
     {
