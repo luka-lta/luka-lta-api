@@ -62,6 +62,35 @@ use LukaLtaApi\Api\LinkCollection\Action\GetDetailLinkAction;
 use LukaLtaApi\Api\Notification\Action\ListNotificationsAction;
 use LukaLtaApi\Api\Notification\Action\MarkAllNotificationsReadAction;
 use LukaLtaApi\Api\Notification\Action\MarkNotificationReadAction;
+use LukaLtaApi\Api\BusinessSettings\Action\GetBusinessSettingsAction;
+use LukaLtaApi\Api\BusinessSettings\Action\UpdateBusinessSettingsAction;
+use LukaLtaApi\Api\BusinessSettings\Action\UploadBusinessLogoAction;
+use LukaLtaApi\Api\Customer\Action\ArchiveCustomerAction;
+use LukaLtaApi\Api\Customer\Action\CreateCustomerAction;
+use LukaLtaApi\Api\Customer\Action\GetCustomerAction;
+use LukaLtaApi\Api\Customer\Action\ListCustomersAction;
+use LukaLtaApi\Api\Customer\Action\UpdateCustomerAction;
+use LukaLtaApi\Api\Invoice\Action\CancelInvoiceAction;
+use LukaLtaApi\Api\Invoice\Action\CreateInvoiceAction;
+use LukaLtaApi\Api\Invoice\Action\DeleteInvoiceAction;
+use LukaLtaApi\Api\Invoice\Action\FinalizeInvoiceAction;
+use LukaLtaApi\Api\Invoice\Action\GetInvoiceAction;
+use LukaLtaApi\Api\Invoice\Action\GetInvoicePdfAction;
+use LukaLtaApi\Api\Invoice\Action\ImportInvoiceAction;
+use LukaLtaApi\Api\Invoice\Action\ListInvoicesAction;
+use LukaLtaApi\Api\Invoice\Action\MarkInvoicePaidAction;
+use LukaLtaApi\Api\Invoice\Action\UnmarkInvoicePaidAction;
+use LukaLtaApi\Api\Invoice\Action\UpdateInvoiceAction;
+use LukaLtaApi\Api\Offer\Action\CreateInvoiceFromOfferAction;
+use LukaLtaApi\Api\Offer\Action\CreateOfferAction;
+use LukaLtaApi\Api\Offer\Action\DeleteOfferAction;
+use LukaLtaApi\Api\Offer\Action\DuplicateOfferAction;
+use LukaLtaApi\Api\Offer\Action\GetOfferAction;
+use LukaLtaApi\Api\Offer\Action\GetOfferPdfAction;
+use LukaLtaApi\Api\Offer\Action\ListOffersAction;
+use LukaLtaApi\Api\Offer\Action\SendOfferAction;
+use LukaLtaApi\Api\Offer\Action\SetOfferStatusAction;
+use LukaLtaApi\Api\Offer\Action\UpdateOfferAction;
 use LukaLtaApi\Api\Project\Action\CreateProjectAction;
 use LukaLtaApi\Api\Project\Action\CreateProjectTagAction;
 use LukaLtaApi\Api\Project\Action\DeleteProjectAction;
@@ -305,6 +334,52 @@ class RouteMiddlewareCollector
                 $projects->delete('/{projectId}/assets/{assetId}', DeleteProjectAssetAction::class);
                 $projects->patch('/{projectId}', UpdateProjectAction::class);
                 $projects->delete('/{projectId}', DeleteProjectAction::class);
+            })->add(AuthMiddleware::class);
+
+            // Business — Kunden fuer Angebote und Rechnungen (Dashboard)
+            $app->group('/customers', function (RouteCollectorProxy $customers) {
+                $customers->get('', ListCustomersAction::class);
+                $customers->post('', CreateCustomerAction::class);
+                $customers->get('/{customerId}', GetCustomerAction::class);
+                $customers->patch('/{customerId}', UpdateCustomerAction::class);
+                $customers->post('/{customerId}/archive', ArchiveCustomerAction::class);
+            })->add(AuthMiddleware::class);
+
+            // Business — Angebote mit Nummernkreis und PDF (Dashboard)
+            $app->group('/offers', function (RouteCollectorProxy $offers) {
+                $offers->get('', ListOffersAction::class);
+                $offers->post('', CreateOfferAction::class);
+                $offers->get('/{offerId}', GetOfferAction::class);
+                $offers->patch('/{offerId}', UpdateOfferAction::class);
+                $offers->delete('/{offerId}', DeleteOfferAction::class);
+                $offers->post('/{offerId}/send', SendOfferAction::class);
+                $offers->post('/{offerId}/status', SetOfferStatusAction::class);
+                $offers->post('/{offerId}/duplicate', DuplicateOfferAction::class);
+                $offers->get('/{offerId}/pdf', GetOfferPdfAction::class);
+                $offers->post('/{offerId}/invoices', CreateInvoiceFromOfferAction::class);
+            })->add(AuthMiddleware::class);
+
+            // Business — Rechnungen: Entwurf, Festschreiben mit Nummernkreis und PDF, Zahlung, Storno, Import
+            $app->group('/invoices', function (RouteCollectorProxy $invoices) {
+                $invoices->get('', ListInvoicesAction::class);
+                $invoices->post('', CreateInvoiceAction::class);
+                // Statisches Segment vor den {invoiceId}-Routen
+                $invoices->post('/import', ImportInvoiceAction::class);
+                $invoices->get('/{invoiceId}', GetInvoiceAction::class);
+                $invoices->patch('/{invoiceId}', UpdateInvoiceAction::class);
+                $invoices->delete('/{invoiceId}', DeleteInvoiceAction::class);
+                $invoices->post('/{invoiceId}/finalize', FinalizeInvoiceAction::class);
+                $invoices->get('/{invoiceId}/pdf', GetInvoicePdfAction::class);
+                $invoices->post('/{invoiceId}/payment', MarkInvoicePaidAction::class);
+                $invoices->delete('/{invoiceId}/payment', UnmarkInvoicePaidAction::class);
+                $invoices->post('/{invoiceId}/cancel', CancelInvoiceAction::class);
+            })->add(AuthMiddleware::class);
+
+            // Business — Firmendaten und privates Logo (Dashboard)
+            $app->group('/business/settings', function (RouteCollectorProxy $settings) {
+                $settings->get('', GetBusinessSettingsAction::class);
+                $settings->put('', UpdateBusinessSettingsAction::class);
+                $settings->post('/logo', UploadBusinessLogoAction::class);
             })->add(AuthMiddleware::class);
 
             // Projects — oeffentlicher Byte-Proxy (kein Login fuer Portfolio-Bilder)

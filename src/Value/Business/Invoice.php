@@ -1,0 +1,868 @@
+<?php
+
+declare(strict_types=1);
+
+namespace LukaLtaApi\Value\Business;
+
+use DateTimeImmutable;
+use JsonSerializable;
+use LukaLtaApi\Exception\ApiValidationException;
+
+class Invoice implements JsonSerializable
+{
+    /** Obergrenze für das Zahlungsziel in Tagen (wie in den Firmendaten) */
+    private const int MAX_PAYMENT_TERM_DAYS = 365;
+
+    /** Zahlungsziel, falls noch keine Firmendaten gepflegt sind */
+    public const int FALLBACK_PAYMENT_TERM_DAYS = 14;
+
+    private const string DATE_FORMAT = DocumentFieldParser::DATE_FORMAT;
+
+    /** Datumsformat in Texten auf dem Beleg */
+    private const string DISPLAY_DATE_FORMAT = 'd.m.Y';
+
+    /** Einheit von Pauschal-Positionen (Anzahlung, Storno einer importierten Rechnung) */
+    private const string LUMP_SUM_UNIT = 'pausch.';
+
+    /** @param ?array<string, mixed> $issuerSnapshot */
+    private function __construct(
+        private readonly InvoiceId $invoiceId,
+        private readonly ?DocumentNumber $invoiceNumber,
+        private readonly InvoiceKind $kind,
+        private readonly InvoiceStatus $status,
+        private readonly CustomerId $customerId,
+        private readonly string $customerName,
+        private readonly ?OfferId $offerId,
+        private readonly ?string $offerNumber,
+        private readonly ?DepositInvoiceState $deposit,
+        private readonly ?InvoiceId $cancelsInvoiceId,
+        private readonly ?string $cancelsInvoiceNumber,
+        private readonly DateTimeImmutable $invoiceDate,
+        private readonly ?DateTimeImmutable $serviceDate,
+        private readonly ?DateTimeImmutable $servicePeriodStart,
+        private readonly ?DateTimeImmutable $servicePeriodEnd,
+        private readonly int $paymentTermDays,
+        private readonly ?DateTimeImmutable $storedDueDate,
+        private readonly ?string $introText,
+        private readonly ?string $closingText,
+        private readonly LineItems $items,
+        private readonly Money $subtotal,
+        private readonly Money $depositDeduction,
+        private readonly Money $total,
+        private readonly ?string $paidAt,
+        private readonly bool $isImported,
+        private readonly ?PostalAddressSnapshot $customerSnapshot,
+        private readonly ?array $issuerSnapshot,
+        private readonly ?string $pdfObjectKey,
+        private readonly ?string $createdAt,
+    ) {
+        if ($paymentTermDays < 0 || $paymentTermDays > self::MAX_PAYMENT_TERM_DAYS) {
+            throw new ApiValidationException(
+                sprintf('paymentTermDays must be between 0 and %d', self::MAX_PAYMENT_TERM_DAYS),
+                400,
+            );
+        }
+        if (($servicePeriodStart === null) !== ($servicePeriodEnd === null)) {
+            throw new ApiValidationException('servicePeriodStart and servicePeriodEnd must be set together', 400);
+        }
+        if ($serviceDate !== null && $servicePeriodStart !== null) {
+            throw new ApiValidationException('Either serviceDate or a service period may be set, not both', 400);
+        }
+        // Kalendertage vergleichen, nicht Zeitpunkte: die Daten können aus unterschiedlichen Zeitzonen stammen
+        $isPeriodReversed = $servicePeriodStart !== null
+            && $servicePeriodEnd !== null
+            && $servicePeriodEnd->format(self::DATE_FORMAT) < $servicePeriodStart->format(self::DATE_FORMAT);
+        if ($isPeriodReversed) {
+            throw new ApiValidationException('servicePeriodEnd must not be before servicePeriodStart', 400);
+        }
+    }
+
+    /**
+     * Neuer Entwurf einer normalen Rechnung. Kunde (und ggf. Angebot) muss der Aufrufer bereits geprüft haben.
+     * Fehlen closingText bzw. paymentTermDays im Request, gelten die übergebenen Standardwerte.
+     *
+     * @param array<string, mixed> $data camelCase-Felder des Requests
+     */
+    public static function fromRequest(
+        array $data,
+        Customer $customer,
+        ?Offer $offer,
+        ?string $defaultClosingText,
+        int $defaultPaymentTermDays,
+        DateTimeImmutable $today,
+    ): self {
+        $closingText = array_key_exists('closingText', $data)
+            ? DocumentFieldParser::optionalText($data, 'closingText')
+            : $defaultClosingText;
+        $paymentTermDays = array_key_exists('paymentTermDays', $data)
+            ? self::parsePaymentTermDays($data['paymentTermDays'])
+            : $defaultPaymentTermDays;
+        $items = self::parseItems($data);
+        $subtotal = $items->getTotal();
+
+        return new self(
+            InvoiceId::generate(),
+            null,
+            InvoiceKind::Standard,
+            InvoiceStatus::Draft,
+            $customer->getCustomerId(),
+            $customer->getDisplayName(),
+            $offer?->getOfferId(),
+            $offer?->getOfferNumber()?->asString(),
+            null,
+            null,
+            null,
+            DocumentFieldParser::optionalDate($data, 'invoiceDate') ?? $today,
+            DocumentFieldParser::optionalDate($data, 'serviceDate'),
+            DocumentFieldParser::optionalDate($data, 'servicePeriodStart'),
+            DocumentFieldParser::optionalDate($data, 'servicePeriodEnd'),
+            $paymentTermDays,
+            null,
+            DocumentFieldParser::optionalText($data, 'introText'),
+            $closingText,
+            $items,
+            $subtotal,
+            Money::fromCents(0),
+            $subtotal,
+            null,
+            false,
+            null,
+            null,
+            null,
+            null,
+        );
+    }
+
+    /**
+     * Entwurf einer normalen Rechnung oder Schlussrechnung aus einem angenommenen Angebot: übernimmt Kunde
+     * und Positionen. Die Schlussrechnung verweist auf die aktive Anzahlung (falls vorhanden) und zieht sie
+     * vorläufig ab; maßgeblich ist der Abzug beim Festschreiben. Angebot und Kunde prüft der Aufrufer.
+     */
+    public static function fromOffer(
+        Offer $offer,
+        Customer $customer,
+        InvoiceKind $kind,
+        ?DepositInvoiceState $deposit,
+        ?string $defaultClosingText,
+        int $defaultPaymentTermDays,
+        DateTimeImmutable $today,
+    ): self {
+        if ($kind !== InvoiceKind::Standard && $kind !== InvoiceKind::Final) {
+            throw new ApiValidationException('kind must be standard or final', 400);
+        }
+        if ($kind !== InvoiceKind::Final && $deposit !== null) {
+            throw new ApiValidationException('Only a final invoice can reference a deposit invoice', 400);
+        }
+
+        $subtotal = $offer->getItems()->getTotal();
+        $depositDeduction = $deposit?->getDeduction() ?? Money::fromCents(0);
+
+        return self::draftForOffer(
+            $offer,
+            $customer,
+            $kind,
+            $deposit,
+            $offer->getItems(),
+            $subtotal,
+            $depositDeduction,
+            $defaultClosingText,
+            $defaultPaymentTermDays,
+            $today,
+        );
+    }
+
+    /**
+     * Entwurf einer Anzahlungsrechnung zu einem angenommenen Angebot: eine Pauschal-Position über den Betrag,
+     * der größer als 0 und kleiner als die Angebotssumme sein muss.
+     */
+    public static function depositForOffer(
+        Offer $offer,
+        Customer $customer,
+        Money $amount,
+        ?string $defaultClosingText,
+        int $defaultPaymentTermDays,
+        DateTimeImmutable $today,
+    ): self {
+        $offerNumber = $offer->getOfferNumber();
+        if ($offerNumber === null) {
+            throw new ApiValidationException('Offer has no number', 400);
+        }
+        if ($amount->asCents() <= 0 || $amount->asCents() >= $offer->getTotal()->asCents()) {
+            throw new ApiValidationException(
+                'Deposit amount must be greater than 0 and less than the offer total',
+                400,
+            );
+        }
+
+        $items = LineItems::from(LineItem::create(
+            1,
+            sprintf('Anzahlung zu Angebot %s', $offerNumber->asString()),
+            Quantity::fromDecimalString('1'),
+            self::LUMP_SUM_UNIT,
+            $amount,
+        ));
+
+        return self::draftForOffer(
+            $offer,
+            $customer,
+            InvoiceKind::Deposit,
+            null,
+            $items,
+            $items->getTotal(),
+            Money::fromCents(0),
+            $defaultClosingText,
+            $defaultPaymentTermDays,
+            $today,
+        );
+    }
+
+    /**
+     * Entwurf der Stornorechnung zu einer festgeschriebenen Rechnung. Spiegelt das Original exakt: gleicher
+     * Kunde, Leistungsdatum/-zeitraum, Zahlungsziel, Angebots- und Anzahlungsbezug, Positionen mit negativem
+     * Einzelpreis, Zwischensumme, Anzahlungsabzug und Gesamtbetrag jeweils negiert (Storno einer
+     * Schlussrechnung = −Restbetrag). Importierte Rechnungen haben keine Positionen: dann eine Sammelposition
+     * "Storno zu Rechnung <Nummer>" über den negierten Gesamtbetrag. Empfänger ist der Kunden-Snapshot des
+     * Originals, nicht der aktuelle Kundenstamm. Ob storniert werden darf, prüft der Aufrufer.
+     */
+    public static function cancellationOf(self $original, DateTimeImmutable $today): self
+    {
+        $originalNumber = $original->invoiceNumber;
+        if ($originalNumber === null || $original->customerSnapshot === null) {
+            throw new ApiValidationException('Only finalized invoices can be cancelled', 400);
+        }
+
+        $items = $original->items->negated();
+        $subtotal = $original->subtotal->negate();
+        $depositDeduction = $original->depositDeduction->negate();
+        $total = $original->total->negate();
+        if ($original->isImported || count($original->items) === 0) {
+            $items = LineItems::from(LineItem::create(
+                1,
+                sprintf('Storno zu Rechnung %s', $originalNumber->asString()),
+                Quantity::fromDecimalString('1'),
+                self::LUMP_SUM_UNIT,
+                $total,
+            ));
+            $subtotal = $total;
+            $depositDeduction = Money::fromCents(0);
+        }
+
+        return new self(
+            InvoiceId::generate(),
+            null,
+            InvoiceKind::Cancellation,
+            InvoiceStatus::Draft,
+            $original->customerId,
+            $original->customerName,
+            $original->offerId,
+            $original->offerNumber,
+            $original->deposit,
+            $original->invoiceId,
+            $originalNumber->asString(),
+            $today,
+            $original->serviceDate,
+            $original->servicePeriodStart,
+            $original->servicePeriodEnd,
+            $original->paymentTermDays,
+            null,
+            sprintf(
+                'Hiermit wird die Rechnung %s vom %s vollständig storniert.',
+                $originalNumber->asString(),
+                $original->invoiceDate->format(self::DISPLAY_DATE_FORMAT),
+            ),
+            null,
+            $items,
+            $subtotal,
+            $depositDeduction,
+            $total,
+            null,
+            false,
+            $original->customerSnapshot,
+            null,
+            null,
+            null,
+        );
+    }
+
+    /**
+     * Außerhalb des Systems ausgestellte Bestandsrechnung: normale Rechnung ohne Positionen, bereits mit Nummer,
+     * Fälligkeit und Kunden-Snapshot; das hochgeladene Original ist das PDF (Key setzt der Aufrufer danach).
+     * Fachliche Prüfungen (Daten, Nummernjahr, Eindeutigkeit) macht der Aufrufer.
+     */
+    public static function imported(
+        Customer $customer,
+        DocumentNumber $invoiceNumber,
+        InvoiceStatus $status,
+        DateTimeImmutable $invoiceDate,
+        ?DateTimeImmutable $serviceDate,
+        int $paymentTermDays,
+        DateTimeImmutable $dueDate,
+        Money $total,
+        ?DateTimeImmutable $paidAt,
+    ): self {
+        if ($status !== InvoiceStatus::Open && $status !== InvoiceStatus::Paid) {
+            throw new ApiValidationException('status must be open or paid', 400);
+        }
+        if (($status === InvoiceStatus::Paid) !== ($paidAt !== null)) {
+            throw new ApiValidationException('paidAt must be set exactly for paid invoices', 400);
+        }
+        if ($total->asCents() <= 0) {
+            throw new ApiValidationException('totalCents must be positive', 400);
+        }
+
+        $customerSnapshot = PostalAddressSnapshot::fromCustomer($customer);
+
+        return new self(
+            InvoiceId::generate(),
+            $invoiceNumber,
+            InvoiceKind::Standard,
+            $status,
+            $customer->getCustomerId(),
+            $customerSnapshot->getDisplayName(),
+            null,
+            null,
+            null,
+            null,
+            null,
+            $invoiceDate,
+            $serviceDate,
+            null,
+            null,
+            $paymentTermDays,
+            $dueDate,
+            null,
+            null,
+            LineItems::from(),
+            $total,
+            Money::fromCents(0),
+            $total,
+            $paidAt?->format(self::DATE_FORMAT),
+            true,
+            $customerSnapshot,
+            null,
+            null,
+            null,
+        );
+    }
+
+    /** @param array<string, mixed> $row inkl. Join-Spalten aus BusinessInvoiceRepository */
+    public static function fromDatabase(array $row, LineItems $items): self
+    {
+        $customerSnapshot = DocumentFieldParser::decodeJson($row['customer_snapshot']);
+        $snapshot = $customerSnapshot !== null ? PostalAddressSnapshot::fromArray($customerSnapshot) : null;
+        $invoiceNumber = $row['invoice_number'] !== null
+            ? DocumentNumber::parse((string) $row['invoice_number'], DocumentPrefix::Invoice)
+            : null;
+        $kind = InvoiceKind::from((string) $row['kind']);
+        $status = InvoiceStatus::from((string) $row['status']);
+        $deposit = self::depositFromDatabase($row);
+        $subtotal = Money::fromCents((int) $row['subtotal_cents']);
+        $depositDeduction = Money::fromCents((int) $row['deposit_deduction_cents']);
+        $total = Money::fromCents((int) $row['total_cents']);
+        // Entwurf einer Schlussrechnung: Abzug nach aktuellem Stand der Anzahlung anzeigen; festgeschrieben
+        // wird der Abzug erst beim Festschreiben (InvoiceFinalizer)
+        if ($kind === InvoiceKind::Final && $status === InvoiceStatus::Draft && $deposit !== null) {
+            $depositDeduction = $deposit->getDeduction();
+            $total = $subtotal->subtract($depositDeduction);
+        }
+
+        return new self(
+            InvoiceId::fromString((string) $row['invoice_id']),
+            $invoiceNumber,
+            $kind,
+            $status,
+            CustomerId::fromString((string) $row['customer_id']),
+            $snapshot?->getDisplayName() ?? (string) $row['customer_display_name'],
+            $row['offer_id'] !== null ? OfferId::fromString((string) $row['offer_id']) : null,
+            $row['offer_number'],
+            $deposit,
+            $row['cancels_invoice_id'] !== null ? InvoiceId::fromString((string) $row['cancels_invoice_id']) : null,
+            $row['cancels_invoice_number'],
+            new DateTimeImmutable((string) $row['invoice_date']),
+            self::dateFromDatabase($row['service_date']),
+            self::dateFromDatabase($row['service_period_start']),
+            self::dateFromDatabase($row['service_period_end']),
+            (int) $row['payment_term_days'],
+            self::dateFromDatabase($row['due_date']),
+            $row['intro_text'],
+            $row['closing_text'],
+            $items,
+            $subtotal,
+            $depositDeduction,
+            $total,
+            $row['paid_at'],
+            (bool) $row['is_imported'],
+            $snapshot,
+            DocumentFieldParser::decodeJson($row['issuer_snapshot']),
+            $row['pdf_object_key'],
+            (string) $row['created_at'],
+        );
+    }
+
+    /**
+     * Wendet die Felder eines PATCH-Requests auf einen Entwurf an. Art, Verknüpfungen und Anzahlungsabzug
+     * bleiben unverändert. Wird ein Leistungsdatum gesetzt, entfällt ein bisheriger Zeitraum und umgekehrt.
+     * Die Pauschal-Position einer Anzahlung ist fest: ihr Betrag wurde beim Anlegen gegen das Angebot geprüft.
+     *
+     * @param array<string, mixed> $data nur die zu ändernden Felder
+     */
+    public function withRequestChanges(array $data, Customer $customer): self
+    {
+        if ($this->kind === InvoiceKind::Deposit && array_key_exists('items', $data)) {
+            throw new ApiValidationException('Deposit items cannot be changed', 400);
+        }
+
+        $isServiceDateSent = ($data['serviceDate'] ?? null) !== null;
+        $isPeriodSent = ($data['servicePeriodStart'] ?? null) !== null || ($data['servicePeriodEnd'] ?? null) !== null;
+
+        $serviceDate = $this->serviceDate;
+        if (array_key_exists('serviceDate', $data) || $isPeriodSent) {
+            $serviceDate = DocumentFieldParser::optionalDate($data, 'serviceDate');
+        }
+        $periodStart = $this->servicePeriodStart;
+        $periodEnd = $this->servicePeriodEnd;
+        if ($isServiceDateSent && !$isPeriodSent) {
+            $periodStart = null;
+            $periodEnd = null;
+        }
+        if (array_key_exists('servicePeriodStart', $data)) {
+            $periodStart = DocumentFieldParser::optionalDate($data, 'servicePeriodStart');
+        }
+        if (array_key_exists('servicePeriodEnd', $data)) {
+            $periodEnd = DocumentFieldParser::optionalDate($data, 'servicePeriodEnd');
+        }
+
+        $items = array_key_exists('items', $data) ? self::parseItems($data) : $this->items;
+        $subtotal = $items->getTotal();
+
+        return new self(
+            $this->invoiceId,
+            null,
+            $this->kind,
+            InvoiceStatus::Draft,
+            $customer->getCustomerId(),
+            $customer->getDisplayName(),
+            $this->offerId,
+            $this->offerNumber,
+            $this->deposit,
+            $this->cancelsInvoiceId,
+            $this->cancelsInvoiceNumber,
+            array_key_exists('invoiceDate', $data)
+                ? DocumentFieldParser::optionalDate($data, 'invoiceDate') ?? $this->invoiceDate
+                : $this->invoiceDate,
+            $serviceDate,
+            $periodStart,
+            $periodEnd,
+            array_key_exists('paymentTermDays', $data)
+                ? self::parsePaymentTermDays($data['paymentTermDays'])
+                : $this->paymentTermDays,
+            null,
+            array_key_exists('introText', $data)
+                ? DocumentFieldParser::optionalText($data, 'introText')
+                : $this->introText,
+            array_key_exists('closingText', $data)
+                ? DocumentFieldParser::optionalText($data, 'closingText')
+                : $this->closingText,
+            $items,
+            $subtotal,
+            $this->depositDeduction,
+            $subtotal->subtract($this->depositDeduction),
+            null,
+            false,
+            null,
+            null,
+            null,
+            $this->createdAt,
+        );
+    }
+
+    /**
+     * Abzug nach dem (gesperrt gelesenen) Stand der Anzahlung neu berechnen: Gesamt = Zwischensumme − Abzug.
+     * Nummer und Datum der Anzahlung für das PDF kommen ebenfalls aus diesem Stand.
+     */
+    public function withDeposit(DepositInvoiceState $deposit): self
+    {
+        $depositDeduction = $deposit->getDeduction();
+
+        return new self(
+            $this->invoiceId,
+            $this->invoiceNumber,
+            $this->kind,
+            $this->status,
+            $this->customerId,
+            $this->customerName,
+            $this->offerId,
+            $this->offerNumber,
+            $deposit,
+            $this->cancelsInvoiceId,
+            $this->cancelsInvoiceNumber,
+            $this->invoiceDate,
+            $this->serviceDate,
+            $this->servicePeriodStart,
+            $this->servicePeriodEnd,
+            $this->paymentTermDays,
+            $this->storedDueDate,
+            $this->introText,
+            $this->closingText,
+            $this->items,
+            $this->subtotal,
+            $depositDeduction,
+            $this->subtotal->subtract($depositDeduction),
+            $this->paidAt,
+            $this->isImported,
+            $this->customerSnapshot,
+            $this->issuerSnapshot,
+            $this->pdfObjectKey,
+            $this->createdAt,
+        );
+    }
+
+    public function getInvoiceId(): InvoiceId
+    {
+        return $this->invoiceId;
+    }
+
+    public function getInvoiceNumber(): ?DocumentNumber
+    {
+        return $this->invoiceNumber;
+    }
+
+    public function getKind(): InvoiceKind
+    {
+        return $this->kind;
+    }
+
+    public function getStatus(): InvoiceStatus
+    {
+        return $this->status;
+    }
+
+    public function isDraft(): bool
+    {
+        return $this->status === InvoiceStatus::Draft;
+    }
+
+    public function getCustomerId(): CustomerId
+    {
+        return $this->customerId;
+    }
+
+    public function getCustomerName(): string
+    {
+        return $this->customerName;
+    }
+
+    public function getOfferId(): ?OfferId
+    {
+        return $this->offerId;
+    }
+
+    public function getOfferNumber(): ?string
+    {
+        return $this->offerNumber;
+    }
+
+    public function getDepositInvoiceId(): ?InvoiceId
+    {
+        return $this->deposit?->getInvoiceId();
+    }
+
+    public function getDepositInvoiceNumber(): ?string
+    {
+        return $this->deposit?->getInvoiceNumber();
+    }
+
+    public function getDepositInvoiceDate(): ?DateTimeImmutable
+    {
+        return $this->deposit?->getInvoiceDate();
+    }
+
+    /**
+     * Sperre einer Schlussrechnung im Entwurf, solange die verknüpfte Anzahlung Entwurf oder offen ist.
+     * Dieselbe Meldung liefert das Festschreiben als 409.
+     */
+    public function getLockReason(): ?string
+    {
+        if ($this->kind !== InvoiceKind::Final || !$this->isDraft()) {
+            return null;
+        }
+
+        return $this->deposit?->getFinalizeBlocker()?->getMessage();
+    }
+
+    public function getCancelsInvoiceId(): ?InvoiceId
+    {
+        return $this->cancelsInvoiceId;
+    }
+
+    public function getCancelsInvoiceNumber(): ?string
+    {
+        return $this->cancelsInvoiceNumber;
+    }
+
+    public function getInvoiceDate(): DateTimeImmutable
+    {
+        return $this->invoiceDate;
+    }
+
+    public function getServiceDate(): ?DateTimeImmutable
+    {
+        return $this->serviceDate;
+    }
+
+    public function getServicePeriodStart(): ?DateTimeImmutable
+    {
+        return $this->servicePeriodStart;
+    }
+
+    public function getServicePeriodEnd(): ?DateTimeImmutable
+    {
+        return $this->servicePeriodEnd;
+    }
+
+    public function hasServiceDateOrPeriod(): bool
+    {
+        return $this->serviceDate !== null || $this->servicePeriodStart !== null;
+    }
+
+    public function getPaymentTermDays(): int
+    {
+        return $this->paymentTermDays;
+    }
+
+    /** Festgeschrieben: gespeicherte Fälligkeit; Entwurf: Rechnungsdatum + Zahlungsziel */
+    public function getDueDate(): DateTimeImmutable
+    {
+        return $this->storedDueDate ?? $this->invoiceDate->modify('+' . $this->paymentTermDays . ' days');
+    }
+
+    /** Überfällig = offen und Fälligkeit vor heute; Kalendertage als Y-m-d vergleichen */
+    public function isOverdue(DateTimeImmutable $today): bool
+    {
+        return $this->status === InvoiceStatus::Open
+            && $this->storedDueDate !== null
+            && $this->storedDueDate->format(self::DATE_FORMAT) < $today->format(self::DATE_FORMAT);
+    }
+
+    public function getIntroText(): ?string
+    {
+        return $this->introText;
+    }
+
+    public function getClosingText(): ?string
+    {
+        return $this->closingText;
+    }
+
+    public function getItems(): LineItems
+    {
+        return $this->items;
+    }
+
+    public function getSubtotal(): Money
+    {
+        return $this->subtotal;
+    }
+
+    /** Abzuziehende Anzahlung (Schlussrechnung positiv, deren Storno negativ, sonst 0) */
+    public function getDepositDeduction(): Money
+    {
+        return $this->depositDeduction;
+    }
+
+    public function getTotal(): Money
+    {
+        return $this->total;
+    }
+
+    public function getPaidAt(): ?string
+    {
+        return $this->paidAt;
+    }
+
+    public function isImported(): bool
+    {
+        return $this->isImported;
+    }
+
+    public function getCustomerSnapshot(): ?PostalAddressSnapshot
+    {
+        return $this->customerSnapshot;
+    }
+
+    /** @return ?array<string, mixed> */
+    public function getIssuerSnapshot(): ?array
+    {
+        return $this->issuerSnapshot;
+    }
+
+    public function getPdfObjectKey(): ?string
+    {
+        return $this->pdfObjectKey;
+    }
+
+    public function hasPdf(): bool
+    {
+        return $this->pdfObjectKey !== null;
+    }
+
+    /**
+     * Datenbankzeile ohne Positionen; Nummer, Fälligkeit, Snapshots und PDF setzt erst markFinalized.
+     *
+     * @return array<string, mixed>
+     */
+    public function toDatabaseRow(): array
+    {
+        return [
+            'invoice_id' => $this->invoiceId->asString(),
+            'kind' => $this->kind->value,
+            'customer_id' => $this->customerId->asString(),
+            'offer_id' => $this->offerId?->asString(),
+            'deposit_invoice_id' => $this->deposit?->getInvoiceId()->asString(),
+            'cancels_invoice_id' => $this->cancelsInvoiceId?->asString(),
+            'invoice_date' => $this->invoiceDate->format(self::DATE_FORMAT),
+            'service_date' => $this->serviceDate?->format(self::DATE_FORMAT),
+            'service_period_start' => $this->servicePeriodStart?->format(self::DATE_FORMAT),
+            'service_period_end' => $this->servicePeriodEnd?->format(self::DATE_FORMAT),
+            'payment_term_days' => $this->paymentTermDays,
+            'intro_text' => $this->introText,
+            'closing_text' => $this->closingText,
+            'subtotal_cents' => $this->subtotal->asCents(),
+            'deposit_deduction_cents' => $this->depositDeduction->asCents(),
+            'total_cents' => $this->total->asCents(),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public function toArray(): array
+    {
+        $lockReason = $this->getLockReason();
+
+        return [
+            'invoiceId' => $this->invoiceId->asString(),
+            'invoiceNumber' => $this->invoiceNumber?->asString(),
+            'kind' => $this->kind->value,
+            'status' => $this->status->value,
+            'customerId' => $this->customerId->asString(),
+            'customerName' => $this->customerName,
+            'offerId' => $this->offerId?->asString(),
+            'offerNumber' => $this->offerNumber,
+            'depositInvoiceId' => $this->getDepositInvoiceId()?->asString(),
+            'depositInvoiceNumber' => $this->getDepositInvoiceNumber(),
+            'cancelsInvoiceId' => $this->cancelsInvoiceId?->asString(),
+            'cancelsInvoiceNumber' => $this->cancelsInvoiceNumber,
+            'invoiceDate' => $this->invoiceDate->format(self::DATE_FORMAT),
+            'serviceDate' => $this->serviceDate?->format(self::DATE_FORMAT),
+            'servicePeriodStart' => $this->servicePeriodStart?->format(self::DATE_FORMAT),
+            'servicePeriodEnd' => $this->servicePeriodEnd?->format(self::DATE_FORMAT),
+            'paymentTermDays' => $this->paymentTermDays,
+            // Stornos haben keine Fälligkeit
+            'dueDate' => $this->kind->isCancellation() ? null : $this->getDueDate()->format(self::DATE_FORMAT),
+            'introText' => $this->introText,
+            'closingText' => $this->closingText,
+            'items' => $this->items->toArray(),
+            'subtotalCents' => $this->subtotal->asCents(),
+            'depositDeductionCents' => $this->depositDeduction->asCents(),
+            'totalCents' => $this->total->asCents(),
+            'paidAt' => $this->paidAt,
+            'isImported' => $this->isImported,
+            'isOverdue' => $this->isOverdue(BusinessClock::today()),
+            'isLocked' => $lockReason !== null,
+            'lockReason' => $lockReason,
+            'hasPdf' => $this->hasPdf(),
+            'createdAt' => $this->createdAt,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public function jsonSerialize(): array
+    {
+        return $this->toArray();
+    }
+
+    private static function draftForOffer(
+        Offer $offer,
+        Customer $customer,
+        InvoiceKind $kind,
+        ?DepositInvoiceState $deposit,
+        LineItems $items,
+        Money $subtotal,
+        Money $depositDeduction,
+        ?string $closingText,
+        int $paymentTermDays,
+        DateTimeImmutable $today,
+    ): self {
+        return new self(
+            InvoiceId::generate(),
+            null,
+            $kind,
+            InvoiceStatus::Draft,
+            $customer->getCustomerId(),
+            $customer->getDisplayName(),
+            $offer->getOfferId(),
+            $offer->getOfferNumber()?->asString(),
+            $deposit,
+            null,
+            null,
+            $today,
+            null,
+            null,
+            null,
+            $paymentTermDays,
+            null,
+            null,
+            $closingText,
+            $items,
+            $subtotal,
+            $depositDeduction,
+            $subtotal->subtract($depositDeduction),
+            null,
+            false,
+            null,
+            null,
+            null,
+            null,
+        );
+    }
+
+    /** @param array<string, mixed> $data */
+    private static function parseItems(array $data): LineItems
+    {
+        $items = $data['items'] ?? null;
+        if (!is_array($items)) {
+            throw new ApiValidationException('items must be an array', 400);
+        }
+
+        return LineItems::fromRequestArray($items);
+    }
+
+    private static function parsePaymentTermDays(mixed $value): int
+    {
+        if (!is_int($value)) {
+            throw new ApiValidationException('paymentTermDays must be an integer', 400);
+        }
+
+        return $value;
+    }
+
+    /** @param array<string, mixed> $row Join-Spalten deposit_invoice_* aus BusinessInvoiceRepository */
+    private static function depositFromDatabase(array $row): ?DepositInvoiceState
+    {
+        if ($row['deposit_invoice_id'] === null || $row['deposit_invoice_status'] === null) {
+            return null;
+        }
+
+        return DepositInvoiceState::create(
+            InvoiceId::fromString((string) $row['deposit_invoice_id']),
+            InvoiceStatus::from((string) $row['deposit_invoice_status']),
+            $row['deposit_invoice_number'],
+            self::dateFromDatabase($row['deposit_invoice_date']),
+            Money::fromCents((int) $row['deposit_invoice_total_cents']),
+        );
+    }
+
+    private static function dateFromDatabase(mixed $value): ?DateTimeImmutable
+    {
+        return $value !== null ? new DateTimeImmutable((string) $value) : null;
+    }
+}

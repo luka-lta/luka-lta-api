@@ -86,6 +86,9 @@ Antworten via `ApiResult::from(ResultInterface, $status)->getResponse($response)
 | `src/Api/<Domain>/Service/` | Logik der Domain; Actions bleiben dünn (Request parsen, Response bauen) |
 | `src/Repository/` | sämtlicher DB-/Redis-/S3-Zugriff, flach, kein Domain-Subdir |
 | `src/Value/` | immutable Value Objects, named constructors (`from`, `fromArray`) |
+| `src/Api/Customer`, `BusinessSettings`, `Offer`, `Invoice` | Business-Domain (Kunden, Firmendaten, Angebote, Rechnungen) |
+| `src/Api/Business/` | gemeinsamer PDF-Renderer (mPDF) + Dokument-Services für Angebote/Rechnungen |
+| `src/Value/Business/` | Value Objects der Business-Domain |
 | `src/Exception/` | müssen `ApiException` erben, sonst wird daraus ein 500 |
 | `src/Command/<Domain>/` | Symfony-Console, Einstieg `bin/app.php`, Zeitplan in `crontab` |
 | `data/mysql/*.sql` | Migrations |
@@ -106,6 +109,19 @@ Antworten via `ApiResult::from(ResultInterface, $status)->getResponse($response)
   Web-Tracking liegt im separaten `trackspire`-Projekt.
 - Zeitstempel gehen als SQL-UTC ohne Zonen-Marker raus (`yyyy-MM-dd HH:mm:ss`). Clients parsen
   das als UTC — Format nicht einseitig ändern.
+- **Business-Dateien**: MinIO-Prefix `business/` ist **privat** (nie public-read). PDFs je Versuch unter
+  `business/{offers,invoices}/<id>/<uuid>.pdf`, das Firmenlogo unter `business/logo.<ext>`; ausgeliefert nur
+  über authentifizierte API-Routen.
+- **Festgeschriebene Dokumente sind unveränderlich**: bei Rechnungen nur Zahlungsstatus und Storno, bei Angeboten nur
+  der Übergang gesendet → angenommen/abgelehnt.
+- **Nummernvergabe** über `business_number_sequences` mit `SELECT … FOR UPDATE` in der Transaktion des Aufrufers —
+  nie außerhalb einer Transaktion vergeben.
+- **Geschäftliches „heute“** nur über `BusinessClock` (Europe/Berlin); der Container läuft in UTC.
+- mPDF braucht `ext-gd` (steht im Dockerfile) — Image nach Änderung neu bauen.
+- `docker/php/Dockerfile` und `docker/nginx/*.conf` sind **CRLF**: Zeilenenden beibehalten (Repo `autocrlf=input`,
+  daher mit `git -c core.autocrlf=false commit` committen).
+- Upload-Limits (PHP `uploads.ini` 11M/12M, nginx 12m) wurden für den 10-MiB-Rechnungsimport erhöht —
+  Produktion muss übereinstimmen.
 - Längere Design-Dokumente liegen in `docs/plans/` und sind Momentaufnahmen, kein Ist-Zustand.
 
 ## Nicht tun
