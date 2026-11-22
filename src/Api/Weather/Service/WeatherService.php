@@ -48,7 +48,12 @@ class WeatherService
             $now = new DateTimeImmutable();
 
             $this->weatherRepository->insertReading($snapshot->getCurrent());
-            $this->weatherRepository->saveForecastCache($snapshot->getHourly(), $snapshot->getDaily(), $now);
+            $this->weatherRepository->saveForecastCache(
+                $snapshot->getHourly(),
+                $snapshot->getDaily(),
+                $snapshot->getAirQuality(),
+                $now,
+            );
             $this->weatherRepository->purgeReadingsOlderThan(
                 $now->modify('-' . self::READING_RETENTION_DAYS . ' days'),
             );
@@ -118,6 +123,7 @@ class WeatherService
                 'current' => null,
                 'hourly' => [],
                 'daily' => [],
+                'airQuality' => null,
             ]));
         }
 
@@ -130,6 +136,7 @@ class WeatherService
             'current' => $latest,
             'hourly' => $forecast['hourly'] ?? [],
             'daily' => $forecast['daily'] ?? [],
+            'airQuality' => $forecast['airQuality'] ?? null,
         ]));
     }
 
