@@ -19,6 +19,7 @@ class WeatherSnapshot
         private readonly WeatherReading $current,
         private readonly array          $hourly,
         private readonly array          $daily,
+        private readonly ?WeatherAirQuality $airQuality,
     ) {
     }
 
@@ -37,5 +38,10 @@ class WeatherSnapshot
     public function getDaily(): array
     {
         return $this->daily;
+    }
+
+    public function getAirQuality(): ?WeatherAirQuality
+    {
+        return $this->airQuality;
     }
 }

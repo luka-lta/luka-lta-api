@@ -6,6 +6,10 @@ namespace LukaLtaApi\Value\Weather;
 
 use JsonSerializable;
 
+/**
+ * One hour of forecast. The optional measurements are null when the provider
+ * did not deliver them — and for forecast caches written before they existed.
+ */
 class WeatherHourPoint implements JsonSerializable
 {
     private function __construct(
@@ -15,6 +19,14 @@ class WeatherHourPoint implements JsonSerializable
         private readonly float  $precipitationMm,
         private readonly int    $conditionCode,
         private readonly bool   $isDay,
+        private readonly ?int   $humidityPercent,
+        private readonly ?float $dewPointCelsius,
+        private readonly ?float $windSpeedKmh,
+        private readonly ?int   $windDirectionDegrees,
+        private readonly ?float $windGustsKmh,
+        private readonly ?float $visibilityMeters,
+        private readonly ?int   $cloudCoverPercent,
+        private readonly ?float $uvIndex,
     ) {
     }
 
@@ -25,6 +37,14 @@ class WeatherHourPoint implements JsonSerializable
         float  $precipitationMm,
         int    $conditionCode,
         bool   $isDay,
+        ?int   $humidityPercent,
+        ?float $dewPointCelsius,
+        ?float $windSpeedKmh,
+        ?int   $windDirectionDegrees,
+        ?float $windGustsKmh,
+        ?float $visibilityMeters,
+        ?int   $cloudCoverPercent,
+        ?float $uvIndex,
     ): self {
         return new self(
             $time,
@@ -33,6 +53,14 @@ class WeatherHourPoint implements JsonSerializable
             $precipitationMm,
             $conditionCode,
             $isDay,
+            $humidityPercent,
+            $dewPointCelsius,
+            $windSpeedKmh,
+            $windDirectionDegrees,
+            $windGustsKmh,
+            $visibilityMeters,
+            $cloudCoverPercent,
+            $uvIndex,
         );
     }
 
@@ -45,6 +73,14 @@ class WeatherHourPoint implements JsonSerializable
             (float) ($data['precipitationMm'] ?? 0.0),
             (int) $data['conditionCode'],
             (bool) $data['isDay'],
+            isset($data['humidityPercent']) ? (int) $data['humidityPercent'] : null,
+            isset($data['dewPointCelsius']) ? (float) $data['dewPointCelsius'] : null,
+            isset($data['windSpeedKmh']) ? (float) $data['windSpeedKmh'] : null,
+            isset($data['windDirectionDegrees']) ? (int) $data['windDirectionDegrees'] : null,
+            isset($data['windGustsKmh']) ? (float) $data['windGustsKmh'] : null,
+            isset($data['visibilityMeters']) ? (float) $data['visibilityMeters'] : null,
+            isset($data['cloudCoverPercent']) ? (int) $data['cloudCoverPercent'] : null,
+            isset($data['uvIndex']) ? (float) $data['uvIndex'] : null,
         );
     }
 
@@ -59,6 +95,15 @@ class WeatherHourPoint implements JsonSerializable
             'precipitationMm' => $this->precipitationMm,
             'condition' => $condition->getLabel(),
             'icon' => $condition->getIcon(),
+            'isDay' => $this->isDay,
+            'humidityPercent' => $this->humidityPercent,
+            'dewPointCelsius' => $this->dewPointCelsius,
+            'windSpeedKmh' => $this->windSpeedKmh,
+            'windDirectionDegrees' => $this->windDirectionDegrees,
+            'windGustsKmh' => $this->windGustsKmh,
+            'visibilityMeters' => $this->visibilityMeters,
+            'cloudCoverPercent' => $this->cloudCoverPercent,
+            'uvIndex' => $this->uvIndex,
         ];
     }
 
@@ -71,6 +116,14 @@ class WeatherHourPoint implements JsonSerializable
             'precipitationMm' => $this->precipitationMm,
             'conditionCode' => $this->conditionCode,
             'isDay' => $this->isDay,
+            'humidityPercent' => $this->humidityPercent,
+            'dewPointCelsius' => $this->dewPointCelsius,
+            'windSpeedKmh' => $this->windSpeedKmh,
+            'windDirectionDegrees' => $this->windDirectionDegrees,
+            'windGustsKmh' => $this->windGustsKmh,
+            'visibilityMeters' => $this->visibilityMeters,
+            'cloudCoverPercent' => $this->cloudCoverPercent,
+            'uvIndex' => $this->uvIndex,
         ];
     }
 }

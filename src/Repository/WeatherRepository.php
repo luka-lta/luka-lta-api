@@ -6,6 +6,7 @@ namespace LukaLtaApi\Repository;
 
 use DateTimeImmutable;
 use LukaLtaApi\Exception\ApiDatabaseException;
+use LukaLtaApi\Value\Weather\WeatherAirQuality;
 use LukaLtaApi\Value\Weather\WeatherForecastDay;
 use LukaLtaApi\Value\Weather\WeatherHourPoint;
 use LukaLtaApi\Value\Weather\WeatherReading;
@@ -91,11 +92,20 @@ class WeatherRepository
     }
 
     /**
-     * @return array{hourly: WeatherHourPoint[], daily: WeatherForecastDay[], fetchedAt: DateTimeImmutable}|null
+     * @return array{
+     *     hourly: WeatherHourPoint[],
+     *     daily: WeatherForecastDay[],
+     *     airQuality: WeatherAirQuality|null,
+     *     fetchedAt: DateTimeImmutable,
+     * }|null
      */
     public function loadForecastCache(): ?array
     {
-        $sql = 'SELECT hourly_payload, daily_payload, fetched_at FROM weather_forecast_cache WHERE id = 1';
+        $sql = <<<SQL
+            SELECT hourly_payload, daily_payload, air_quality_payload, fetched_at
+            FROM weather_forecast_cache
+            WHERE id = 1
+        SQL;
 
         try {
             $row = $this->pdo->query($sql)->fetch();
@@ -109,10 +119,14 @@ class WeatherRepository
 
         $hourly = json_decode($row['hourly_payload'], true, flags: JSON_THROW_ON_ERROR);
         $daily = json_decode($row['daily_payload'], true, flags: JSON_THROW_ON_ERROR);
+        $airQuality = $row['air_quality_payload'] !== null
+            ? json_decode($row['air_quality_payload'], true, flags: JSON_THROW_ON_ERROR)
+            : null;
 
         return [
             'hourly' => array_map(static fn (array $point) => WeatherHourPoint::fromArray($point), $hourly),
             'daily' => array_map(static fn (array $day) => WeatherForecastDay::fromArray($day), $daily),
+            'airQuality' => $airQuality !== null ? WeatherAirQuality::fromArray($airQuality) : null,
             'fetchedAt' => new DateTimeImmutable($row['fetched_at']),
         ];
     }
@@ -121,15 +135,20 @@ class WeatherRepository
      * @param WeatherHourPoint[]   $hourly
      * @param WeatherForecastDay[] $daily
      */
-    public function saveForecastCache(array $hourly, array $daily, DateTimeImmutable $fetchedAt): void
-    {
+    public function saveForecastCache(
+        array $hourly,
+        array $daily,
+        ?WeatherAirQuality $airQuality,
+        DateTimeImmutable $fetchedAt,
+    ): void {
         $sql = <<<SQL
-            INSERT INTO weather_forecast_cache (id, hourly_payload, daily_payload, fetched_at)
-            VALUES (1, :hourly_payload, :daily_payload, :fetched_at)
+            INSERT INTO weather_forecast_cache (id, hourly_payload, daily_payload, air_quality_payload, fetched_at)
+            VALUES (1, :hourly_payload, :daily_payload, :air_quality_payload, :fetched_at)
             ON DUPLICATE KEY UPDATE
-                hourly_payload = VALUES(hourly_payload),
-                daily_payload  = VALUES(daily_payload),
-                fetched_at     = VALUES(fetched_at)
+                hourly_payload      = VALUES(hourly_payload),
+                daily_payload       = VALUES(daily_payload),
+                air_quality_payload = VALUES(air_quality_payload),
+                fetched_at          = VALUES(fetched_at)
         SQL;
 
         try {
@@ -143,6 +162,9 @@ class WeatherRepository
                     array_map(static fn (WeatherForecastDay $d) => $d->toArray(), $daily),
                     JSON_THROW_ON_ERROR,
                 ),
+                'air_quality_payload' => $airQuality !== null
+                    ? json_encode($airQuality->toArray(), JSON_THROW_ON_ERROR)
+                    : null,
                 'fetched_at' => $fetchedAt->format('Y-m-d H:i:s'),
             ]);
         } catch (PDOException $exception) {

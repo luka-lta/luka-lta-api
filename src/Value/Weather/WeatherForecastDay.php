@@ -18,6 +18,9 @@ class WeatherForecastDay implements JsonSerializable
         private readonly ?float $uvIndexMax,
         private readonly string $sunrise,
         private readonly string $sunset,
+        private readonly ?float $windSpeedMaxKmh,
+        private readonly ?float $windGustsMaxKmh,
+        private readonly ?int   $windDirectionDominantDegrees,
     ) {
     }
 
@@ -31,6 +34,9 @@ class WeatherForecastDay implements JsonSerializable
         ?float $uvIndexMax,
         string $sunrise,
         string $sunset,
+        ?float $windSpeedMaxKmh,
+        ?float $windGustsMaxKmh,
+        ?int   $windDirectionDominantDegrees,
     ): self {
         return new self(
             $date,
@@ -42,6 +48,9 @@ class WeatherForecastDay implements JsonSerializable
             $uvIndexMax,
             $sunrise,
             $sunset,
+            $windSpeedMaxKmh,
+            $windGustsMaxKmh,
+            $windDirectionDominantDegrees,
         );
     }
 
@@ -57,6 +66,9 @@ class WeatherForecastDay implements JsonSerializable
             $data['uvIndexMax'] !== null ? (float) $data['uvIndexMax'] : null,
             (string) $data['sunrise'],
             (string) $data['sunset'],
+            isset($data['windSpeedMaxKmh']) ? (float) $data['windSpeedMaxKmh'] : null,
+            isset($data['windGustsMaxKmh']) ? (float) $data['windGustsMaxKmh'] : null,
+            isset($data['windDirectionDominantDegrees']) ? (int) $data['windDirectionDominantDegrees'] : null,
         );
     }
 
@@ -75,6 +87,9 @@ class WeatherForecastDay implements JsonSerializable
             'uvIndexMax' => $this->uvIndexMax,
             'sunrise' => $this->sunrise,
             'sunset' => $this->sunset,
+            'windSpeedMaxKmh' => $this->windSpeedMaxKmh,
+            'windGustsMaxKmh' => $this->windGustsMaxKmh,
+            'windDirectionDominantDegrees' => $this->windDirectionDominantDegrees,
         ];
     }
 
@@ -90,6 +105,9 @@ class WeatherForecastDay implements JsonSerializable
             'uvIndexMax' => $this->uvIndexMax,
             'sunrise' => $this->sunrise,
             'sunset' => $this->sunset,
+            'windSpeedMaxKmh' => $this->windSpeedMaxKmh,
+            'windGustsMaxKmh' => $this->windGustsMaxKmh,
+            'windDirectionDominantDegrees' => $this->windDirectionDominantDegrees,
         ];
     }
 }
